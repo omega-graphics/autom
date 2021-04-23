@@ -1,0 +1,12 @@
+#! /usr/bin/python3
+
+from src.autom import *
+
+project_name = "TestProject"
+
+lib = ImportedLibrary("NAME","lib")
+
+
+exported_targets = [lib]
+
+
