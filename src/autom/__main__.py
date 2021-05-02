@@ -4,7 +4,7 @@ import runpy
 import os
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog="autom")
     parser.add_argument("--mode",type=str)
     parser.add_argument("--out",type=str)
     parser.add_argument("-p",type=str,dest="p")

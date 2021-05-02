@@ -1,0 +1,14 @@
+
+{
+    "commands":[
+        {
+            "type":"clone",
+            "url":"https://github.com/omega-graphics/omega-wtk-project.git",
+            "branch":"default",
+            "dest":"./omegaWTK"
+        }
+    ],
+    "subdirs":[
+
+    ]
+}
