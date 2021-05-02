@@ -1,1 +1,1 @@
-py automdeps.py %*
+py "%~dp0/automdeps.py" %*
