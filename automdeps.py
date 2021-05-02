@@ -4,7 +4,7 @@ import os,sys
 import re as Regex
 import runpy
 from urllib.request import *
-import tarfile,zipfile
+import tarfile,zipfile,shutil
 
 tar_file_regex = Regex.compile(r"(?:\.tar\.(\w{2}))|\.t(\w{2})$",Regex.DOTALL | Regex.MULTILINE)
 
@@ -82,6 +82,7 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
         elif c.get("type") == "download":
             assert(c.get("url"))
             assert(c.get("dest"))
+            os.makedirs(os.path.dirname(c.get("dest")))
             res = urlretrieve(c.get("url"),c.get("dest"))
             print(res)
         elif c.get("type") == "tar":
@@ -101,6 +102,8 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
             _zip = zipfile.ZipFile(z_file,"r")
             _zip.extractall(c.get("dest"))
             _zip.close()
+            os.remove(z_file)
+            shutil.rmtree(os.path.dirname(z_file))
         _counter.increment()
     stream.close()
 
