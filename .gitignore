@@ -3,6 +3,7 @@
 out 
 *.pyc
 __pycache__
+.DS_STORE
 
 # Compiled Object files
 *.slo
