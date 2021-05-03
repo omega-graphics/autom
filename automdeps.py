@@ -43,6 +43,8 @@ def countAutomDepsFileCommandsRecurse(stream:io.TextIOWrapper) -> int:
 current_idx:int = 0
 
 _counter:Counter
+# Stores the abspaths of all the cloned repos using the clone.py tool waiting to synced with automdeps
+clone_automdeps_queue:"list[str]" = []
 
 def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
     j:dict = json.load(stream)
@@ -67,7 +69,25 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
             assert(homeConfig.get("installDest"))
             src.gnpkg.main.get_package(c.get('package'),home=homeConfig.get("installDest"),homeConfig=homeConfig)
 
+        elif c.get("type") == "git_clone":
+            assert(c.get("url"))
+            assert(c.get("dest"))
+            assert(c.get("branch"))
+            url = c.get("url")
+            dest = c.get("dest")
+            branch = None
+            if(c.get("branch") != "default"):
+                branch = c.get("branch")
+
+            prior_dir = os.getcwd()
+            if branch == None:
+                os.system(f"git clone " + url + f" {dest}")
+            else:
+                os.system(f"git clone " + url + f" --branch {branch} {dest}")
+
+            
         elif c.get("type") == "clone":
+            # Same implementation as clone.py
             assert(c.get("url"))
             assert(c.get("dest"))
             assert(c.get("branch"))
@@ -83,6 +103,7 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
             else:
                 os.system(f"git clone " + url + f" --branch {branch} {dest}")
             
+            clone_automdeps_queue.append(os.path.abspath(dest))
         elif c.get("type") == "autom":
             assert(c.get("dir"))
             assert(c.get("dest"))
@@ -128,10 +149,23 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
     if root:
         _counter.finish()
 
-if __name__ == "__main__":
-    # print(os.getcwd())
+def main():
+    absroot = os.path.abspath(os.getcwd())
     if os.path.exists("./AUTOMDEPS"):
+        print("Invoking root ./AUTOMDEPS")
         c = countAutomDepsFileCommandsRecurse(io.open("./AUTOMDEPS","r"))
         parseAutomDepsFile(io.open("./AUTOMDEPS","r"),True,c)
+
+        for t in clone_automdeps_queue:
+            print(f"Invoking sub-component {os.path.relpath(t,start=absroot)}")
+            os.chdir(t)
+            c = countAutomDepsFileCommandsRecurse(io.open("./AUTOMDEPS","r"))
+            parseAutomDepsFile(io.open("./AUTOMDEPS","r"),True,c)
+            os.chdir(absroot)
+            
     else:
         raise "AUTOMDEPS File Not Found in Current Directory. Exiting..."
+    return
+if __name__ == "__main__":
+    main()
+    

@@ -17,7 +17,6 @@ __all__ = [
     "ProjectFileType",
     "Script",
     "Copy",
-    "ProjectFileGen",
     "configure",
     "ImportedLibrary"
 ]
