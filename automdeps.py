@@ -5,6 +5,8 @@ import re as Regex
 import runpy
 from urllib.request import *
 import tarfile,zipfile,shutil
+import src.autom.autom
+import src.gnpkg.main
 
 tar_file_regex = Regex.compile(r"(?:\.tar\.(\w{2}))|\.t(\w{2})$",Regex.DOTALL | Regex.MULTILINE)
 
@@ -58,7 +60,14 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
 
     for c in commands:
         assert(c.get("type"))
-        if c.get("type") == "clone":
+        if c.get("type") == "gnpkg":
+            assert(c.get("package"))
+
+            homeConfig:dict = json.load(io.open("./GNPKG"))
+            assert(homeConfig.get("installDest"))
+            src.gnpkg.main.get_package(c.get('package'),home=homeConfig.get("installDest"),homeConfig=homeConfig)
+
+        elif c.get("type") == "clone":
             assert(c.get("url"))
             assert(c.get("dest"))
             assert(c.get("branch"))
@@ -74,6 +83,15 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
             else:
                 os.system(f"git clone " + url + f" --branch {branch} {dest}")
             
+        elif c.get("type") == "autom":
+            assert(c.get("dir"))
+            assert(c.get("dest"))
+            exports = runpy.run_path(f'{c.get("dir")}/AUTOM')
+            assert(exports.get("export"))
+            p = src.autom.autom.Project("","")
+            p.add_targets(exports.get("export"))
+            src.autom.autom.generateProjectFiles(project=p,mode=src.autom.autom.ProjectFileType.GN,output_dir=c.get("dest"))
+        
         elif c.get("type") == "script":
             assert(c.get("path"))
             assert(c.get("args"))

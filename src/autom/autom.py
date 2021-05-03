@@ -216,27 +216,25 @@ class __CmakeGenerator__:
                 
         stream.close()
 
-class ProjectFileGen:
-    def __init__(self):
-        return
-    def generateProjectFiles(self,project:Project,mode:ProjectFileType,output_dir:str,options:"dict[str,Any]" = {}):
-        targets = project.__targets__
-        target_names = []
-        for i in range(0,len(targets)-1):
-            t = targets[i]
-            for d in t.dependencies:
-                try: 
-                    target_names.index(d)
-                except ValueError:
-                    print(f"\u001b[31mERROR:\u001b[0m \"{d}\" is a dependency of target \"{t.name}\" but does not exist.")
-                    exit(1)
-            target_names.append(t)
-        """
-        Do a quick dependency check
-        """
 
-        if mode == ProjectFileType.CMAKE:
-            __CmakeGenerator__(targets,project=project).generate(output_dir + "/CMakeLists.txt")
-        elif mode == ProjectFileType.GN:
-            __GNGenerator__(targets).generate(output_dir + "/BUILD.gn")
-        return
+def generateProjectFiles(project:Project,mode:ProjectFileType,output_dir:str,options:"dict[str,Any]" = {}):
+    targets = project.__targets__
+    target_names = []
+    for i in range(0,len(targets)-1):
+        t = targets[i]
+        for d in t.dependencies:
+            try: 
+                target_names.index(d)
+            except ValueError:
+                print(f"\u001b[31mERROR:\u001b[0m \"{d}\" is a dependency of target \"{t.name}\" but does not exist.")
+                exit(1)
+        target_names.append(t)
+    """
+    Do a quick dependency check
+    """
+
+    if mode == ProjectFileType.CMAKE:
+        __CmakeGenerator__(targets,project=project).generate(output_dir + "/CMakeLists.txt")
+    elif mode == ProjectFileType.GN:
+        __GNGenerator__(targets).generate(output_dir + "/BUILD.gn")
+    return

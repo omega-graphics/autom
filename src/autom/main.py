@@ -1,10 +1,10 @@
 import argparse
-from autom import *
+from .autom import *
 import runpy
 import os
 
 def main():
-    parser = argparse.ArgumentParser(prog="autom")
+    parser = argparse.ArgumentParser(prog="autom",description="AUTOM Build Tool.. Automates the building of Native Projects utlizing CMake or GN")
     parser.add_argument("--mode",type=str)
     parser.add_argument("--out",type=str)
     parser.add_argument("-p",type=str,dest="p")
@@ -29,10 +29,7 @@ def main():
         exit(1)
 
     try:
-        gen = ProjectFileGen()
-        gen.generateProjectFiles(n["export"],t,args.out)
+        generateProjectFiles(n["export"],t,args.out)
     except KeyError:
         print(f"\u001b[31mERROR:\u001b[0m Exported project not found in AUTOMPROJ file")
 
-if __name__ == "__main__":
-    main()
