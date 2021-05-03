@@ -25,7 +25,8 @@ def get_current_packages() -> "list[Package]":
 
 __all__ = [
     "get_package",
-    "main"
+    "main",
+    "link_utils"
 ]
 def get_package(name:str,home:str,homeConfig:dict):
     if homeConfig.get("packages") == None:
@@ -40,7 +41,11 @@ def get_package(name:str,home:str,homeConfig:dict):
                 os.system("git clone " + p.url + f" {home}/{p.name}/code")
                 original_dir =  os.path.abspath(os.getcwd())
                 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-                shutil.copy2(p.gnBindingDest,f"{home}/{p.name}/BUILD.gn")
+                
+                for iter in os.walk(p.gnBindingDest):
+                    for f in iter[2]:
+                        shutil.copy2(os.path.join(iter[0],f),f"{home}/{p.name}/{os.path.basename(f)}")
+
                 os.chdir(original_dir)
                 # homeConfig["packages"].append({
                 #     "name":p.name,
@@ -54,6 +59,11 @@ def get_package(name:str,home:str,homeConfig:dict):
 
     return
 
+def link_utils():
+    dest = os.path.abspath(os.getcwd())
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    os.symlink(os.path.abspath("../../gn-utils"),dest + "/gn-utils",target_is_directory=True)
+    os.chdir(dest)
 def main():
     parser = argparse.ArgumentParser(prog="gnpkg")
     subparsers = parser.add_subparsers(dest="command")
@@ -65,19 +75,18 @@ def main():
     args = parser.parse_args()
     home:str
     homeConfig:dict
-    if os.path.exists("./GNPKG"):
-            homeConfig = json.load(io.open("./GNPKG","r"))
-            assert(homeConfig.get("installDest"))
+    if args.command != "utils":
+        if os.path.exists("./GNPKG"):
+                homeConfig = json.load(io.open("./GNPKG","r"))
+                assert(homeConfig.get("installDest"))
 
-            home = os.path.abspath(homeConfig.get("installDest"))
-    else:
-        raise FileNotFoundError("./GNPKG")
+                home = os.path.abspath(homeConfig.get("installDest"))
+        else:
+            raise FileNotFoundError("./GNPKG")
 
     if args.command == "utils":
         if args.get:
-            dest = os.path.abspath(os.getcwd())
-            os.chdir(os.path.dirname(os.path.abspath(__file__)))
-            shutil.copytree("../../gn-utils",dest + "/gn-utils")
+            link_utils()
 
     elif args.command == "get":
         get_package(args.package,home=home,homeConfig=homeConfig)

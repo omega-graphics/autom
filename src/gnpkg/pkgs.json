@@ -3,17 +3,17 @@
         {
             "name":"aws-sdk",
             "url":"https://github.com/aws/aws-sdk-cpp.git",
-            "gn_binding":"./projectfiles/aws-sdk/BUILD.gn"
+            "gn_binding":"./projectfiles/aws-sdk"
         },
         {
             "name":"ffmpeg",
             "url":"https://github.com/FFmpeg/FFmpeg.git",
-            "gn_binding":"./projectfiles/ffmpeg/BUILD.gn"
+            "gn_binding":"./projectfiles/ffmpeg"
         },
         {
             "name":"libpng",
             "url":"https://github.com/glennrp/libpng.git",
-            "gn_binding":"./projectfiles/libpng/BUILD.gn"
+            "gn_binding":"./projectfiles/libpng"
         }
     ]
 }

@@ -5,34 +5,38 @@ shared_library("dynlib"){
     output_dir = "$root_out_dir/lib"
 }
 
-mac_framework_bundle("MyFramework"){
-    sources = [
-        "src/framework.cpp"
-    ]
-    public_deps = [
-        ":dynlib"
-    ]
-    version = "A"
-    resources = [
-        "./src/MyFramework/Info.plist"
-    ]
-    embedded_libs = ["$root_out_dir/lib/dynlib.dylib"]
-    output_dir = "$root_out_dir/Frameworks"
-}
+if(is_mac){
 
-mac_app_bundle("MyApp"){
-    sources = [
-        "src/main.mm"
-    ]
-    resources = [
-        "./src/MyApp/Info.plist"
-    ]
-    frameworks = [
-        "Cocoa.framework"
-    ]
-    public_deps = [
-        ":MyFramework.framework"
-    ]
-    output_dir = "$root_out_dir/Apps"
-    embedded_frameworks = ["MyFramework.framework"]
+    mac_framework_bundle("MyFramework"){
+        sources = [
+            "src/framework.cpp"
+        ]
+        public_deps = [
+            ":dynlib"
+        ]
+        version = "A"
+        resources = [
+            "./src/MyFramework/Info.plist"
+        ]
+        embedded_libs = ["$root_out_dir/lib/dynlib.dylib"]
+        output_dir = "$root_out_dir/Frameworks"
+    }
+
+    mac_app_bundle("MyApp"){
+        sources = [
+            "src/main.mm"
+        ]
+        resources = [
+            "./src/MyApp/Info.plist"
+        ]
+        frameworks = [
+            "Cocoa.framework"
+        ]
+        public_deps = [
+            ":MyFramework.framework"
+        ]
+        output_dir = "$root_out_dir/Apps"
+        embedded_frameworks = ["MyFramework.framework"]
+    }
+
 }

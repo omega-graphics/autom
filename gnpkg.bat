@@ -1,1 +1,1 @@
-py "%~dp0/_gnpkg.py" %*
+py "%~dp0_gnpkg.py" %*
