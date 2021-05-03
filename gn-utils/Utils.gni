@@ -1,0 +1,325 @@
+declare_args(){
+    code_signature = ""
+}
+
+std_forward_args = ["libs","include_dirs",
+        "public_configs","configs",
+        "deps","public_deps",
+        "sources","include_dirs",
+        "output_dir","defines"]
+
+flags_forward_args = ["cflags_c","cflags_cc","cflags_objc","cflags_objcc","ldflags"]
+framework_link_args = ["frameworks","framework_dirs"]
+
+config_file_py = get_path_info("./ConfigFile.py","abspath")
+codesign = get_path_info("./codesign.py","abspath")
+
+
+template("configure_file"){
+    assert(defined(invoker.defines))
+    assert(defined(invoker.file))
+    assert(defined(invoker.output_name))
+
+    foreach(i,invoker.defines){
+        i = "-D" + i
+    }   
+
+    print(invoker.defines)
+
+    action(target_name){
+        sources = [
+            invoker.file
+        ]
+        script = config_file_py
+        args = [
+            "--input",
+            invoker.file,
+            "--output",
+            invoker.output_name,
+            invoker.defines
+        ]
+    }
+}
+
+template("executable"){
+    executable(target_name){
+        if(is_windows){
+            output_extension = "exe"
+        }
+        else {
+            output_extension = ""
+        }
+        forward_variables_from(invoker,
+        std_forward_args + flags_forward_args + framework_link_args)
+    }
+}
+
+template("static_library"){
+    static_library(target_name){
+        if(is_windows){
+            output_extension = "lib"
+        }
+        else if(is_mac || is_linux){
+            output_extension = "a"
+        }
+
+        forward_variables_from(invoker,
+        std_forward_args + ["cflags_c","cflags_cc","cflags_objc","cflags_objcc","arflags"])
+    }
+}
+
+template("shared_library"){
+    shared_library(target_name){
+        if(is_windows){
+            output_extension = "dll"
+        }
+        else if(is_mac){
+            if(defined(invoker.null_ext)){
+                if(invoker.null_ext == false){
+                    output_extension = "dylib"
+                }
+            }
+            else {
+                output_extension = "dylib"
+            }
+        }
+        else if(is_linux){
+            output_extension = "so"
+        }
+
+        forward_variables_from(invoker,
+        std_forward_args + flags_forward_args)
+    }
+}
+
+template("mac_framework_bundle"){
+    assert(defined(invoker.version))
+    f_name = target_name
+    bundle_name = "${target_name}.framework"
+
+    if(!defined(invoker.ldflags)){
+        invoker.ldflags = []
+    }
+
+    invoker.ldflags += [
+        "-Xlinker",
+        "-install_name",
+        "-Xlinker",
+        "@rpath/${f_name}.framework/Versions/${invoker.version}/${f_name}"
+    ]
+
+    shared_library(target_name){
+        forward_variables_from(invoker,["libs","include_dirs",
+        "public_configs","configs",
+        "deps",
+        "sources","include_dirs",
+        "defines"] + flags_forward_args + framework_link_args)
+        null_ext = true
+        public_deps = invoker.public_deps
+        output_dir = "$root_out_dir/in"
+    }
+
+    bundle_data("${target_name}__execute_copy"){
+        public_deps = [
+            ":${f_name}"
+        ]
+        sources = ["$root_out_dir/in/${f_name}"]
+        outputs = [
+            "{{bundle_executable_dir}}/{{source_file_part}}"
+        ]
+    }
+
+    if(defined(invoker.resources)){
+        bundle_data("${target_name}__res_copy"){
+            public_deps = [
+                ":${f_name}"
+            ]
+            sources = invoker.resources
+            outputs = [
+                "{{bundle_resources_dir}}/{{source_file_part}}"
+            ]
+        }
+    }
+
+    if(defined(invoker.embedded_libs)){
+
+        bundle_data("${target_name}__embed_lib"){
+            sources = invoker.embedded_libs
+            public_deps = [
+                ":${f_name}"
+            ]
+            outputs = [
+                "{{bundle_contents_dir}}/Libraries/{{source_file_part}}"
+            ]
+        }
+    }
+
+    framework_name = target_name
+
+    create_bundle(bundle_name){
+        bundle_root_dir = "${invoker.output_dir}/${bundle_name}"
+        bundle_contents_dir = "${bundle_root_dir}/Versions/${invoker.version}"
+        bundle_executable_dir = bundle_contents_dir
+        bundle_resources_dir = "${bundle_contents_dir}/Resources"
+
+        code_signing_sources = [
+              "$root_out_dir/in/${framework_name}"
+        ]
+        code_signing_script = codesign
+        code_signing_args = [
+            "--sig",
+            code_signature,
+            "--code",
+            rebase_path("$root_out_dir/Frameworks/$target_name/Versions/${invoker.version}"),
+            "--framework",
+            "-F",
+            rebase_path("$root_out_dir/Frameworks/${framework_name}.framework"),
+            "--name",
+            "${framework_name}",
+            "--current_version",
+            "${invoker.version}"
+        ]
+        code_signing_outputs = [
+            "$bundle_executable_dir/_CodeSignature",
+            "$bundle_root_dir/$framework_name"
+        ]
+
+        public_deps = [
+            ":${f_name}__execute_copy"
+        ]
+
+        if(defined(invoker.embedded_libs)){
+            code_signing_args += [
+                "--symlink-other-dirs",
+                "Libraries"
+            ]
+
+            public_deps += [
+                ":${f_name}__embed_lib"
+            ]
+        }
+
+        if(defined(invoker.resources)){
+            public_deps += [
+                ":${f_name}__res_copy"
+            ]
+        }
+    }
+}
+
+
+template("mac_app_bundle"){
+    assert(defined(invoker.output_dir))
+    bundle_name = "${target_name}.app"
+    app_name = target_name
+
+    embedded_frameworks_link = [
+        "-Xlinker",
+        "-rpath",
+        "-Xlinker",
+        "@loader_path/../Frameworks"
+    ]
+
+    if(defined(invoker.ldflags)){
+        invoker.ldflags += embedded_frameworks_link
+    }
+    else {
+        invoker.ldflags = embedded_frameworks_link
+    }  
+
+    if(!defined(invoker.frameworks)){
+        invoker.frameworks = []
+    }
+
+    if(defined(invoker.embedded_frameworks)){
+        _frameworks_to_embed = []
+        _frameworks_for_link = []
+        _framework_dirs = []
+        foreach(f,invoker.embedded_frameworks){
+            _frameworks_for_link += [":"+f]
+            f_dir = get_target_outputs(":"+f)
+            _framework_dirs += [get_path_info(f_dir[2],"dir")]
+            _frameworks_to_embed += [f_dir[2]]
+
+        }
+
+        invoker.frameworks += invoker.embedded_frameworks
+        invoker.framework_dirs = _framework_dirs
+
+        bundle_data("${bundle_name}__embed_frameworks"){
+            sources = _frameworks_to_embed
+            public_deps = _frameworks_for_link
+            outputs = [
+                "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}"
+            ]
+        }
+    }
+
+    executable(app_name){
+
+        forward_variables_from(invoker,["libs","include_dirs",
+        "public_configs","configs",
+        "deps","public_deps",
+        "sources","include_dirs",
+        "defines"] + flags_forward_args + framework_link_args)
+
+        output_dir =  "$root_out_dir/in"
+    }
+
+    bundle_data("${bundle_name}__execute_copy"){
+        public_deps = [
+            ":${app_name}"
+        ]
+        sources = ["$root_out_dir/in/${app_name}"]
+        outputs = [
+            "{{bundle_executable_dir}}/{{source_file_part}}"
+        ]
+    }
+
+    if(defined(invoker.resources)){
+        bundle_data("${bundle_name}__res_copy"){
+            public_deps = [
+                ":${app_name}"
+            ]
+            sources = invoker.resources
+            outputs = [
+                "{{bundle_resources_dir}}/{{source_file_part}}"
+            ]
+        }
+    }
+
+    create_bundle(bundle_name){
+        bundle_root_dir = "${invoker.output_dir}/${bundle_name}"
+        bundle_contents_dir = "${bundle_root_dir}/Contents"
+        bundle_executable_dir = "${bundle_contents_dir}/MacOS"
+        bundle_resources_dir = "${bundle_contents_dir}/Resources"
+
+        public_deps = [
+            ":${bundle_name}__execute_copy",
+        ]
+
+        if(defined(invoker.embedded_frameworks)){
+            public_deps += [
+                ":${bundle_name}__embed_frameworks"
+            ]
+        }
+
+        if(defined(invoker.resources)){
+            public_deps += [
+                ":${bundle_name}__res_copy"
+            ]
+        }
+
+        code_signing_script = codesign
+        code_signing_args = [
+            "--sig",
+            code_signature,
+            "--code",
+            rebase_path("${invoker.output_dir}/${bundle_name}")
+        ]
+        code_signing_outputs = [
+            "$bundle_executable_dir/_CodeSignature",
+            # "$bundle_executable_dir/$app_name"
+        ]
+    }
+}
