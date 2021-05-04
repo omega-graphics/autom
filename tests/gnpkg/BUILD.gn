@@ -1,0 +1,13 @@
+import("//gn-utils/Utils.gni")
+
+executable("test-aws"){
+    sources = [
+        "./src/test.cpp"
+    ]
+    public_configs = [
+        "//third_party/aws-sdk:aws-sdk-config"
+    ]
+    public_deps = [
+        "//third_party/aws-sdk:aws-sdk-core"
+    ]
+}

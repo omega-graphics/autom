@@ -2,7 +2,7 @@ declare_args(){
     code_signature = ""
 }
 
-std_forward_args = ["libs","include_dirs",
+std_forward_args = ["libs",
         "public_configs","configs",
         "deps","public_deps",
         "sources","include_dirs",
@@ -70,6 +70,9 @@ template("static_library"){
 
 template("shared_library"){
     shared_library(target_name){
+        forward_variables_from(invoker,
+        std_forward_args + flags_forward_args)
+
         if(is_windows){
             output_extension = "dll"
         }
@@ -86,9 +89,6 @@ template("shared_library"){
         else if(is_linux){
             output_extension = "so"
         }
-
-        forward_variables_from(invoker,
-        std_forward_args + flags_forward_args)
     }
 }
 

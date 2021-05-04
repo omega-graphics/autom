@@ -6,6 +6,11 @@
             "gn_binding":"./projectfiles/aws-sdk"
         },
         {
+            "name":"aws-crt",
+            "url":"https://github.com/awslabs/aws-crt-cpp.git",
+            "gn_binding":"./projectfiles/aws-crt"
+        },
+        {
             "name":"ffmpeg",
             "url":"https://github.com/FFmpeg/FFmpeg.git",
             "gn_binding":"./projectfiles/ffmpeg"
@@ -14,6 +19,16 @@
             "name":"libpng",
             "url":"https://github.com/glennrp/libpng.git",
             "gn_binding":"./projectfiles/libpng"
+        },
+        {
+            "name":"libjpeg-turbo",
+            "url":"https://github.com/libjpeg-turbo/libjpeg-turbo.git",
+            "gn_binding":"./projectfiles/libjpeg-turbo"
+        },
+        {
+            "name":"zlib",
+            "url":"https://github.com/madler/zlib.git",
+            "gn_binding":"./projectfiles/zlib"
         }
     ]
 }

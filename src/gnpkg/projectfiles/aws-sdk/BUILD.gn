@@ -1,0 +1,212 @@
+import("//gn-utils/Utils.gni")
+import("../Gnpkg.gni")
+
+package_out_dir = "${built_package_out_dir}/aws-sdk"
+package_include_dir = "${package_out_dir}/include"
+aws_sdk_include_dir = "./code/aws-cpp-sdk-core/include"
+
+copy("sdk_config_h"){
+    sources = [
+        "./SDKConfig.h"
+    ]
+    outputs = [
+        "${package_out_dir}/include/aws/core/{{source_file_part}}"
+    ]
+    visibility = [
+        ":aws-sdk-core"
+    ]
+}
+
+aws_sdk_core_src_dir = "./code/aws-cpp-sdk-core/source"
+aws_sdk_core_include_dir = "${aws_sdk_include_dir}/aws/core"
+
+external_lib_target("aws-sdk-core"){
+    deps = [
+        ":sdk_config_h"
+    ]
+
+    include_dirs = [
+        package_include_dir
+    ]
+
+    public_header_output_dir = "${package_out_dir}/include/aws/core/{{source_file_part}}"
+
+    public_headers = [
+        "${aws_sdk_core_include_dir}/AmazonSerializableWebServiceRequest.h",
+        "${aws_sdk_core_include_dir}/AmazonStreamingWebServiceRequest.h",
+        "${aws_sdk_core_include_dir}/AmazonWebServiceRequest.h",
+        "${aws_sdk_core_include_dir}/AmazonWebServiceResult.h",
+        "${aws_sdk_core_include_dir}/Aws.h",
+        "${aws_sdk_core_include_dir}/Core_EXPORTS.h",
+        "${aws_sdk_core_include_dir}/Globals.h",
+        "${aws_sdk_core_include_dir}/NoResult.h",
+        "${aws_sdk_core_include_dir}/Region.h",
+        "${aws_sdk_core_include_dir}/Version.h",
+        "${aws_sdk_core_include_dir}/VersionConfig.h",
+
+        # Header Dirs
+        "${aws_sdk_core_include_dir}/auth",
+        "${aws_sdk_core_include_dir}/client",
+        "${aws_sdk_core_include_dir}/config",
+        "${aws_sdk_core_include_dir}/external",
+        "${aws_sdk_core_include_dir}/http",
+        "${aws_sdk_core_include_dir}/internal",
+        "${aws_sdk_core_include_dir}/monitoring",
+        "${aws_sdk_core_include_dir}/net",
+        "${aws_sdk_core_include_dir}/platform",
+        "${aws_sdk_core_include_dir}/utils"
+    ]
+
+    sources = [
+        # Root Dir
+        "${aws_sdk_core_src_dir}/AmazonSerializableWebServiceRequest.cpp",
+        "${aws_sdk_core_src_dir}/AmazonStreamingWebServiceRequest.cpp",
+        "${aws_sdk_core_src_dir}/AmazonWebServiceRequest.cpp",
+        "${aws_sdk_core_src_dir}/Aws.cpp",
+        "${aws_sdk_core_src_dir}/Globals.cpp",
+        "${aws_sdk_core_src_dir}/Region.cpp",
+        "${aws_sdk_core_src_dir}/Version.cpp",
+        # Auth Dir
+        "${aws_sdk_core_src_dir}/auth/AWSAuthSigner.cpp",
+        "${aws_sdk_core_src_dir}/auth/AWSAuthSignerProvider.cpp",
+        "${aws_sdk_core_src_dir}/auth/AWSCredentialsProvider.cpp",
+        "${aws_sdk_core_src_dir}/auth/AWSCredentialsProviderChain.cpp",
+        "${aws_sdk_core_src_dir}/auth/SSOCredentialsProvider.cpp",
+        "${aws_sdk_core_src_dir}/auth/STSCredentialsProvider.cpp",
+        # Client Dir
+        "${aws_sdk_core_src_dir}/client/AWSClient.cpp",
+        "${aws_sdk_core_src_dir}/client/AWSErrorMarshaller.cpp",
+        "${aws_sdk_core_src_dir}/client/AsyncCallerContext.cpp",
+        "${aws_sdk_core_src_dir}/client/ClientConfiguration.cpp",
+        "${aws_sdk_core_src_dir}/client/CoreErrors.cpp",
+        "${aws_sdk_core_src_dir}/client/DefaultRetryStrategy.cpp",
+        "${aws_sdk_core_src_dir}/client/RetryStrategy.cpp",
+        "${aws_sdk_core_src_dir}/client/SpecifiedRetryableErrorsRetryStrategy.cpp",
+        # Config Dir
+        "${aws_sdk_core_src_dir}/config/AWSProfileConfigLoader.cpp",
+        # SDK External Libs Dir
+        "${aws_sdk_core_src_dir}/external/cjson/cJSON.cpp",
+        "${aws_sdk_core_src_dir}/external/tinyxml2/tinyxml2.cpp",
+        # HTTP Dir
+        "${aws_sdk_core_src_dir}/http/HttpClient.cpp",
+        "${aws_sdk_core_src_dir}/http/HttpClientFactory.cpp",
+        "${aws_sdk_core_src_dir}/http/HttpRequest.cpp",
+        "${aws_sdk_core_src_dir}/http/HttpTypes.cpp",
+        "${aws_sdk_core_src_dir}/http/Scheme.cpp",
+        "${aws_sdk_core_src_dir}/http/URI.cpp",
+        "${aws_sdk_core_src_dir}/http/curl/CurlHandleContainer.cpp",
+        "${aws_sdk_core_src_dir}/http/curl/CurlHttpClient.cpp",
+        "${aws_sdk_core_src_dir}/http/standard/StandardHttpRequest.cpp",
+        "${aws_sdk_core_src_dir}/http/standard/StandardHttpResponse.cpp",
+        # Internal Dir
+        "${aws_sdk_core_src_dir}/internal/AWSHttpResourceClient.cpp",
+        # Monitoring Dir
+        "${aws_sdk_core_src_dir}/monitoring/DefaultMonitoring.cpp",
+        "${aws_sdk_core_src_dir}/monitoring/HttpClientMetrics.cpp",
+        "${aws_sdk_core_src_dir}/monitoring/MonitoringManager.cpp",
+        # Net Dir
+        "${aws_sdk_core_src_dir}/net/Net.cpp",
+        "${aws_sdk_core_src_dir}/net/SimpleUDP.cpp",
+    ]
+
+    # Platform Dir
+
+    if(is_mac || is_linux){
+        sources += [
+            "${aws_sdk_core_src_dir}/net/linux-shared/Net.cpp",
+            "${aws_sdk_core_src_dir}/net/linux-shared/SimpleUDP.cpp",
+            # ---
+            "${aws_sdk_core_src_dir}/platform/linux-shared/Environment.cpp",
+            "${aws_sdk_core_src_dir}/platform/linux-shared/FileSystem.cpp",
+            "${aws_sdk_core_src_dir}/platform/linux-shared/OSVersionInfo.cpp",
+            "${aws_sdk_core_src_dir}/platform/linux-shared/Security.cpp",
+            "${aws_sdk_core_src_dir}/platform/linux-shared/Time.cpp",
+        ]
+    }
+
+    # Utils Dir
+    sources += [
+        "${aws_sdk_core_src_dir}/utils/ARN.cpp",
+        "${aws_sdk_core_src_dir}/utils/Array.cpp",
+        "${aws_sdk_core_src_dir}/utils/DNS.cpp",
+        "${aws_sdk_core_src_dir}/utils/DateTimeCommon.cpp",
+        "${aws_sdk_core_src_dir}/utils/Directory.cpp",
+        "${aws_sdk_core_src_dir}/utils/EnumParseOverflowContainer.cpp",
+        "${aws_sdk_core_src_dir}/utils/FileSystemUtils.cpp",
+        "${aws_sdk_core_src_dir}/utils/GetTheLights.cpp",
+        "${aws_sdk_core_src_dir}/utils/HashingUtils.cpp",
+        "${aws_sdk_core_src_dir}/utils/StringUtils.cpp",
+        "${aws_sdk_core_src_dir}/utils/TempFile.cpp",
+        "${aws_sdk_core_src_dir}/utils/UUID.cpp",
+        # Base 64 Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/base64/Base64.cpp",
+        # Crypto Sub-Dir (TODO: Improve crypto support. Only supports openssl bindings for now)
+        "${aws_sdk_core_src_dir}/utils/crypto/Cipher.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/ContentCryptoMaterial.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/ContentCryptoScheme.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/CryptoBuf.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/CryptoStream.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/EncryptionMaterials.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/KeyWrapAlgorithm.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/MD5.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/Sha1.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/Sha256.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/Sha256HMAC.cpp",
+        "${aws_sdk_core_src_dir}/utils/crypto/factory/Factories.cpp",
+        # openssl bindings
+        "${aws_sdk_core_src_dir}/utils/crypto/openssl/CryptoImpl.cpp",
+        # --    
+        # Event Sub-Dir 
+        "${aws_sdk_core_src_dir}/utils/event/EventDecoderStream.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventEncoderStream.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventHeader.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventMessage.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventStreamBuf.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventStreamDecoder.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventStreamEncoder.cpp",
+        "${aws_sdk_core_src_dir}/utils/event/EventStreamErrors.cpp",
+        # JSON Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/json/JsonSerializer.cpp",
+        # Logging Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/logging/AWSLogging.cpp",
+        "${aws_sdk_core_src_dir}/utils/logging/CRTLogSystem.cpp",
+        "${aws_sdk_core_src_dir}/utils/logging/CRTLogging.cpp",
+        "${aws_sdk_core_src_dir}/utils/logging/ConsoleLogSystem.cpp",
+        "${aws_sdk_core_src_dir}/utils/logging/DefaultLogSystem.cpp",
+        "${aws_sdk_core_src_dir}/utils/logging/FormattedLogSystem.cpp",
+        "${aws_sdk_core_src_dir}/utils/logging/LogLevel.cpp",
+         # Memory Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/memory/AWSMemory.cpp",
+        "${aws_sdk_core_src_dir}/utils/memory/stl/SimpleStringStream.cpp",
+         # Stream Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/stream/ConcurrentStreamBuf.cpp",
+        "${aws_sdk_core_src_dir}/utils/stream/PreallocatedStreamBuf.cpp",
+        "${aws_sdk_core_src_dir}/utils/stream/ResponseStream.cpp",
+        "${aws_sdk_core_src_dir}/utils/stream/SimpleStreamBuf.cpp",
+        # Threading Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/threading/Executor.cpp",
+        "${aws_sdk_core_src_dir}/utils/threading/ReaderWriterLock.cpp",
+        "${aws_sdk_core_src_dir}/utils/threading/Semaphore.cpp",
+        "${aws_sdk_core_src_dir}/utils/threading/ThreadTask.cpp",
+        # XML Sub-Dir
+        "${aws_sdk_core_src_dir}/utils/xml/XmlSerializer.cpp",
+    ]
+
+    defines = [
+        "ENABLE_OPENSSL_ENCRYPTION"
+    ]
+
+    output_dir = package_out_dir
+}
+
+config("aws-sdk-config"){
+    include_dirs = [
+        aws_sdk_include_dir
+    ]
+}
+
+group("aws-sdk-all"){
+    public_deps = [
+        ":aws-sdk-core"
+    ]
+}

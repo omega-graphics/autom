@@ -49,139 +49,170 @@ _counter:Counter
 clone_automdeps_queue:"list[str]" = []
 
 updateOnly:bool = False
+absroot:str
+isAbsRoot:bool
+
+Command = dict
+
+def processCommand(c:Command):
+    assert(c.get("type"))
+    if c.get("type") == "gnpkg":
+        assert(c.get("command"))
+        com = c.get('command')
+
+        if com == "utils":
+            print("GNPKG Get:gn-utils")
+            src.gnpkg.main.link_utils()
+        elif com == "get":
+            assert(c.get('package'))
+            print(f"GNPKG Get:{c.get('package')}")
+            homeConfig:dict = json.load(io.open("./GNPKG"))
+            assert(homeConfig.get("installDest"))
+            src.gnpkg.main.get_package(c.get('package'),home=homeConfig.get("installDest"),homeConfig=homeConfig)
+
+    elif c.get("type") == "git_clone":
+        assert(c.get("url"))
+        assert(c.get("dest"))
+        assert(c.get("branch"))
+        url = c.get("url")
+        dest = c.get("dest")
+        branch = None
+        if(c.get("branch") != "default"):
+            branch = c.get("branch")
+
+        prior_dir = os.getcwd()
+        if updateOnly:
+            print(f"Git Pull {c.get('url')}\nBranch:{c.get('branch')}")
+            os.system(f"git pull")
+        else:
+            print(f"Git Clone {c.get('url')}\nBranch:{c.get('branch')}")
+            if branch == None:
+                os.system(f"git clone" + url + f" {dest}")
+            else:
+                os.system(f"git clone " + url + f" --branch {branch} {dest}")
+
+        
+    elif c.get("type") == "clone":
+        # Same implementation as clone.py
+        assert(c.get("url"))
+        assert(c.get("dest"))
+        assert(c.get("branch"))
+        url = c.get("url")
+        dest = c.get("dest")
+        branch = None
+        if(c.get("branch") != "default"):
+            branch = c.get("branch")
+
+        prior_dir = os.getcwd()
+        if updateOnly:
+            print(f"AUTOM Sync {c.get('url')}\nBranch:{c.get('branch')}")
+            os.system(f"git pull")
+        else:
+            print(f"AUTOM Clone {c.get('url')}\nBranch:{c.get('branch')}")
+            if branch == None:
+                os.system(f"git clone " + url + f" {dest}")
+            else:
+                os.system(f"git clone " + url + f" --branch {branch} {dest}")
+        
+        clone_automdeps_queue.append(os.path.abspath(dest))
+    else:
+        if updateOnly == True:
+            print("SKIP")  
+    if updateOnly == False:
+        if c.get("type") == "autom":
+            assert(c.get("dir"))
+            assert(c.get("dest"))
+            exports = runpy.run_path(f'{c.get("dir")}/AUTOM')
+            assert(exports.get("export"))
+            p = src.autom.autom.Project("","")
+            p.add_targets(exports.get("export"))
+            print(f"AUTOM {c.get('dir')}")
+            src.autom.autom.generateProjectFiles(project=p,mode=src.autom.autom.ProjectFileType.GN,output_dir=c.get("dest"))
+        
+        elif c.get("type") == "script":
+            assert(c.get("path"))
+            assert(c.get("args"))
+            print(f"Script {c.get('path')}")
+            runpy.run_path(c.get("path") + " {}".format(c.get("args")))
+        elif c.get("type") == "download":
+            assert(c.get("url"))
+            assert(c.get("dest"))
+            os.makedirs(os.path.dirname(c.get("dest")))
+            print(f"Download {c.get('url')}")
+            res = urlretrieve(c.get("url"),c.get("dest"))
+            print(res)
+        elif c.get("type") == "tar":
+            assert(c.get("tarfile"))
+            assert(c.get("dest"))
+            t_file:str = c.get("tarfile")
+            tar_file_type = tar_file_regex.match(t_file)
+            if tar_file_type == None:
+                raise f"Tar File Format Invalid: \"{t_file}\""
+            print(f"Tar {t_file}")
+            tar = tarfile.open(t_file,"r:*")
+            tar.extractall(c.get("dest"))
+            tar.close()
+        elif c.get("type") == "unzip":
+            assert(c.get("zipfile"))
+            assert(c.get("dest"))
+            z_file:str  = c.get("zipfile")
+            _zip = zipfile.ZipFile(z_file,"r")
+            print(f"Unzipping {z_file}")
+            _zip.extractall(c.get("dest"))
+            _zip.close()
+            os.remove(z_file)
+            shutil.rmtree(os.path.dirname(z_file))
+    return
 
 def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
     global updateOnly
+    global _counter
+    global isAbsRoot
+    
     j:dict = json.load(stream)
 
+    if isAbsRoot and j.get("rootCommands"):
+        count += len(j.get("rootCommands"))
     if root:
         _counter = Counter(count)
 
     assert(j.get("commands"))
     commands:"list[dict]" = j.get("commands")
 
+    if isAbsRoot:
+        if j.get("rootCommands") != None:
+            rootCommands = j.get("rootCommands")
+            for c in rootCommands:
+                processCommand(c)
+                _counter.increment()
+
+        isAbsRoot = False
+
+
+    for c in commands:
+        processCommand(c)
+        _counter.increment()
+
     if j.get("subdirs") != None:
         subdirs = j.get("subdirs")
         for s in subdirs:
+            parent_dir = os.path.abspath(os.getcwd())
+            t = os.path.abspath(s)
+            os.chdir(t)
+            print(f"Invoking sub-directory {os.path.relpath(t,start=absroot)}")
             parseAutomDepsFile(io.open(s + "/AUTOMDEPS","r"),root=False)
-
-    for c in commands:
-        assert(c.get("type"))
-        if c.get("type") == "gnpkg":
-            assert(c.get("command"))
-            com = c.get('command')
-
-            if com == "utils":
-                print("GNPKG Get:gn-utils")
-                src.gnpkg.main.link_utils()
-            elif com == "get":
-                assert(c.get('package'))
-                print(f"GNPKG Get:{c.get('package')}")
-                homeConfig:dict = json.load(io.open("./GNPKG"))
-                assert(homeConfig.get("installDest"))
-                src.gnpkg.main.get_package(c.get('package'),home=homeConfig.get("installDest"),homeConfig=homeConfig)
-
-        elif c.get("type") == "git_clone":
-            assert(c.get("url"))
-            assert(c.get("dest"))
-            assert(c.get("branch"))
-            url = c.get("url")
-            dest = c.get("dest")
-            branch = None
-            if(c.get("branch") != "default"):
-                branch = c.get("branch")
-
-            prior_dir = os.getcwd()
-            if updateOnly:
-                print(f"Git Pull {c.get('url')}\nBranch:{c.get('branch')}")
-                os.system(f"git pull")
-            else:
-                print(f"Git Clone {c.get('url')}\nBranch:{c.get('branch')}")
-                if branch == None:
-                    os.system(f"git clone" + url + f" {dest}")
-                else:
-                    os.system(f"git clone " + url + f" --branch {branch} {dest}")
-
-            
-        elif c.get("type") == "clone":
-            # Same implementation as clone.py
-            assert(c.get("url"))
-            assert(c.get("dest"))
-            assert(c.get("branch"))
-            url = c.get("url")
-            dest = c.get("dest")
-            branch = None
-            if(c.get("branch") != "default"):
-                branch = c.get("branch")
-
-            prior_dir = os.getcwd()
-            if updateOnly:
-                print(f"AUTOM Sync {c.get('url')}\nBranch:{c.get('branch')}")
-                os.system(f"git pull")
-            else:
-                print(f"AUTOM Clone {c.get('url')}\nBranch:{c.get('branch')}")
-                if branch == None:
-                    os.system(f"git clone " + url + f" {dest}")
-                else:
-                    os.system(f"git clone " + url + f" --branch {branch} {dest}")
-            
-            clone_automdeps_queue.append(os.path.abspath(dest))
-        else:
-            if updateOnly == True:
-                print("SKIP")  
-        if updateOnly == False:
-            if c.get("type") == "autom":
-                assert(c.get("dir"))
-                assert(c.get("dest"))
-                exports = runpy.run_path(f'{c.get("dir")}/AUTOM')
-                assert(exports.get("export"))
-                p = src.autom.autom.Project("","")
-                p.add_targets(exports.get("export"))
-                print(f"AUTOM {c.get('dir')}")
-                src.autom.autom.generateProjectFiles(project=p,mode=src.autom.autom.ProjectFileType.GN,output_dir=c.get("dest"))
-            
-            elif c.get("type") == "script":
-                assert(c.get("path"))
-                assert(c.get("args"))
-                print(f"Script {c.get('path')}")
-                runpy.run_path(c.get("path") + " {}".format(c.get("args")))
-            elif c.get("type") == "download":
-                assert(c.get("url"))
-                assert(c.get("dest"))
-                os.makedirs(os.path.dirname(c.get("dest")))
-                print(f"Download {c.get('url')}")
-                res = urlretrieve(c.get("url"),c.get("dest"))
-                print(res)
-            elif c.get("type") == "tar":
-                assert(c.get("tarfile"))
-                assert(c.get("dest"))
-                t_file:str = c.get("tarfile")
-                tar_file_type = tar_file_regex.match(t_file)
-                if tar_file_type == None:
-                    raise f"Tar File Format Invalid: \"{t_file}\""
-                print(f"Tar {t_file}")
-                tar = tarfile.open(t_file,"r:*")
-                tar.extractall(c.get("dest"))
-                tar.close()
-            elif c.get("type") == "unzip":
-                assert(c.get("zipfile"))
-                assert(c.get("dest"))
-                z_file:str  = c.get("zipfile")
-                _zip = zipfile.ZipFile(z_file,"r")
-                print(f"Unzipping {z_file}")
-                _zip.extractall(c.get("dest"))
-                _zip.close()
-                os.remove(z_file)
-                shutil.rmtree(os.path.dirname(z_file))
-         
-        _counter.increment()
+            os.chdir(parent_dir)
+        
     stream.close()
+
+
 
     if root:
         _counter.finish()
 
 def main():
-    parser = argparse.ArgumentParser(prog="automdeps")
+    parser = argparse.ArgumentParser(prog="automdeps",description=
+    "AUTOM Project Dependency Manager (Automates 3rd party library installation/fetching as well project configuration)")
     parser.add_argument("--exec",action="store_const",const=True,default=True)
     parser.add_argument("--update",dest="update",action="store_const",const=True,default=False)
     args = parser.parse_args()
@@ -190,9 +221,12 @@ def main():
     global updateOnly
     updateOnly = args.update
        
-
+    global absroot
     absroot = os.path.abspath(os.getcwd())
     if os.path.exists("./AUTOMDEPS"):
+        global isAbsRoot
+        isAbsRoot = True
+
         print("Invoking root ./AUTOMDEPS")
         c = countAutomDepsFileCommandsRecurse(io.open("./AUTOMDEPS","r"))
         parseAutomDepsFile(io.open("./AUTOMDEPS","r"),True,c)
