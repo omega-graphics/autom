@@ -1,3 +1,33 @@
 {
-    "installDest":"./third_party"
+  "installDest": "./third_party",
+  "packages": [
+    {
+      "installedPath": "./third_party/zlib",
+      "name": "zlib"
+    },
+    {
+      "installedPath": "./third_party/libpng",
+      "name": "libpng"
+    },
+    {
+      "installedPath": "./third_party/rapidjson",
+      "name": "rapidjson"
+    },
+    {
+      "installedPath": "./third_party/websocketpp",
+      "name": "websocketpp"
+    },
+    {
+      "installedPath": "./third_party/asio",
+      "name": "asio"
+    },
+    {
+      "installedPath": "./third_party/openssl",
+      "name": "openssl"
+    },
+    {
+      "installedPath": "./third_party/boost",
+      "name": "boost"
+    }
+  ]
 }

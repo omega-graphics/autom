@@ -20,9 +20,9 @@ template("configure_file"){
     assert(defined(invoker.file))
     assert(defined(invoker.output_name))
 
-    foreach(i,invoker.defines){
-        i = "-D" + i
-    }   
+    # foreach(i,invoker.defines){
+    #     i = "-D" + i
+    # }   
 
     print(invoker.defines)
 
@@ -33,10 +33,12 @@ template("configure_file"){
         script = config_file_py
         args = [
             "--input",
-            invoker.file,
+            rebase_path(invoker.file),
             "--output",
-            invoker.output_name,
-            invoker.defines
+            rebase_path(invoker.output_name),
+        ] +  invoker.defines
+        outputs = [
+            invoker.output_name
         ]
     }
 }
@@ -64,14 +66,14 @@ template("static_library"){
         }
 
         forward_variables_from(invoker,
-        std_forward_args + ["cflags_c","cflags_cc","cflags_objc","cflags_objcc","arflags"])
+        std_forward_args + ["cflags_c","cflags_cc","cflags_objc","cflags_objcc","arflags"] + framework_link_args)
     }
 }
 
 template("shared_library"){
     shared_library(target_name){
         forward_variables_from(invoker,
-        std_forward_args + flags_forward_args)
+        std_forward_args + flags_forward_args + framework_link_args)
 
         if(is_windows){
             output_extension = "dll"

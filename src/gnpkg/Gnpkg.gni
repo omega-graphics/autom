@@ -1,5 +1,9 @@
 import("//gn-utils/Utils.gni")
 
+declare_args(){
+    built_package_out_dir = "$root_out_dir/gnpkg"
+}
+
 if(is_linux){
     static_lib_suffix = "a"
     shared_lib_suffix = "so"
@@ -16,18 +20,23 @@ else {
     lib_prefix = ""
 }
 
-external_lib_path = "$root_out_dir/externals/"
-
 template("external_lib_target"){
     assert(defined(invoker.public_headers))
-    t_name = "${target_name}""
+    t_name = "${target_name}"
     copy("${target_name}_headers"){
         visibility = [":$t_name"]
         sources = invoker.public_headers
         # if(built == false){
-            outputs = [
-                "${invoker.output_dir}/include/{{source_file_part}}"
-            ]
+            if(defined(invoker.public_header_output_dir)){
+                outputs = [
+                    invoker.public_header_output_dir
+                ]
+            }
+            else {
+                outputs = [
+                    "${invoker.output_dir}/include/{{source_file_part}}"
+                ]
+            }
         # }
     }
 
@@ -41,20 +50,20 @@ template("external_lib_target"){
     if(defined(invoker.static)){
         if(invoker.static == true){
             static_library(target_name){
-                forward_variables_from(invoker,["sources","deps","public_deps","configs","public_configs","include_dirs","output_dir","defines","ldflags","cflags_c","cflags_cc","output_name","visibility"])
+                forward_variables_from(invoker,["sources","deps","public_deps","configs","public_configs","include_dirs","output_dir","defines","ldflags","cflags_c","cflags_cc","output_name","visibility","frameworks","framework_dirs","libs"])
             }
         }
     }
     else if(defined(invoker.is_source_set)){
         if(invoker.is_source_set){
             source_set(target_name){
-                forward_variables_from(invoker,["sources","deps","public_deps","configs","public_configs","include_dirs","output_dir","defines","ldflags","cflags_c","cflags_cc","output_name","visibility"])
+                forward_variables_from(invoker,["sources","deps","public_deps","configs","public_configs","include_dirs","output_dir","defines","ldflags","cflags_c","cflags_cc","output_name","visibility","frameworks","framework_dirs","libs"])
             }
         }
     }
     else {
         shared_library(target_name){
-           forward_variables_from(invoker,["sources","deps","public_deps","configs","public_configs","include_dirs","output_dir","defines","ldflags","cflags_c","cflags_cc","output_name","visibility"]) 
+           forward_variables_from(invoker,["sources","deps","public_deps","configs","public_configs","include_dirs","output_dir","defines","ldflags","cflags_c","cflags_cc","output_name","visibility","frameworks","framework_dirs","libs"]) 
         }
     }
 
@@ -74,6 +83,24 @@ template("external_lib_target"){
             
         }
     }
-
     
+}
+
+template("external_header_lib_target"){
+    assert(defined(invoker.output_dir))
+    copy(target_name){
+        sources = invoker.sources
+        forward_variables_from(invoker,["deps","public_deps"])
+        # if(built == false){
+            outputs = [
+                "${invoker.output_dir}/{{source_file_part}}"
+            ]
+        # }
+    }
+
+    t_name = target_name
+
+    config("${t_name}_config"){
+        forward_variables_from(invoker,["include_dirs","public_configs","libs","defines"])
+    }
 }

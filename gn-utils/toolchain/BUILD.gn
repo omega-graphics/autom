@@ -149,7 +149,7 @@ toolchain("llvm") {
             command = "llvm-lib /machine:x64 {{arflags}}  /out:{{output}} {{inputs}}"
         }
         else if(is_mac) {
-            command = "$cxx -o {{output}} {{inputs}} {{arflags}}"
+            command = "ar -r {{output}} {{inputs}} {{arflags}}"
         }
         outputs = [
             "{{output_dir}}/{{target_output_name}}{{output_extension}}"

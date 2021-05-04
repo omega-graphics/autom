@@ -1,0 +1,26 @@
+import("../Gnpkg.gni")
+
+package_out_dir = "${built_package_out_dir}/websocketpp"
+
+external_header_lib_target("websocketpp"){
+    sources = [
+        "./code/websocketpp"
+    ]
+    include_dirs = [
+        "${package_out_dir}/include"
+    ]
+    if(is_windows){
+        defines = [
+            "_WEBSOCKETPP_CPP11_FUNCTIONAL_",
+            "_WEBSOCKETPP_CPP11_SYSTEM_ERROR_",
+            "_WEBSOCKETPP_CPP11_RANDOM_DEVICE_",
+            "_WEBSOCKETPP_CPP11_MEMORY_"
+        ]
+    }
+    else {
+        defines = [
+            "_WEBSOCKETPP_CPP11_STL_",
+        ]
+    }
+    output_dir = "${package_out_dir}/include"
+}

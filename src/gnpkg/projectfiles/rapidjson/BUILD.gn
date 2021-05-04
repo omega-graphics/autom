@@ -1,0 +1,17 @@
+import("//gn-utils/Utils.gni")
+import("../Gnpkg.gni")
+
+package_out_dir = "${built_package_out_dir}/rapidjson"
+
+external_header_lib_target("rapidjson"){
+    sources = [
+        "./code/include/rapidjson"
+    ]
+    include_dirs = [
+        "${package_out_dir}/include"
+    ]
+    output_dir = "${package_out_dir}/include"
+    cflags_cc = [
+        "-march=native"
+    ]
+}

@@ -1,14 +1,49 @@
 {
     "packages":[
         {
-            "name":"aws-sdk",
-            "url":"https://github.com/aws/aws-sdk-cpp.git",
-            "gn_binding":"./projectfiles/aws-sdk"
+            "name":"asio",
+            "url":"https://github.com/chriskohlhoff/asio.git",
+            "gn_binding":"./projectfiles/asio",
+            "deps":[
+                "boost"
+            ]
         },
         {
-            "name":"aws-crt",
-            "url":"https://github.com/awslabs/aws-crt-cpp.git",
-            "gn_binding":"./projectfiles/aws-crt"
+            "name":"boost",
+            "url":"https://github.com/boostorg/boost.git",
+            "cloneSubmodules":true,
+            "gn_binding":"./projectfiles/boost"
+        },
+        {
+            "name":"rapidjson",
+            "url":"https://github.com/Tencent/rapidjson.git",
+            "gn_binding":"./projectfiles/rapidjson"
+        },
+        {
+            "name":"socket.io-client",
+            "url":"https://github.com/socketio/socket.io-client-cpp.git",
+            "gn_binding":"./projectfiles/socket.io-client",
+            "deps":[
+                "asio",
+                "rapidjson",
+                "websocketpp"
+            ]
+        },
+        {
+            "name":"websocketpp",
+            "url":"https://github.com/zaphoyd/websocketpp.git",
+            "gn_binding":"./projectfiles/websocketpp"
+        },
+        {
+            "name":"curl",
+            "url":"https://github.com/curl/curl.git",
+            "gn_binding":"./projectfiles/curl"
+        },
+        {
+            "name":"aws-sdk",
+            "url":"https://github.com/aws/aws-sdk-cpp.git",
+            "gn_binding":"./projectfiles/aws-sdk",
+            "cloneSubmodules":true
         },
         {
             "name":"ffmpeg",
@@ -18,7 +53,10 @@
         {
             "name":"libpng",
             "url":"https://github.com/glennrp/libpng.git",
-            "gn_binding":"./projectfiles/libpng"
+            "gn_binding":"./projectfiles/libpng",
+            "deps":[
+                "zlib"
+            ]
         },
         {
             "name":"libjpeg-turbo",
@@ -29,6 +67,11 @@
             "name":"zlib",
             "url":"https://github.com/madler/zlib.git",
             "gn_binding":"./projectfiles/zlib"
+        },
+        {
+            "name":"openssl",
+            "url":"https://github.com/openssl/openssl.git",
+            "gn_binding":"./projectfiles/openssl"
         }
     ]
 }

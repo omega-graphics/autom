@@ -17,14 +17,11 @@ for arg in args:
         idx = args.index(arg)
         dest = args[idx + 1]
 
-if(sys.api_version > 2.9):
-    if(os.path.isfile(src)):
-        if os.path.exists(dest):
-            os.remove(dest)
-        shutil.copy2(src,dest)
-    elif(os.path.isdir(src)):
-        if os.path.exists(dest):
-            shutil.rmtree(dest)
-        shutil.copytree(src,dest,True)
-else:
-    os.system("cp " + src + " " + dest)
+if os.path.isfile(src):
+    if os.path.exists(dest):
+        os.remove(dest)
+    shutil.copy2(src,dest)
+elif os.path.isdir(src):
+    if os.path.exists(dest):
+        shutil.rmtree(dest)
+    shutil.copytree(src,dest,True)

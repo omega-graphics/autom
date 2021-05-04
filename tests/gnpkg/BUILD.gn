@@ -5,9 +5,13 @@ executable("test-aws"){
         "./src/test.cpp"
     ]
     public_configs = [
-        "//third_party/aws-sdk:aws-sdk-config"
+        "//third_party/aws-sdk:aws-sdk-config",
+        "//third_party/rapidjson:rapidjson_config",
+        "//third_party/websocketpp:websocketpp_config",
+        "//third_party/asio:asio_config"
     ]
     public_deps = [
         "//third_party/aws-sdk:aws-sdk-core"
     ]
+    output_dir = "$root_out_dir/tests"
 }
