@@ -143,9 +143,12 @@ def remove_package(name:str,homeConfig:dict):
 
 def link_utils():
     dest = os.path.abspath(os.getcwd())
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    os.symlink(os.path.abspath("../../gn-utils"),dest + "/gn-utils",target_is_directory=True)
-    os.chdir(dest)
+    if os.path.exists(dest + "/gn-utils"):
+        return
+    else:
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.symlink(os.path.abspath("../../gn-utils"),dest + "/gn-utils",target_is_directory=True)
+        os.chdir(dest)
 def get_chromium_build_utils():
     os.system("git clone https://chromium.googlesource.com/chromium/src/build ./build")
 def main():
