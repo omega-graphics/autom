@@ -1,0 +1,29 @@
+import("../Gnpkg.gni")
+
+package_out_dir = "${built_package_out_dir}/socket.io-client"
+
+external_lib_target("socket.io-client"){
+    public_deps = [
+        "../asio",
+        "../websocketpp",
+        "../rapidjson"
+    ]
+    public_configs = [
+        "../asio:asio_config",
+        "../websocketpp:websocketpp_config",
+        "../rapidjson:rapidjson_config"
+    ]
+    sources = [
+        "./code/src/sio_client.cpp",
+         "./code/src/sio_socket.cpp",
+         "./code/src/internal/sio_client_impl.cpp",
+         "./code/src/internal/sio_packet.cpp"
+    ]
+    public_headers = [
+        "./code/src/sio_client.h",
+        "./code/src/sio_message.h",
+        "./code/src/sio_socket.h",
+        "./code/src/internal"
+    ]
+    output_dir = package_out_dir
+}

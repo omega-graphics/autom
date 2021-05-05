@@ -28,6 +28,10 @@
     {
       "installedPath": "./third_party/boost",
       "name": "boost"
+    },
+    {
+      "installedPath": "./third_party/socket.io-client",
+      "name": "socket.io-client"
     }
   ]
 }

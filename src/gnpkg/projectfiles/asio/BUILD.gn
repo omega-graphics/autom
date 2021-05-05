@@ -2,24 +2,18 @@ import("../Gnpkg.gni")
 
 package_out_dir = "${built_package_out_dir}/asio"
 
-external_lib_target("asio"){
-    public_configs = [
-        "../openssl:openssl_config"
-    ]
-    public_headers = [
+external_header_lib_target("asio"){
+    sources = [
         "./code/asio/include/asio.hpp",
         "./code/asio/include/asio"
-    ]
-    public_deps = [
-        "../openssl"
     ]
     include_dirs = [
         "${package_out_dir}/include"
     ]
-    sources = [
-        "./code/asio/src/asio.cpp",
-        "./code/asio/src/asio_ssl.cpp"
+    defines = [
+        "BOOST_DATE_TIME_NO_LIB",
+        "BOOST_REGEX_NO_LIB",
+        "ASIO_STANDALONE",
     ]
-    public_header_output_dir = "${package_out_dir}/include/{{source_file_part}}"
-    output_dir = package_out_dir
+    output_dir = "${package_out_dir}/include"
 }

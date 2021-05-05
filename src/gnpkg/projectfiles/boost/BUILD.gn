@@ -1,0 +1,434 @@
+import("../Gnpkg.gni")
+
+package_out_dir = "${built_package_out_dir}/boost"
+package_include_dir = "${package_out_dir}/include"
+
+boost_src_dir = "./code/libs"
+
+config("boost_inc_config"){
+    include_dirs = [
+        package_include_dir
+    ]
+}
+
+
+
+external_header_lib_target("boost-config"){
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    sources = [
+        "${boost_src_dir}/config/include/boost/config",
+        "${boost_src_dir}/config/include/boost/detail",
+        "${boost_src_dir}/config/include/boost/config.hpp",
+        "${boost_src_dir}/config/include/boost/cstdint.hpp",
+        "${boost_src_dir}/config/include/boost/cxx11_char_types.hpp", 
+        "${boost_src_dir}/config/include/boost/limits.hpp", 
+        "${boost_src_dir}/config/include/boost/version.hpp", 
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-predef"){
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_deps = [
+        ":boost-config"
+    ]
+    sources = [
+        "${boost_src_dir}/predef/include/boost/predef.h",
+        "${boost_src_dir}/predef/include/boost/predef",
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-assert"){
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_deps = [
+        ":boost-config"
+    ]
+    sources = [
+        "${boost_src_dir}/assert/include/boost/assert"
+        "${boost_src_dir}/assert/include/boost/assert.hpp",
+        "${boost_src_dir}/assert/include/boost/current_function.hpp"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-align"){
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_deps = [
+        ":boost-config"
+    ]
+    sources = [
+        "${boost_src_dir}/align/include/boost/align",
+        "${boost_src_dir}/align/include/boost/align.hpp"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-static_assert"){
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_deps = [
+        ":boost-config"
+    ]
+    sources = [
+        "${boost_src_dir}/static_assert/include/boost/static_assert.hpp"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-core"){
+    public_deps = [
+        ":boost-static_assert",
+        ":boost-config"
+    ]
+    sources = [
+        "${boost_src_dir}/core/include/boost/core",
+        "${boost_src_dir}/core/include/boost/detail",
+        "${boost_src_dir}/core/include/boost/checked_delete.hpp",
+        "${boost_src_dir}/core/include/boost/get_pointer.hpp",
+        "${boost_src_dir}/core/include/boost/iterator.hpp",
+        "${boost_src_dir}/core/include/boost/non_type.hpp",
+        "${boost_src_dir}/core/include/boost/noncopyable.hpp",
+        "${boost_src_dir}/core/include/boost/ref.hpp",
+        "${boost_src_dir}/core/include/boost/swap.hpp",
+        "${boost_src_dir}/core/include/boost/type.hpp",
+        "${boost_src_dir}/core/include/boost/visit_each.hpp"
+    ]
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-detail"){
+    public_deps = [
+        ":boost-config"
+    ]
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    sources = [
+        "${boost_src_dir}/detail/include/boost/detail",
+        "${boost_src_dir}/detail/include/boost/blank.hpp",
+        "${boost_src_dir}/detail/include/boost/blank_fwd.hpp",
+        "${boost_src_dir}/detail/include/boost/cstdlib.hpp"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+
+external_header_lib_target("boost-preprocessor"){
+    public_deps = [
+        ":boost-config"
+    ]
+    sources = [
+        "${boost_src_dir}/preprocessor/include/boost/preprocessor.hpp",
+        "${boost_src_dir}/preprocessor/include/boost/preprocessor"
+    ]
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-accumulators"){
+    public_deps = [
+        ":boost-config"
+    ]
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    sources = [
+        "${boost_src_dir}/accumulators/include/boost/accumulators"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-type_traits"){
+    public_deps = [
+        ":boost-config"
+    ]
+   public_configs = [
+        ":boost_inc_config"
+   ]
+   sources = [
+        "${boost_src_dir}/type_traits/include/boost/type_traits",
+        "${boost_src_dir}/type_traits/include/boost/aligned_storage.hpp",
+        "${boost_src_dir}/type_traits/include/boost/type_traits.hpp"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-utility"){
+    public_deps = [
+        ":boost-config"
+    ]
+   public_configs = [
+        ":boost_inc_config"
+   ]
+   sources = [
+       "${boost_src_dir}/utility/include/boost/detail",
+       "${boost_src_dir}/utility/include/boost/utility"
+        "${boost_src_dir}/utility/include/boost/call_traits.hpp",
+        "${boost_src_dir}/utility/include/boost/compressed_pair.hpp",
+        "${boost_src_dir}/utility/include/boost/operators.hpp",
+        "${boost_src_dir}/utility/include/boost/operators_v1.hpp",
+        "${boost_src_dir}/utility/include/boost/utility.hpp"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+external_header_lib_target("boost-algorithm"){
+    public_deps = [
+        ":boost-config"
+    ]
+   public_configs = [
+        ":boost_inc_config"
+   ]
+   sources = [
+        "${boost_src_dir}/algorithm/include/boost/algorithm"
+    ]
+    export_config = false
+    output_dir = "${package_include_dir}/${target_name}/boost"
+}
+
+if(is_windows){
+
+    external_header_lib_target("boost-winapi"){
+        public_deps = [
+            ":boost-config"
+        ]
+        public_configs = [
+            ":boost_inc_config"
+        ]
+        sources = [
+            "${boost_src_dir}/winapi/include/boost/winapi",
+            "${boost_src_dir}/winapi/include/boost/detail",
+        ]
+        export_config = false
+        output_dir = "${package_include_dir}/${target_name}/boost"
+    }
+
+}
+
+# PUBLIC
+ #       Boost::assert
+ #       Boost::config
+#      Boost::static_assert
+#       Boost::type_traits
+#  PRIVATE
+#      Boost::align
+#    Boost::predef
+#   Boost::preprocessor
+#
+#
+#
+#
+#
+
+atomic_deps = [
+    "boost-align",
+    "boost-predef",
+    "boost-config",
+    "boost-static_assert",
+    "boost-type_traits",
+]
+
+if(is_windows){
+    atomic_deps += [
+        "boost-winapi"
+    ]
+}
+_atomic_include_dirs = []
+
+foreach(dep,atomic_deps){
+    _atomic_include_dirs += ["${package_include_dir}/${dep}"]
+}
+
+external_lib_target("boost-atomic"){
+    static = true
+    include_dirs = _atomic_include_dirs
+    public_deps = [
+        ":boost-align",
+        ":boost-predef",
+        ":boost-config",
+        ":boost-static_assert",
+        ":boost-type_traits",
+    ]
+
+    if(is_windows){
+        public_deps += [
+            ":boost-winapi"
+        ]
+    }
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_headers = [
+        "${boost_src_dir}/atomic/include/boost/atomic",
+        "${boost_src_dir}/atomic/include/boost/atomic.hpp",
+        "${boost_src_dir}/atomic/include/boost/memory_order.hpp"
+    ]
+    public_header_output_dir = "${package_include_dir}/${target_name}/boost/{{source_file_part}}"
+    cflags_cc = [
+        "-msse -msse2"
+    ]
+    sources = [
+        "${boost_src_dir}/atomic/src/find_address_sse2.cpp",
+        "${boost_src_dir}/atomic/src/find_address_sse41.cpp",
+        "${boost_src_dir}/atomic/src/lock_pool.cpp",
+    ]
+    if(is_windows){
+        sources += [
+             "${boost_src_dir}/atomic/src/wait_ops_windows.cpp"
+        ]
+    }
+}
+
+_thread_include_dirs = [
+    "${package_include_dir}/boost-atomic",
+    "${package_include_dir}/boost-winapi"
+]
+
+external_lib_target("boost-thread"){
+    static = true
+    include_dirs = _thread_include_dirs
+    public_deps = [
+        ":boost-atomic"
+    ]
+    if(is_windows){
+        public_deps = [
+            ":boost-winapi"
+        ]
+    }
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_headers = [
+        "${boost_src_dir}/thread/include/boost/thread",
+        "${boost_src_dir}/thread/include/boost/thread.hpp",
+    ]
+    sources = [
+        "${boost_src_dir}/thread/src/future.cpp",
+        "${boost_src_dir}/thread/src/tss_null.cpp"
+    ]
+    if(is_windows){
+        sources += [
+            "${boost_src_dir}/thread/src/win32/thread.cpp",
+            "${boost_src_dir}/thread/src/win32/thread_primitives.cpp",
+            "${boost_src_dir}/thread/src/win32/tss_dll.cpp",
+            "${boost_src_dir}/thread/src/win32/tss_pe.cpp"
+        ]
+    }
+    else {
+        sources += [
+            "${boost_src_dir}/thread/src/pthread/once.cpp",
+            "${boost_src_dir}/thread/src/pthread/once_atomic.cpp",
+            "${boost_src_dir}/thread/src/pthread/thread.cpp"
+        ]
+    }
+    public_header_output_dir = "${package_include_dir}/${target_name}/boost/{{source_file_part}}"
+}
+
+
+
+external_lib_target("boost-coroutine"){
+    static = true
+    public_configs = [
+        ":boost_inc_config"
+    ]
+    public_deps = [
+        ":boost-thread"
+    ]
+    public_headers = [
+        "${boost_src_dir}/coroutine/include/boost/coroutine"
+    ]
+    sources += [
+        "${boost_src_dir}/coroutine/src/exceptions.cpp",
+        "${boost_src_dir}/coroutine/src/detail/coroutine_context.cpp",
+    ]
+    if(is_windows){
+        sources += [
+            "${boost_src_dir}/coroutine/src/windows/stack_traits.cpp"
+        ]
+    }
+    else {
+        sources += [
+            "${boost_src_dir}/coroutine/src/posix/stack_traits.cpp"
+        ]
+    }
+    public_header_output_dir = "${package_include_dir}/${target_name}/boost/{{source_file_part}}"
+}
+
+group("boost"){
+    public_deps = [
+        ":boost-core",
+        ":boost-predef",
+        ":boost-preprocessor"
+        ":boost-algorithm",
+        ":boost-accumulators",
+        ":boost-thread",
+        ":boost-atomic",
+        ":boost-coroutine",
+        ":boost-assert",
+        ":boost-config",
+        ":boost-type_traits",
+        ":boost-utility",
+        ":boost-detail",
+        ":boost-align",
+        ":boost-static_assert"
+    ]
+    if(is_windows){
+        public_deps += [
+            ":boost-winapi"
+        ]
+    }
+}
+
+boost_components = [
+        "boost-core",
+        "boost-predef",
+        "boost-preprocessor"
+        "boost-algorithm",
+        "boost-accumulators",
+        "boost-thread",
+        "boost-atomic",
+        "boost-coroutine",
+        "boost-assert",
+        "boost-config",
+        "boost-type_traits",
+        "boost-utility",
+        "boost-detail",
+        "boost-align",
+        "boost-static_assert"
+]
+
+_boost_include_dirs = []
+
+foreach(com,boost_components){
+    _boost_include_dirs += ["${package_include_dir}/${com}"]
+}
+
+config("boost_config"){
+    include_dirs = _boost_include_dirs
+}
