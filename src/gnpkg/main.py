@@ -4,9 +4,7 @@ import io
 import json,os,shutil
 
 __all__ = [
-    "get_package",
     "main",
-    "link_utils"
 ]
 
 error_prefix = "\x1b[31mERROR:\x1b[0m"
@@ -151,7 +149,8 @@ def link_utils():
         os.chdir(dest)
 def get_chromium_build_utils():
     os.system("git clone https://chromium.googlesource.com/chromium/src/build ./build")
-def main():
+
+def main(args):
     parser = argparse.ArgumentParser(prog="gnpkg")
     subparsers = parser.add_subparsers(dest="command")
     utils_parser = subparsers.add_parser("utils")
@@ -164,7 +163,7 @@ def main():
     remove_parser = subparsers.add_parser("remove")
     remove_parser.add_argument("package",type=str)
 
-    args = parser.parse_args()
+    args = parser.parse_args(args=args)
     home:str
     homeConfig:dict
     if args.command != "utils":

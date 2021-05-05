@@ -100,7 +100,18 @@ template("external_header_lib_target"){
 
     t_name = target_name
 
-    config("${t_name}_config"){
-        forward_variables_from(invoker,["include_dirs","public_configs","libs","defines"])
+    if(!defined(invoker.export_config)){
+
+        config("${t_name}_config"){
+            forward_variables_from(invoker,["include_dirs","public_configs","libs","defines","cflags_c","cflags_cc"])
+        }
+
+    }
+    else {
+        if(invoker.export_config){
+            config("${t_name}_config"){
+                forward_variables_from(invoker,["include_dirs","public_configs","libs","defines","cflags_c","cflags_cc"])
+            }
+        }
     }
 }

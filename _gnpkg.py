@@ -1,3 +1,3 @@
 import src.gnpkg.main 
-
-src.gnpkg.main.main()
+import sys
+src.gnpkg.main.main(sys.argv)

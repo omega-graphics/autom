@@ -58,17 +58,8 @@ def processCommand(c:Command):
     assert(c.get("type"))
     if c.get("type") == "gnpkg":
         assert(c.get("command"))
-        com = c.get('command')
-
-        if com == "utils":
-            print("GNPKG Get:gn-utils")
-            src.gnpkg.main.link_utils()
-        elif com == "get":
-            assert(c.get('package'))
-            print(f"GNPKG Get:{c.get('package')}")
-            homeConfig:dict = json.load(io.open("./GNPKG"))
-            assert(homeConfig.get("installDest"))
-            src.gnpkg.main.get_package(c.get('package'),home=homeConfig.get("installDest"),homeConfig=homeConfig)
+        com:str = c.get('command')
+        src.gnpkg.main.main(args=com.split(" "))
 
     elif c.get("type") == "git_clone":
         assert(c.get("url"))
