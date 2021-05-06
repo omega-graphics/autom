@@ -10,7 +10,8 @@ executable("test-aws"){
     ]
     public_deps = [
         "//third_party/aws-sdk:aws-sdk-core",
-        "//third_party/socket.io-client"
+        "//third_party/socket.io-client",
+        "//third_party/ffmpeg"
     ]
     output_dir = "$root_out_dir/tests"
 }

@@ -1,0 +1,59 @@
+import("../Gnpkg.gni")
+import("//gn-utils/Utils.gni")
+
+package_out_dir = "${built_package_out_dir}/curl"
+print("libcurl Sources -->")
+curl_sources = exec_script(glob_py,[rebase_path("./code/lib/*.c")],"value")
+foreach(s,curl_sources){
+    print(get_path_info(s,"file"))
+}
+print("---")
+curl_h = exec_script(glob_py,[rebase_path("./code/include/curl/*.h")],"value")
+print("libcurl Public Headers -->")
+foreach(s,curl_h){
+    print(get_path_info(s,"file"))
+}
+auth_sources = exec_script(glob_py,[rebase_path("./code/lib/vauth/*.c")],"value")
+vtls_sources = exec_script(glob_py,[rebase_path("./code/lib/vtls/*.c")],"value")
+
+if(is_windows){
+    ssh_sources = exec_script(glob_py,[rebase_path("./code/lib/vssh/*.c")],"value")
+}
+
+external_lib_target("curl"){
+    sources = curl_sources
+    defines = [
+        "BUILDING_LIBCURL"
+    ]
+    include_dirs = [
+        "./code/include",
+        "./code/lib",
+        "./code/lib/vauth",
+        "./code/lib/vquic",
+        "./code/lib/vssh",
+        "./code/lib/vtls",
+        "./code"
+    ]
+    if(is_windows){
+        sources += ssh_sources + vtls_sources + auth_sources
+        defines += [
+            "_USRDLL",
+            "USE_THREADS_WIN32",
+            # "USE_SCHANNEL",
+            "USE_WINDOWS_SSPI",
+            # "USE_SSH",
+            "SECURITY_WIN32",
+            "_WINSOCKAPI_",
+            "CURL_DISABLE_LDAP"
+            # "USE_WIN32_LDAP",
+            # "_WIN32_WINNT=\"0x0600\""
+        ]
+        ldflags = [
+            "advapi32.lib",
+            "ws2_32.lib"
+        ]
+    }
+    public_headers = curl_h
+    public_header_output_dir = "${package_out_dir}/include/curl/{{source_file_part}}"
+    output_dir = package_out_dir
+}

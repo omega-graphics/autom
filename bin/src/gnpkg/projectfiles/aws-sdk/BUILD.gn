@@ -89,6 +89,20 @@ external_lib_target("aws-c-common") {
       "${aws_crt_dir}/aws-c-common/source/posix/time.c",
     ]
   }
+  else {
+    sources += [
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/clock.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/condition_variable.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/device_random.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/environment.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/mutex.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/process.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/rw_lock.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/system_info.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/thread.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-common/source/windows/time.c"
+    ]
+  }
 
   if(target_cpu == "x86" || target_cpu == "x64"){
       sources += [
@@ -156,6 +170,17 @@ external_lib_target("aws-c-io") {
 
   if (is_windows) {
     defines = [ "AWS_USE_IO_COMPLETION_PORTS" ]
+    sources += [
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/file_utils.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/host_resolver.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/secure_channel_tls_handler.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/shared_library.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/windows_pki_utils.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/winsock_init.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/iocp/iocp_event_loop.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/iocp/pipe.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-io/source/windows/iocp/socket.c"
+    ]
   }
 
   if (is_mac) {
@@ -249,6 +274,17 @@ external_lib_target("aws-c-cal") {
       "${aws_crt_dir}/aws-c-cal/source/darwin/commoncrypto_platform_init.c",
       "${aws_crt_dir}/aws-c-cal/source/darwin/commoncrypto_sha256.c",
       "${aws_crt_dir}/aws-c-cal/source/darwin/securityframework_ecc.c",
+    ]
+  }
+  else if(is_windows){
+    sources += [
+      "./code/crt/aws-crt-cpp/crt/aws-c-cal/source/windows/bcrypt_ecc.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-cal/source/windows/bcrypt_hash.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-cal/source/windows/bcrypt_hmac.c",
+      "./code/crt/aws-crt-cpp/crt/aws-c-cal/source/windows/bcrypt_platform_init.c"
+    ]
+    ldflags = [
+      "bcrypt.lib","User32.lib"
     ]
   }
   output_dir = package_out_dir
@@ -443,8 +479,7 @@ external_lib_target("aws-crt-cpp") {
     # Crypto
     "./code/crt/aws-crt-cpp/source/crypto/Hash.cpp",
 
-    # External
-    # "./code/crt/aws-crt-cpp/source/external/cJSON.cpp",
+    # External 
 
     # HTTP
     "./code/crt/aws-crt-cpp/source/http/HttpConnection.cpp",
@@ -467,6 +502,11 @@ external_lib_target("aws-crt-cpp") {
     # MQTT
     "./code/crt/aws-crt-cpp/source/mqtt/MqttClient.cpp",
   ]
+  if(is_windows){
+    sources += [
+       "./code/crt/aws-crt-cpp/source/external/cJSON.cpp",
+    ]
+  }
   output_dir = package_out_dir
   public_header_output_dir = "${package_out_dir}/include/aws/{{source_file_part}}"
 }
@@ -603,6 +643,63 @@ external_lib_target("aws-sdk-core") {
         [ "${aws_sdk_core_src_dir}/utils/crypto/commoncrypto/CryptoImpl.cpp" ]
   }
 
+  else if(is_windows) {
+    defines = [
+      "_COMDEF_NOT_WINAPI_FAMILY_DESKTOP_APP",
+    ]
+    # defines += [
+    #   "BYPASS_DEFAULT_PROXY"
+    # ]
+    public_deps += [
+      "../curl",
+    ]
+    public_configs += [
+      "../curl:curl_config"
+    ]
+    include_dirs = [
+      "./code/aws-cpp-sdk-core/include/aws/core/platform/refs"
+    ]
+    sources += [
+      #HTTP 
+       "./code/aws-cpp-sdk-core/source/http/windows/IXmlHttpRequest2HttpClient.cpp",
+       "./code/aws-cpp-sdk-core/source/http/windows/WinConnectionPoolMgr.cpp",
+        "./code/aws-cpp-sdk-core/source/http/windows/WinHttpConnectionPoolMgr.cpp",
+        "./code/aws-cpp-sdk-core/source/http/windows/WinHttpSyncHttpClient.cpp",
+        "./code/aws-cpp-sdk-core/source/http/windows/WinINetConnectionPoolMgr.cpp",
+        "./code/aws-cpp-sdk-core/source/http/windows/WinINetSyncHttpClient.cpp",
+        "./code/aws-cpp-sdk-core/source/http/windows/WinSyncHttpClient.cpp",
+
+      # NET
+
+      "./code/aws-cpp-sdk-core/source/net/windows/Net.cpp",
+      "./code/aws-cpp-sdk-core/source/net/windows/SimpleUDP.cpp",
+
+      # PLATFORM
+
+      "./code/aws-cpp-sdk-core/source/platform/windows/Environment.cpp",
+      "./code/aws-cpp-sdk-core/source/platform/windows/FileSystem.cpp",
+       "./code/aws-cpp-sdk-core/source/platform/windows/OSVersionInfo.cpp",
+       "./code/aws-cpp-sdk-core/source/platform/windows/Security.cpp",
+       "./code/aws-cpp-sdk-core/source/platform/windows/Time.cpp",
+
+      "./code/aws-cpp-sdk-core/source/utils/crypto/bcrypt/CryptoImpl.cpp"
+    ]
+    ldflags = [
+      "ws2_32.lib",
+      "bcrypt.lib",
+      "advapi32.lib",
+      "crypt32.lib",
+      "secur32.lib",
+      "winhttp.lib",
+      "wininet.lib",
+      "version.lib",
+      "runtimeobject.lib",
+      "shlwapi.lib",
+      "userenv.lib",
+      "msxml6.lib"
+    ]
+  }
+
   # Utils Dir
   sources += [
     "${aws_sdk_core_src_dir}/utils/ARN.cpp",
@@ -683,6 +780,9 @@ external_lib_target("aws-sdk-core") {
     if(is_mac){
         defines = ["ENABLE_COMMONCRYPTO_ENCRYPTION"]
     }
+    else if(is_windows){
+       defines += ["ENABLE_BCRYPT_ENCRYPTION","AWS_CORE_EXPORTS","USE_IMPORT_EXPORT"]
+    }
 #   defines = [ "ENABLE_OPENSSL_ENCRYPTION" ]
 
   output_dir = package_out_dir
@@ -690,6 +790,10 @@ external_lib_target("aws-sdk-core") {
 }
 
 config("aws-sdk-config") {
+  defines = [
+    "USE_IMPORT_EXPORT=1",
+    # "USE_WINDOWS_DLL_SEMANTICS"
+  ]
   include_dirs = [ aws_sdk_include_dir ]
 }
 

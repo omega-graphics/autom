@@ -9,6 +9,8 @@ else {
     debug_flag = ""
 }
 
+except_flag_cl = "/EHa"
+
 toolchain("llvm") {
     if(is_windows){
         cc = "clang-cl"
@@ -59,7 +61,7 @@ toolchain("llvm") {
         }
         else {
             depsformat = "msvc"
-            command = "$cc /clang:-MD /clang:-MF /clang:$depfile  {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  -c {{source}}  -o {{output}}"
+            command = "$cc ${except_flag_cl} /clang:-MD /clang:-MF /clang:$depfile  {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  -c {{source}}  -o {{output}}"
         }
         description = "Compiling C source {{output}}"
         outputs = [
@@ -72,7 +74,7 @@ toolchain("llvm") {
             command = "$cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
         }
         else {
-            command = "clang-cl /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
+            command = "clang-cl ${except_flag_cl} /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
         }
         if(is_linux || is_mac){
             depsformat = "gcc"
@@ -94,7 +96,7 @@ toolchain("llvm") {
         }
         else {
             depsformat = "msvc"
-            command = "clang-cl /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}} -fmodules -fmodule-name={{label}} -Xclang -Xclang -emit-module-interface -c {{source}} -o {{output}}"
+            command = "clang-cl ${except_flag_cl} /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}} -fmodules -fmodule-name={{label}} -Xclang -Xclang -emit-module-interface -c {{source}} -o {{output}}"
         }
         description = "Compiling CXX source for module {{label}} {{output}}"
         outputs = [

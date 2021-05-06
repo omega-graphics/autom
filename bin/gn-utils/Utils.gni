@@ -13,7 +13,45 @@ framework_link_args = ["frameworks","framework_dirs"]
 
 config_file_py = get_path_info("./ConfigFile.py","abspath")
 codesign = get_path_info("./codesign.py","abspath")
+glob_copy = get_path_info("./__copy.py","abspath")
+glob_py = get_path_info("./_glob.py","abspath")
 
+template("copy"){
+    if(defined(invoker.glob)) {
+        if(invoker.glob){
+            srcs = invoker.sources
+            outs = invoker.outputs
+            action(target_name){
+                script = glob_copy
+                args = [
+                    "-I",
+                    srcs[0],
+                    "-O",
+                    rebase_path(outs[0]),
+                    "--glob"
+                ]
+                outputs = exec_script(glob_copy,[
+                    "-I",
+                    srcs[0],
+                    "-O",
+                    rebase_path(outs[0]),
+                    "--calc-glob-outputs"
+                ])
+            }
+        }
+        else {
+            copy(target_name){
+                forward_variables_from(invoker,"*")
+            }
+        }
+    }
+    else {
+        copy(target_name){
+            forward_variables_from(invoker,"*")
+        }
+    }
+    
+}
 
 template("configure_file"){
     assert(defined(invoker.defines))

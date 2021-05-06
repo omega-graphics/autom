@@ -1,14 +1,14 @@
 import argparse
-from genericpath import exists
 import io
 import json,os,shutil
+import re as Regex
 
 __all__ = [
     "main",
 ]
 
 error_prefix = "\x1b[31mERROR:\x1b[0m"
-warn_prefix = "\x1b[31mWARNING:\x1b[0m"
+warn_prefix = "\x1b[32mWARNING:\x1b[0m"
 
 class Package:
     name:str
@@ -51,10 +51,12 @@ def package_is_installed(name:str,installedPkgList:PkgList) -> bool:
 
 pkgs:"list[Package]" = get_current_packages()
 
-def get_package(name:str,home:str,homeConfig:dict,root:bool = True,install_if_root:bool = True):
+def get_package(name:str,home:str,homeConfig:dict,root:bool = True,install_if_root:bool = True,depContext:bool = False):
     if os.path.exists(f"{home}/Gnpkg.gni") == False:
         prev_dir = os.path.abspath(os.getcwd())
         os.chdir(os.path.abspath(os.path.dirname(__file__)))
+        if os.path.exists(home) == False:
+            os.makedirs(home)
         shutil.copy2("./Gnpkg.gni",f"{home}/Gnpkg.gni")
         os.chdir(prev_dir)
     
@@ -65,7 +67,8 @@ def get_package(name:str,home:str,homeConfig:dict,root:bool = True,install_if_ro
     global pkgs
     # Check if Package is Already Installed.
     if package_is_installed(name=name,installedPkgList=cfg):
-        print(f"{error_prefix} Package {name} is already installed.",flush=True)
+        if not depContext:
+            print(f"{error_prefix} Package {name} is already installed.",flush=True)
         return
 
     success:bool = False
@@ -77,7 +80,8 @@ def get_package(name:str,home:str,homeConfig:dict,root:bool = True,install_if_ro
                 print("Dependencies:")
                 for d in p.deps:
                     print(f"\t-> {d}")
-                    get_package(d,home=home,homeConfig=homeConfig,root = False)
+                for d in p.deps:
+                    get_package(d,home=home,homeConfig=homeConfig,root = False,depContext=True)
             if p.gitClone:
                 
                 if p.recSubModules:
@@ -117,27 +121,50 @@ def package_get_dependents(name:str) -> "list[str]":
                     break
     return dependents
 
+def package_is_git_cloned(name:str):
+    global pkgs
+    for p in pkgs:
+        if p.name == name:
+            return p.gitClone
+    return None
+
+# For Removing .git folder in git cloned packages
+def onerror(func, path, exc_info):
+    
+    import stat
+    if not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise ""
+
 def remove_package(name:str,homeConfig:dict):
     pkgs:PkgList = homeConfig.get("packages")
+    success:bool = False
     for i in range(len(pkgs)):
         p = pkgs[i]
         assert(p.get('name'))
         if p.get("name") == name:
+            success = True
             parents = package_get_dependents(name)
             if len(parents) > 0:
                 cont = input(f"{warn_prefix} This package is a dependency of the following packages {parents}\nRemoving this package could result in build errors. Continue?[Y/N]:")
-                if cont == "N":
+                if Regex.match(r"^N|n",cont):
                     exit(0)
-                elif cont != "Y":
+                elif Regex.match(r"^Y|y",cont) == None:
                     print(f"Unknown Option:{cont}")
                     exit(1)
+            # if package_is_git_cloned(name):
+            #     shutil.rmtree(p.get("installedPath") + "/code/.git",onerror=onerror)
             shutil.rmtree(p.get("installedPath"))
             pkgs.pop(i)
             break 
 
-    json.dump(homeConfig,io.open("./GNPKG","w"),sort_keys=True,indent=2)
+    if not success:   
+        print(f"{error_prefix} Package not previously installed.\nExiting...")
+    else:
+        json.dump(homeConfig,io.open("./GNPKG","w"),sort_keys=True,indent=2)
 
-    return 
 
 def link_utils():
     dest = os.path.abspath(os.getcwd())

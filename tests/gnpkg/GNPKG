@@ -2,14 +2,6 @@
   "installDest": "./third_party",
   "packages": [
     {
-      "installedPath": "./third_party/zlib",
-      "name": "zlib"
-    },
-    {
-      "installedPath": "./third_party/libpng",
-      "name": "libpng"
-    },
-    {
       "installedPath": "./third_party/rapidjson",
       "name": "rapidjson"
     },
@@ -26,12 +18,20 @@
       "name": "openssl"
     },
     {
-      "installedPath": "./third_party/boost",
-      "name": "boost"
-    },
-    {
       "installedPath": "./third_party/socket.io-client",
       "name": "socket.io-client"
+    },
+    {
+      "installedPath": "./third_party/aws-sdk",
+      "name": "aws-sdk"
+    },
+    {
+      "installedPath": "./third_party/curl",
+      "name": "curl"
+    },
+    {
+      "installedPath": "./third_party/ffmpeg",
+      "name": "ffmpeg"
     }
   ]
 }

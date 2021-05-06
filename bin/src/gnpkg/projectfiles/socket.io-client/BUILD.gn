@@ -25,5 +25,8 @@ external_lib_target("socket.io-client"){
         "./code/src/sio_socket.h",
         "./code/src/internal"
     ]
+    if(is_windows){
+        static = true
+    }
     output_dir = package_out_dir
 }

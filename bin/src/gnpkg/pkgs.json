@@ -3,10 +3,8 @@
         {
             "name":"asio",
             "url":"https://github.com/chriskohlhoff/asio.git",
-            "gn_binding":"./projectfiles/asio",
-            "deps":[
-                "boost"
-            ]
+            "gn_binding":"./projectfiles/asio"
+            
         },
         {
             "name":"boost",
@@ -43,7 +41,10 @@
             "name":"aws-sdk",
             "url":"https://github.com/aws/aws-sdk-cpp.git",
             "gn_binding":"./projectfiles/aws-sdk",
-            "cloneSubmodules":true
+            "cloneSubmodules":true,
+            "deps":[
+                "curl"
+            ]
         },
         {
             "name":"ffmpeg",

@@ -1,0 +1,1 @@
+py "%~dp0autom-toolchain.py" %*
