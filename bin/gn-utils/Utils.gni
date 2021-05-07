@@ -152,10 +152,12 @@ template("mac_framework_bundle"){
         forward_variables_from(invoker,["libs","include_dirs",
         "public_configs","configs",
         "deps",
-        "sources","include_dirs",
+        "sources",
         "defines"] + flags_forward_args + framework_link_args)
         null_ext = true
-        public_deps = invoker.public_deps
+        if(defined(invoker.public_deps)){
+            public_deps = invoker.public_deps
+        }
         output_dir = "$root_out_dir/in"
     }
 
@@ -250,6 +252,7 @@ template("mac_framework_bundle"){
 
 template("mac_app_bundle"){
     assert(defined(invoker.output_dir))
+    assert(defined(invoker.plist))
     bundle_name = "${target_name}.app"
     app_name = target_name
 
@@ -297,7 +300,7 @@ template("mac_app_bundle"){
 
     executable(app_name){
 
-        forward_variables_from(invoker,["libs","include_dirs",
+        forward_variables_from(invoker,["libs",
         "public_configs","configs",
         "deps","public_deps",
         "sources","include_dirs",
@@ -313,6 +316,15 @@ template("mac_app_bundle"){
         sources = ["$root_out_dir/in/${app_name}"]
         outputs = [
             "{{bundle_executable_dir}}/{{source_file_part}}"
+        ]
+    }
+
+    bundle_data("${bundle_name}__plist_copy"){
+        sources = [
+            invoker.plist 
+        ]
+        outputs = [
+            "{{bundle_contents_dir}}/{{source_file_part}}"
         ]
     }
 
@@ -336,6 +348,7 @@ template("mac_app_bundle"){
 
         public_deps = [
             ":${bundle_name}__execute_copy",
+            ":${bundle_name}__plist_copy"
         ]
 
         if(defined(invoker.embedded_frameworks)){

@@ -9,11 +9,11 @@ else {
     debug_flag = ""
 }
 
-except_flag_cl = "/EHa"
 
 toolchain("llvm") {
     if(is_windows){
         cc = "clang-cl"
+        except_flag_cl = "/EHa"
         win_cmd_prefix = "cmd.exe /c"
         obj_ext = "obj"
     }
