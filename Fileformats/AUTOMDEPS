@@ -1,5 +1,8 @@
 
 {   
+    "variables":{
+        "test":"My Var"
+    },
     "rootCommands":[
 
     ],
@@ -12,6 +15,6 @@
         }
     ],
     "subdirs":[
-
+        
     ]
 }

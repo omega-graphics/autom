@@ -3,6 +3,8 @@ import json
 import os,sys
 import re as Regex
 import runpy
+from enum import Enum
+from typing import Any
 from urllib.request import *
 import tarfile,zipfile,shutil
 import src.autom.autom
@@ -54,6 +56,22 @@ isAbsRoot:bool
 
 Command = dict
 
+variables:dict[str,Any] = {}
+
+# Conditional Parser
+
+def processStringWithVariables(string:str) -> str:
+    s = string
+    for k in variables:
+        print(k)
+        regexExp = Regex.compile(rf"\$\({k}\)",Regex.DOTALL | Regex.MULTILINE)
+        if isinstance(variables.get(k),str):
+            s = regexExp.sub(variables.get(k),s)
+        else:
+            s = regexExp.sub(json.dumps(variables.get(k)),s)
+    print(s)
+    return s
+    
 def processCommand(c:Command):
     assert(c.get("type"))
     if c.get("type") == "gnpkg":
@@ -66,10 +84,13 @@ def processCommand(c:Command):
         assert(c.get("dest"))
         assert(c.get("branch"))
         url = c.get("url")
+        url = processStringWithVariables(url)
         dest = c.get("dest")
+        dest = processStringWithVariables(dest)
         branch = None
         if(c.get("branch") != "default"):
             branch = c.get("branch")
+            branch = processStringWithVariables(branch)
 
         prior_dir = os.getcwd()
         if updateOnly:
@@ -78,7 +99,7 @@ def processCommand(c:Command):
         else:
             print(f"Git Clone {c.get('url')}\nBranch:{c.get('branch')}")
             if branch == None:
-                os.system(f"git clone" + url + f" {dest}")
+                os.system(f"git clone " + url + f" {dest}")
             else:
                 os.system(f"git clone " + url + f" --branch {branch} {dest}")
 
@@ -89,10 +110,13 @@ def processCommand(c:Command):
         assert(c.get("dest"))
         assert(c.get("branch"))
         url = c.get("url")
+        url = processStringWithVariables(url)
         dest = c.get("dest")
+        dest = processStringWithVariables(dest)
         branch = None
         if(c.get("branch") != "default"):
             branch = c.get("branch")
+            branch = processStringWithVariables(branch)
 
         prior_dir = os.getcwd()
         if updateOnly:
@@ -128,28 +152,38 @@ def processCommand(c:Command):
         elif c.get("type") == "download":
             assert(c.get("url"))
             assert(c.get("dest"))
-            os.makedirs(os.path.dirname(c.get("dest")))
-            print(f"Download {c.get('url')}")
-            res = urlretrieve(c.get("url"),c.get("dest"))
+            url = c.get('url')
+            url = processStringWithVariables(url)
+            dest = c.get("dest")
+            dest = processStringWithVariables(dest)
+            os.makedirs(os.path.dirname(dest))
+            print(f"Download {url}")
+            res = urlretrieve(url,dest)
             print(res)
         elif c.get("type") == "tar":
             assert(c.get("tarfile"))
             assert(c.get("dest"))
+            dest = c.get("dest")
+            dest = processStringWithVariables(dest)
             t_file:str = c.get("tarfile")
+            t_file = processStringWithVariables(t_file)
             tar_file_type = tar_file_regex.match(t_file)
             if tar_file_type == None:
                 raise f"Tar File Format Invalid: \"{t_file}\""
             print(f"Tar {t_file}")
             tar = tarfile.open(t_file,"r:*")
-            tar.extractall(c.get("dest"))
+            tar.extractall(dest)
             tar.close()
         elif c.get("type") == "unzip":
             assert(c.get("zipfile"))
             assert(c.get("dest"))
+            dest = c.get("dest")
+            dest = processStringWithVariables(dest)
             z_file:str  = c.get("zipfile")
+            z_file = processStringWithVariables(z_file)
             _zip = zipfile.ZipFile(z_file,"r")
             print(f"Unzipping {z_file}")
-            _zip.extractall(c.get("dest"))
+            _zip.extractall(dest)
             _zip.close()
             os.remove(z_file)
             shutil.rmtree(os.path.dirname(z_file))
@@ -159,6 +193,7 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
     global updateOnly
     global _counter
     global isAbsRoot
+    global variables
     
     j:dict = json.load(stream)
 
@@ -169,9 +204,12 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
 
     assert(j.get("commands"))
     commands:"list[dict]" = j.get("commands")
+    _local_vars = j.get("variables")
+    if _local_vars is not None:
+        variables.update(_local_vars)
 
     if isAbsRoot:
-        if j.get("rootCommands") != None:
+        if j.get("rootCommands") is not None:
             rootCommands = j.get("rootCommands")
             for c in rootCommands:
                 processCommand(c)
@@ -184,7 +222,7 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
         processCommand(c)
         _counter.increment()
 
-    if j.get("subdirs") != None:
+    if j.get("subdirs") is not None:
         subdirs = j.get("subdirs")
         for s in subdirs:
             parent_dir = os.path.abspath(os.getcwd())
