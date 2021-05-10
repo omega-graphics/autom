@@ -63,13 +63,13 @@ variables:dict[str,Any] = {}
 def processStringWithVariables(string:str) -> str:
     s = string
     for k in variables:
-        print(k)
+        # print(k)
         regexExp = Regex.compile(rf"\$\({k}\)",Regex.DOTALL | Regex.MULTILINE)
         if isinstance(variables.get(k),str):
             s = regexExp.sub(variables.get(k),s)
         else:
             s = regexExp.sub(json.dumps(variables.get(k)),s)
-    print(s)
+    # print(s)
     return s
     
 def processCommand(c:Command):
@@ -143,12 +143,29 @@ def processCommand(c:Command):
             p.add_targets(exports.get("export"))
             print(f"AUTOM {c.get('dir')}")
             src.autom.autom.generateProjectFiles(project=p,mode=src.autom.autom.ProjectFileType.GN,output_dir=c.get("dest"))
-        
+        elif c.get('type') == "system":
+           assert(c.get("path"))
+           path = processStringWithVariables(c.get("path"))
+           prior_path = os.getenv("PATH")
+           os.environ["PATH"] = prior_path + f":{os.path.dirname(os.path.abspath(path))}"
+           os.system(path)
+           os.environ["PATH"] = prior_path
         elif c.get("type") == "script":
             assert(c.get("path"))
             assert(c.get("args"))
-            print(f"Script {c.get('path')}")
-            runpy.run_path(c.get("path") + " {}".format(c.get("args")))
+            path = c.get('path')
+            path = processStringWithVariables(path)
+            args = c.get("args")
+            for arg in args:
+                arg = processStringWithVariables(arg)
+            print(f"Script {path}")
+            sys.argv[1:] = args
+            prev = os.path.abspath(os.getcwd())
+            os.chdir(os.path.dirname(path))
+            root_m,ext_m = os.path.splitext(path)
+            print(root_m)
+            runpy.run_module(root_m,run_name="__main__",alter_sys=True)
+            os.chdir(prev)
         elif c.get("type") == "download":
             assert(c.get("url"))
             assert(c.get("dest"))
