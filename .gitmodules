@@ -2,3 +2,6 @@
 	path = toolchain/llvm-project
 	url = https://github.com/llvm/llvm-project.git
 	branch = release/12.x
+[submodule "depot_tools"]
+	path = depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
