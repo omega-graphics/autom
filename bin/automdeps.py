@@ -10,6 +10,7 @@ import tarfile,zipfile,shutil
 import src.autom.autom
 import src.gnpkg.main
 import argparse
+from queue import Queue
 
 tar_file_regex = Regex.compile(r"(?:\.tar\.(\w{2}))|\.t(\w{2})$",Regex.DOTALL | Regex.MULTILINE)
 
@@ -36,6 +37,9 @@ def countAutomDepsFileCommandsRecurse(stream:io.TextIOWrapper) -> int:
     j:dict = json.load(stream)
     assert(j.get("commands"))
     current_len = len(j.get("commands"))
+
+    if j.get("postCommands") is not None:
+        current_len += len(j.get('postCommands'))
 
     if j.get("subdirs") != None:
         subdirs = j.get("subdirs")
@@ -143,13 +147,14 @@ def processCommand(c:Command):
             p.add_targets(exports.get("export"))
             print(f"AUTOM {c.get('dir')}")
             src.autom.autom.generateProjectFiles(project=p,mode=src.autom.autom.ProjectFileType.GN,output_dir=c.get("dest"))
+        elif c.get('type') == "chdir":
+            assert(c.get("dir"))
+            dir = processStringWithVariables(c.get('dir'))
+            os.chdir(dir)
         elif c.get('type') == "system":
            assert(c.get("path"))
            path = processStringWithVariables(c.get("path"))
-           prior_path = os.getenv("PATH")
-           os.environ["PATH"] = prior_path + f":{os.path.dirname(os.path.abspath(path))}"
            os.system(path)
-           os.environ["PATH"] = prior_path
         elif c.get("type") == "script":
             assert(c.get("path"))
             assert(c.get("args"))
@@ -206,6 +211,10 @@ def processCommand(c:Command):
             shutil.rmtree(os.path.dirname(z_file))
     return
 
+postCommands:"Queue[list[Command]]" = Queue()
+postRootCommands:"list[list[Command]]" = []
+priorPostCommandsLen:int
+
 def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
     global updateOnly
     global _counter
@@ -234,6 +243,16 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
 
         isAbsRoot = False
 
+    global postCommands
+    global postRootCommands
+    global priorPostCommandsLen
+
+    if j.get('postCommands') is not None:
+        priorPostCommandsLen = len(postCommands)
+        postCommands.put(j.get('postCommands'))
+    
+    if j.get('postRootCommands') is not None:
+        postRootCommands.put(j.get('postRootCommands'))
 
     for c in commands:
         processCommand(c)
@@ -248,12 +267,30 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
             print(f"Invoking sub-directory {os.path.relpath(t,start=absroot)}")
             parseAutomDepsFile(io.open(s + "/AUTOMDEPS","r"),root=False)
             os.chdir(parent_dir)
+            if len(postCommands) > priorPostCommandsLen:
+                p_cmd_list = postCommands.get()
+                for c in p_cmd_list:
+                    processCommand(c)
+                    _counter.increment()
         
     stream.close()
 
 
-
     if root:
+        _counter.finish()
+
+
+    global postRootCommands
+    if isAbsRoot and len(postRootCommands) > 0:
+        print("Post Commands:")
+        counter_len = 0 
+        for cmd_list in postRootCommands:
+            counter_len += len(cmd_list)
+        _counter = Counter(counter_len)
+        for cmd_list in postRootCommands:
+            for c in cmd_list:
+                processCommand(c)
+                _counter.increment()
         _counter.finish()
 
 def main():
