@@ -280,7 +280,6 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
         _counter.finish()
 
 
-    global postRootCommands
     if isAbsRoot and len(postRootCommands) > 0:
         print("Post Commands:")
         counter_len = 0 

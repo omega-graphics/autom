@@ -15,3 +15,10 @@ executable("test-aws"){
     ]
     output_dir = "$root_out_dir/tests"
 }
+
+install(""){
+    files = [
+        "$root_out_dir/tests/test-aws.exe"
+    ]
+    dest = "\$(INSTALL_PREFIX)/bin"
+}

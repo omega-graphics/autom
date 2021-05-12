@@ -3,7 +3,7 @@ import os
 import sys
 import re as Regex
 
-define_regex = Regex.compile(r"^-D([\w|-|_|\+|\-|\"]]+)=([\w|-|_|\+|\-|\"]+)",Regex.MULTILINE)
+define_regex = Regex.compile(r"^-D([\w|-|_|\+|\-|\"]+)=",Regex.MULTILINE)
 # import out
 import shutil
 
@@ -17,7 +17,7 @@ class ConfigFileProcessor:
         self.defines = defines
     def process(self):
         for d in self.defines:
-            self.code = re.sub("@" + d+ "@",self.defines[d],self.code,flags=re.MULTILINE)
+            self.code = Regex.sub("@" + d+ "@",self.defines[d],self.code,flags=Regex.MULTILINE)
             
 
 
@@ -35,8 +35,12 @@ def main():
     for arg in args:
         if arg.startswith("-D"):
             res = define_regex.match(arg)
+            eqs_idx = arg.index("=")
+            val:str = ""
+            for i in range(eqs_idx + 1,len(arg)):
+                val = f"{val}{arg[i]}"
             if res != None:
-                defines[res[0]] = res[1]
+                defines[res.group(1)] = val
             # else:
             #     defines[res[0]] = ""
         elif arg == "--input" or arg == "-I":

@@ -15,6 +15,7 @@ config_file_py = get_path_info("./ConfigFile.py","abspath")
 codesign = get_path_info("./codesign.py","abspath")
 glob_copy = get_path_info("./__copy.py","abspath")
 glob_py = get_path_info("./_glob.py","abspath")
+gen_install_py = get_path_info("./gen_install.py","abspath")
 
 template("copy"){
     if(defined(invoker.glob)) {
@@ -375,4 +376,21 @@ template("mac_app_bundle"){
             # "$bundle_executable_dir/$app_name"
         ]
     }
+}
+
+template("install"){
+    not_needed("*",[target_name])
+    assert(defined(invoker.files))
+    _files = []
+    foreach(file,invoker.files){
+        _files += [rebase_path(file)]
+    }
+    assert(defined(invoker.dest))
+
+    exec_script(gen_install_py,[
+        "--file",
+        rebase_path("$root_out_dir/AUTOMINSTALL"),
+        "--dest",
+        invoker.dest 
+    ] + _files)
 }
