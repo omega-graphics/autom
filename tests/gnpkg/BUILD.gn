@@ -16,7 +16,7 @@ executable("test-aws"){
     output_dir = "$root_out_dir/tests"
 }
 
-install(""){
+install("install_aws_test"){
     files = [
         "$root_out_dir/tests/test-aws.exe"
     ]

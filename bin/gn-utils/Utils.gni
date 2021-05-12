@@ -16,6 +16,7 @@ codesign = get_path_info("./codesign.py","abspath")
 glob_copy = get_path_info("./__copy.py","abspath")
 glob_py = get_path_info("./_glob.py","abspath")
 gen_install_py = get_path_info("./gen_install.py","abspath")
+javac_py = get_path_info("./javac.py","abspath")
 
 template("copy"){
     if(defined(invoker.glob)) {
@@ -378,8 +379,19 @@ template("mac_app_bundle"){
     }
 }
 
+template("java_archive"){
+    t_name = target_name
+    action(target_name){
+        script = javac_py
+        args = []
+        outputs = [
+            "${invoker.output_dir}/${t_name}.jar"
+        ]
+    }
+}
+
 template("install"){
-    not_needed("*",[target_name])
+    assert(defined(target_name))
     assert(defined(invoker.files))
     _files = []
     foreach(file,invoker.files){
@@ -388,9 +400,10 @@ template("install"){
     assert(defined(invoker.dest))
 
     exec_script(gen_install_py,[
+        target_name,
         "--file",
         rebase_path("$root_out_dir/AUTOMINSTALL"),
         "--dest",
-        invoker.dest 
+        invoker.dest,
     ] + _files)
 }

@@ -9,6 +9,7 @@
             ]
         },
         {
+            "name":""
             "files":[
                 "./otherTestfile"
             ]
