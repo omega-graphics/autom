@@ -4,6 +4,10 @@ out
 *.pyc
 __pycache__
 .DS_STORE
+build
+*.bat
+*.sh
+.cache
 
 # Compiled Object files
 *.slo
