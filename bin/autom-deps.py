@@ -9,7 +9,7 @@ from urllib.request import *
 import tarfile,zipfile,shutil
 import src.autom.autom
 import src.gnpkg.main
-import argparse
+import argparse,platform
 from queue import Queue
 
 tar_file_regex = Regex.compile(r"(?:\.tar\.(\w{2}))|\.t(\w{2})$",Regex.DOTALL | Regex.MULTILINE)
@@ -60,7 +60,7 @@ isAbsRoot:bool
 
 Command = dict
 
-variables:dict[str,Any] = {}
+variables:"dict[str,Any]" = {}
 
 # Conditional Parser
 
@@ -77,6 +77,29 @@ def processStringWithVariables(string:str) -> str:
     return s
     
 def processCommand(c:Command):
+    if c.get("platforms"):
+        platforms:"list[str]" = c.get("platforms")
+
+        current_platform = platform.system()
+
+        sp:str 
+        if current_platform == "Windows":
+            sp = "windows"
+        elif current_platform == "Linux":
+            sp = "linux"
+        elif current_platform == "macOS":
+            sp = "mac"
+
+        cont = False
+
+        for p in platforms:
+            if sp == p:
+                cont = True
+                break;
+        
+        if not cont:
+            return
+
     assert(c.get("type"))
     if c.get("type") == "gnpkg":
         assert(c.get("command"))
@@ -189,9 +212,6 @@ def processCommand(c:Command):
             dest = processStringWithVariables(dest)
             t_file:str = c.get("tarfile")
             t_file = processStringWithVariables(t_file)
-            tar_file_type = tar_file_regex.match(t_file)
-            if tar_file_type == None:
-                raise f"Tar File Format Invalid: \"{t_file}\""
             print(f"Tar {t_file}")
             tar = tarfile.open(t_file,"r:*")
             tar.extractall(dest)

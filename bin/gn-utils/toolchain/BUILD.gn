@@ -9,6 +9,11 @@ else {
     debug_flag = ""
 }
 
+fPIC = ""
+if(is_linux){
+    fPIC = "-fPIC"
+}
+
 
 toolchain("llvm") {
     if(is_windows){
@@ -29,6 +34,10 @@ toolchain("llvm") {
         cc = "clang"
         cxx = "clang++"
         # lld_command = "ld"
+    }
+    else if(is_linux){
+        cc = "clang"
+        cxx = "clang++"
     }
 
     tool("asm"){
@@ -57,7 +66,7 @@ toolchain("llvm") {
         
         if(is_linux || is_mac){
             depsformat = "gcc"
-            command = "$cc -MD -MF $depfile  {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  -c {{source}}  -o {{output}}"
+            command = "$cc -MD -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  -c {{source}}  -o {{output}}"
         }
         else {
             depsformat = "msvc"
@@ -70,8 +79,9 @@ toolchain("llvm") {
     }
     tool("cxx"){
         depfile = "{{output}}.d"
+       
         if(is_linux || is_mac){
-            command = "$cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
+            command = "$cxx -MD -MF $depfile -std=c++17 ${fPIC} {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
         }
         else {
             command = "clang-cl ${except_flag_cl} /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
@@ -150,7 +160,7 @@ toolchain("llvm") {
         if(is_windows){
             command = "llvm-lib /machine:x64 {{arflags}}  /out:{{output}} {{inputs}}"
         }
-        else if(is_mac) {
+        else if(is_mac || is_linux) {
             command = "ar -r {{output}} {{inputs}} {{arflags}}"
         }
         outputs = [
@@ -171,8 +181,11 @@ toolchain("llvm") {
         if(is_mac){
             command = "$cxx -o $outfile -Wl, -Xlinker -dylib {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{swiftmodules}} {{libs}}"  
         }
+        else if(is_linux){
+            command = "$cxx -fuse-ld=lld -o $outfile -Wl,-shared {{ldflags}} {{inputs}} {{solibs}} {{libs}}" 
+        }
         # Link MSVC Runtime
-        else {
+        else if(is_windows) {
             command = "clang-cl $debug_flag   -Wl  /LD /Fe$outfile {{inputs}}  /link {{ldflags}} {{solibs}} {{libs}}"
         }
         if(is_windows){

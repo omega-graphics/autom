@@ -41,7 +41,7 @@ def get_current_packages() -> "list[Package]":
         l.append(Package(package.get("name"),package.get("deps"),package.get("url"),True,package.get("gn_binding"),recSubModules=clSubModules))
     return l
 
-PkgList = list[dict[str,str]]
+PkgList = "list[dict[str,str]]"
 
 def package_is_installed(name:str,installedPkgList:PkgList) -> bool:
     for i in installedPkgList:
