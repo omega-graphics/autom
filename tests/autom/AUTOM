@@ -1,0 +1,18 @@
+
+
+    
+Project("TestProject","0.0.0")
+
+# Only Allowed in GN Mode
+cmake_bridge("./cmake_project_dir")
+
+# Only Allowed in CMAKE Mode
+gn_bridge("./gn_project_dir",project_name="OtherProject")
+
+Library("TestLib",source_files=["./TestLib.cpp"],dependencies=[])
+
+Executable("TestExec",source_files=["./test.cpp"],dependencies=[])
+
+
+
+
