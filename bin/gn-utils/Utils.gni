@@ -6,7 +6,7 @@ std_forward_args = ["libs",
         "public_configs","configs",
         "deps","public_deps",
         "sources","include_dirs",
-        "output_dir","defines"]
+        "output_dir","defines","public"]
 
 flags_forward_args = ["cflags_c","cflags_cc","cflags_objc","cflags_objcc","ldflags"]
 framework_link_args = ["frameworks","framework_dirs"]
@@ -17,6 +17,7 @@ glob_copy = get_path_info("./__copy.py","abspath")
 glob_py = get_path_info("./_glob.py","abspath")
 gen_install_py = get_path_info("./gen_install.py","abspath")
 javac_py = get_path_info("./javac.py","abspath")
+gen_target_output_py = get_path_info("./gen_target_output.py","abspath")
 
 template("copy"){
     if(defined(invoker.glob)) {
@@ -155,7 +156,8 @@ template("mac_framework_bundle"){
         "public_configs","configs",
         "deps",
         "sources",
-        "defines"] + flags_forward_args + framework_link_args)
+        "defines",
+        "public"] + flags_forward_args + framework_link_args)
         null_ext = true
         if(defined(invoker.public_deps)){
             public_deps = invoker.public_deps
@@ -301,12 +303,11 @@ template("mac_app_bundle"){
     }
 
     executable(app_name){
-
         forward_variables_from(invoker,["libs",
         "public_configs","configs",
         "deps","public_deps",
         "sources","include_dirs",
-        "defines"] + flags_forward_args + framework_link_args)
+        "defines","public"] + flags_forward_args + framework_link_args)
 
         output_dir =  "$root_out_dir/in"
     }
@@ -388,6 +389,20 @@ template("java_archive"){
             "${invoker.output_dir}/${t_name}.jar"
         ]
     }
+}
+
+template("export"){
+    assert(defined(invoker.targets))
+    assert(defined(invoker.group_name))
+    assert(defined(invoker.output_dir))
+
+    exec_script(gen_target_output_py,
+    [
+        "--group",invoker.group_name,
+        "--output-dir",invoker.output_dir,
+        "--export-file",target_name,
+        "--targets"
+    ] + invoker.targets)
 }
 
 template("install"){

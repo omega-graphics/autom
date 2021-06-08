@@ -3,7 +3,7 @@ import argparse
 import re as Regex
 from typing import Text
 import io
-import automdeps
+from autom_deps import *
 
 git_regex = Regex.compile(r"\/(.+)\.git$", flags=Regex.MULTILINE | Regex.DOTALL)
 
@@ -31,6 +31,6 @@ if args.git_repo_url:
     
     if os.path.exists("./AUTOMDEPS"):
         print(f"2. Running AUTOMDEPS commands")
-        automdeps.parseAutomDepsFile(io.open("./AUTOMDEPS"))
+        main(args=[])
 
 

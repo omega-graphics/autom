@@ -2,6 +2,7 @@ import argparse
 from .autom import *
 import runpy
 import os
+import ast,io
 
 def main():
     parser = argparse.ArgumentParser(prog="autom",description="AUTOM Build Tool.. Automates the building of Native Projects utlizing CMake or GN")
@@ -18,18 +19,20 @@ def main():
     else:
         print(f"\u001b[31mERROR:\u001b[0m Unknown project file mode:{args.mode}")
         exit(1)
-
+    
     try:
-        if args.p:
-            n = runpy.run_path(os.path.abspath(args.p + "/AUTOMPROJ"),{"build_mode":t,"__project_dir__":args.p})
-        else:
-            n = runpy.run_path(os.path.abspath("./AUTOMPROJ"),{"build_mode":t,"__project_dir__":"."})
+        # sym = {"build_mode":t} + AUTOM_LANG_SYMBOLS
+        filename = os.path.abspath("./AUTOM")
+        # stream = io.open(filename,"r")
+        
+        n = runpy.run_path(filename,init_globals=AUTOM_LANG_SYMBOLS)
+            
     except FileNotFoundError:
-        print("\u001b[31mERROR:\u001b[0m AUTOMPROJ file not found in current dir")
+        print("\u001b[31mERROR:\u001b[0m AUTOM file not found in current dir")
         exit(1)
 
     try:
-        generateProjectFiles(n["export"],t,args.out)
+        generateProjectFiles(n["project"],t,args.out)
     except KeyError:
-        print(f"\u001b[31mERROR:\u001b[0m Exported project not found in AUTOMPROJ file")
+        print(f"\u001b[31mERROR:\u001b[0m Exported project not found in AUTOM file")
 

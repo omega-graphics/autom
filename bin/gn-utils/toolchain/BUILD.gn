@@ -179,7 +179,7 @@ toolchain("llvm") {
     tool("solink") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
         if(is_mac){
-            command = "$cxx -o $outfile -Wl, -Xlinker -dylib {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{swiftmodules}} {{libs}}"  
+            command = "$cxx -o $outfile -dynamiclib {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{swiftmodules}} {{libs}}"  
         }
         else if(is_linux){
             command = "$cxx -fuse-ld=lld -o $outfile -Wl,-shared {{ldflags}} {{inputs}} {{solibs}} {{libs}}" 
