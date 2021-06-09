@@ -28,7 +28,6 @@ __all__ = [
 ]
 
 
-
 def configure(file:str,output_file:str,__globals):
     g = __globals
     cwd = os.getcwd()
@@ -44,18 +43,21 @@ def configure(file:str,output_file:str,__globals):
             data = Regex.sub(p,str(g[__g]),data)
         except TypeError:
             continue
-    write = open(output_file,"w")
+    write = open(output_file, "w")
     write.write(data)
+
+
 class Project:
-    name:str
-    version:str
-    __targets__:"list[Target]"
+    name: str
+    version: str
+    __targets__: "list[Target]"
     
-    def __init__(self,name:str,version:str):
+    def __init__(self, name : str, version :str):
         self.name = name
         self.version = version 
         self.__targets__ = []
-    def add_dir(self,name:str):
+
+    def add_dir(self, name: str):
         n = os.path.abspath(name) + "/AUTOM"
         t = runpy.run_path(os.path.abspath(name) + "/AUTOM")
         try:
@@ -66,7 +68,8 @@ class Project:
         except KeyError:
             print(f"\u001b[31mERROR:\u001b[0m The Variable targets is not defined in file scope:{n}")
             exit(1)
-        return 
+        return
+
     def add_targets(self,list:"list[Target]"):
         self.__targets__ += list
         return
@@ -78,26 +81,33 @@ class TargetType(Enum):
     SCRIPT = 2,
     COPY = 3,
     IMPORTED_LIBRARY = 4
+    APPLE_FRAMEWORK = 5,
+    APPLE_APP_BUNDLE = 6,
+
+
 class Target :
     """
     Target Declaration
     """
-    name:str
-    __type__:TargetType
-    source_files:"list[str]"
-    dependencies:"list[str]"
-    include_dirs:"list[str]"
+    name: str
+    __type__: TargetType
+    source_files: "list[str]"
+    dependencies: "list[str]"
+    include_dirs: "list[str]"
+
     def __init__(self,name:str,_type:TargetType,source_files:"list[str]",dependencies:"list[str]"):
         self.name = name
         self.__type__ = _type
         self.source_files = source_files
         self.dependencies = dependencies
         self.include_dirs = []
+
     def set_current_dir(self,newCurrentDir:str):
         for s in self.source_files:
            i =  self.source_files.index(s)
            n = newCurrentDir +  "/" + os.path.basename(s)
            self.source_files[i] = n
+
     def add_include_dirs(self,includeDirs:"list[str]"):
         self.include_dirs += includeDirs
 
@@ -107,8 +117,19 @@ class Executable(Target):
     Defines an executable target
     """
     output_dir:str
+
     def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
         super(Executable,self).__init__(name,TargetType.EXECUTABLE,source_files,dependencies)
+        self.output_dir = output_dir
+
+
+class AppleApplicationBundle(Executable):
+    """
+    Defines a Apple App Bundle
+    """
+    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
+        super(AppleApplicationBundle,self).__init__(name,source_files,dependencies,output_dir=output_dir)
+        self.__type__ = TargetType.APPLE_APP_BUNDLE
         self.output_dir = output_dir
 
 class Library(Target):
@@ -116,13 +137,26 @@ class Library(Target):
     Defines a static or shared library target
     """
     shared:bool
+
     def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str,shared:bool):
         super(Library,self).__init__(name,TargetType.LIBRARY,source_files,dependencies)
         self.output_dir = output_dir
         self.shared = shared
 
+class AppleFrameworkBundle(Library):
+    """
+    Defines a Apple Framework Bundle
+    """
+    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
+        super(AppleFrameworkBundle,self).__init__(name,source_files,dependencies,True)
+        self.__type__ = TargetType.APPLE_FRAMEWORK
+        self.output_dir = output_dir
+
+
+
 class Script(Target):
     script:str
+
     def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",script:str):
         super(Script,self).__init__(name,TargetType.SCRIPT,source_files,dependencies)
         self.script = script
@@ -130,36 +164,44 @@ class Script(Target):
 
 class Copy(Target):
     output_dir:str
+
     def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
         super(Copy,self).__init__(name,TargetType.COPY,source_files,dependencies)
         self.output_dir = output_dir
 
+
 class ImportedLibrary(Target):
     lib:str 
     include_dirs:str
+
     def __init__(self,name:str,lib:str,include_dirs:"list[str]" = []):
         super(ImportedLibrary,self).__init__(name,TargetType.IMPORTED_LIBRARY,[],[])
-        self.lib = lib 
+        self.lib = lib
         self.include_dirs = include_dirs
+
 
 class ProjectFileType(Enum):
     GN = 0,
     CMAKE = 1
 
+
 def cmake_bridge():
     return
+
+
 def gn_bridge():
     return
 
+
 AUTOM_LANG_SYMBOLS = {
-    "Project":Project,
-    "Executable":Executable,
-    "Library":Library,
-    "path":os.path,
-    "ProjectFileType":ProjectFileType,
-    "gn_bridge":gn_bridge,
-    "cmake_bridge":cmake_bridge,
-    "glob":glob.glob
+    "Project": Project,
+    "Executable": Executable,
+    "Library": Library,
+    "path": os.path,
+    "ProjectFileType": ProjectFileType,
+    "gn_bridge": gn_bridge,
+    "cmake_bridge": cmake_bridge,
+    "glob": glob.glob
 }
 
 class __GNGenerator__:
@@ -210,9 +252,9 @@ class __CmakeGenerator__:
     """
     Private class for generating CMake
     """
-    targets:"list[Target]"
-    proj_info:Project
-    def __init__(self,targets:"list[str]",project:Project):
+    targets: "list[Target]"
+    proj_info: Project
+    def __init__(self,targets:"list[Target]",project:Project):
         self.targets = targets
         self.proj_info = project
     def format_source_files(self,srcs:"list[str]"):
@@ -258,7 +300,7 @@ class __CmakeGenerator__:
 def generateProjectFiles(project:Project,mode:ProjectFileType,output_dir:str,options:"dict[str,Any]" = {}):
     targets = project.__targets__
     target_names = []
-    for i in range(0,len(targets)-1):
+    for i in range(0, len(targets)-1):
         t = targets[i]
         for d in t.dependencies:
             try: 
@@ -266,13 +308,13 @@ def generateProjectFiles(project:Project,mode:ProjectFileType,output_dir:str,opt
             except ValueError:
                 print(f"\u001b[31mERROR:\u001b[0m \"{d}\" is a dependency of target \"{t.name}\" but does not exist.")
                 exit(1)
-        target_names.append(t)
+        target_names.append(t.name)
     """
     Do a quick dependency check
     """
 
     if mode == ProjectFileType.CMAKE:
-        __CmakeGenerator__(targets,project=project).generate(output_dir + "/CMakeLists.txt")
+        __CmakeGenerator__(targets, project).generate(output_dir + "/CMakeLists.txt")
     elif mode == ProjectFileType.GN:
         __GNGenerator__(targets).generate(output_dir + "/BUILD.gn")
     return
