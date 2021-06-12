@@ -155,6 +155,7 @@ template("mac_framework_bundle"){
         forward_variables_from(invoker,["libs","include_dirs",
         "public_configs","configs",
         "deps",
+        "pyblic_deps",
         "sources",
         "defines",
         "public"] + flags_forward_args + framework_link_args)

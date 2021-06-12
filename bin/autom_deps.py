@@ -344,11 +344,6 @@ def main(args):
         raise "AUTOMDEPS File Not Found in Current Directory. Exiting..."
     return
 if __name__ == "__main__":
-<<<<<<< Updated upstream:bin/autom-deps.py
-    main()
-    
-=======
     sys.argv.pop()
     main(sys.argv)
     
->>>>>>> Stashed changes:bin/autom_deps.py

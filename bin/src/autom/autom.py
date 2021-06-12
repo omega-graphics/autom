@@ -6,6 +6,7 @@ import ast
 from enum import Enum
 import io
 import json
+import sys
 from typing import Any
 import runpy
 import os
@@ -46,35 +47,6 @@ def configure(file:str,output_file:str,__globals):
     write = open(output_file, "w")
     write.write(data)
 
-
-class Project:
-    name: str
-    version: str
-    __targets__: "list[Target]"
-    
-    def __init__(self, name : str, version :str):
-        self.name = name
-        self.version = version 
-        self.__targets__ = []
-
-    def add_dir(self, name: str):
-        n = os.path.abspath(name) + "/AUTOM"
-        t = runpy.run_path(os.path.abspath(name) + "/AUTOM")
-        try:
-            __n_t = t['targets']
-            for t in __n_t:
-                t.set_current_dir(name)
-            self.__targets__ += __n_t
-        except KeyError:
-            print(f"\u001b[31mERROR:\u001b[0m The Variable targets is not defined in file scope:{n}")
-            exit(1)
-        return
-
-    def add_targets(self,list:"list[Target]"):
-        self.__targets__ += list
-        return
-
-
 class TargetType(Enum):
     EXECUTABLE = 0,
     LIBRARY = 1,
@@ -94,12 +66,18 @@ class Target :
     source_files: "list[str]"
     dependencies: "list[str]"
     include_dirs: "list[str]"
+    cflags: "list[str]" = []
+    cxxflags: "list[str]" = []
+    objcflags: "list[str]" = []
+    objcxxflags: "list[str]" = []
+    output_dir:str
+    defines:"list[str]" = []
 
-    def __init__(self,name:str,_type:TargetType,source_files:"list[str]",dependencies:"list[str]"):
+    def __init__(self,name:str,_type:TargetType,source_files:"list[str]",deps:"list[str]"):
         self.name = name
         self.__type__ = _type
         self.source_files = source_files
-        self.dependencies = dependencies
+        self.dependencies = deps
         self.include_dirs = []
 
     def set_current_dir(self,newCurrentDir:str):
@@ -112,14 +90,84 @@ class Target :
         self.include_dirs += includeDirs
 
 
+
+class Project:
+    name: str
+    version: str
+    __targets__: "list[Target]"
+    install_rules:"list[dict]"
+    
+    def __init__(self, name : str, version :str):
+        self.name = name
+        self.version = version 
+        self.__targets__ = []
+        self.install_rules = []
+
+    def add_dir(self, name: str):
+        n = os.path.abspath(name) + "/AUTOM"
+        t = runpy.run_path(os.path.abspath(name) + "/AUTOM",init_globals={"project":self} + AUTOM_LANG_SYMBOLS)
+        try:
+            __n_t = t['targets']
+            for t in __n_t:
+                t.set_current_dir(name)
+            self.__targets__ += __n_t
+        except KeyError:
+            print(f"\u001b[31mERROR:\u001b[0m The Variable targets is not defined in file scope:{n}")
+            exit(1)
+        return
+
+    def add_targets(self,list:"list[Target]"):
+        self.__targets__ += list
+        return
+
+    def install_targets(self,entry:str, targets:"list[Target]",loc:str):
+        global target_os
+        files:list = []
+        for t in targets:
+            if t.__type__.value == TargetType.LIBRARY.value:
+                ext:str
+                if t.shared:
+                    if target_os == "mac":
+                        ext = "dylib"
+                    elif target_os == "win":
+                        ext = "dll"
+                        files.append(f"{t.output_dir}/{t.name}.lib")
+                    else:
+                        ext = "so"
+                else:
+                    if target_os == "win":
+                        ext = "lib"
+                    else:
+                        ext = "a"
+                files.append(f"{t.output_dir}/{t.name}.{ext}")
+
+        e = {
+            "name":entry,
+            "dest":f"$(INSTALL_PREFIX)/{loc}",
+            "files":files
+        }
+
+        self.install_rules.append(e)
+
+        return 
+
+    def install_files(self,entry:str, files:"list[str]",loc:str):
+        e = {
+            "name":entry,
+            "dest":f"$(INSTALL_PREFIX)/{loc}",
+            "files":files
+        }
+        self.install_rules.append(e)
+        return 
+
+
 class Executable(Target):
     """
     Defines an executable target
     """
-    output_dir:str
 
-    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
-        super(Executable,self).__init__(name,TargetType.EXECUTABLE,source_files,dependencies)
+    def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",output_dir:str):
+        super(Executable,self).__init__(name,TargetType.EXECUTABLE,source_files,deps)
         self.output_dir = output_dir
 
 
@@ -127,10 +175,17 @@ class AppleApplicationBundle(Executable):
     """
     Defines a Apple App Bundle
     """
-    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
-        super(AppleApplicationBundle,self).__init__(name,source_files,dependencies,output_dir=output_dir)
+    embedded_frameworks:"list[str]"
+    resources:"list[str]"
+    def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",output_dir:str):
+        global target_os
+        if target_os != "mac":
+            raise RuntimeError("AppBundles can only be declared if the target platform is macOS")
+        super(AppleApplicationBundle,self).__init__(name,source_files,deps,output_dir=output_dir)
         self.__type__ = TargetType.APPLE_APP_BUNDLE
         self.output_dir = output_dir
+        self.embedded_frameworks = []
+        self.resources = []
 
 class Library(Target):
     """
@@ -138,8 +193,8 @@ class Library(Target):
     """
     shared:bool
 
-    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str,shared:bool):
-        super(Library,self).__init__(name,TargetType.LIBRARY,source_files,dependencies)
+    def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",output_dir:str,shared:bool):
+        super(Library,self).__init__(name,TargetType.LIBRARY,source_files,deps)
         self.output_dir = output_dir
         self.shared = shared
 
@@ -147,26 +202,37 @@ class AppleFrameworkBundle(Library):
     """
     Defines a Apple Framework Bundle
     """
-    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
-        super(AppleFrameworkBundle,self).__init__(name,source_files,dependencies,True)
+    version:str
+    embedded_frameworks:"list[str]"
+    resources:"list[str]"
+    def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",version:str,output_dir:str):
+        global target_os
+        if target_os != "mac":
+            raise RuntimeError("FrameworkBundles can only be declared if the target platform is macOS")
+        super(AppleFrameworkBundle,self).__init__(name,source_files,deps,shared=True,output_dir=output_dir)
         self.__type__ = TargetType.APPLE_FRAMEWORK
         self.output_dir = output_dir
+        self.version = version
+        self.embedded_frameworks = []
+        self.resources = []
 
 
 
 class Script(Target):
     script:str
+    outputs:"list[str]"
 
-    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",script:str):
+    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",script:str,outputs:"list[str]"):
         super(Script,self).__init__(name,TargetType.SCRIPT,source_files,dependencies)
         self.script = script
+        self.outputs = outputs
 
 
 class Copy(Target):
     output_dir:str
 
-    def __init__(self,name:str,source_files:"list[str]",dependencies:"list[str]",output_dir:str):
-        super(Copy,self).__init__(name,TargetType.COPY,source_files,dependencies)
+    def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",output_dir:str):
+        super(Copy,self).__init__(name,TargetType.COPY,source_files,deps)
         self.output_dir = output_dir
 
 
@@ -185,13 +251,24 @@ class ProjectFileType(Enum):
     CMAKE = 1
 
 
-def cmake_bridge():
+def cmake_bridge(dir:str) -> "list[Target]":
+    
+
     return
 
 
-def gn_bridge():
+def gn_bridge(dir:str,args:"dict[str,Any]") -> "list[Target]":
+
+
     return
 
+target_os:str
+if sys.platform == "win32":
+    target_os:str = "win"
+elif sys.platform == "darwin":
+    target_os = "mac"
+else:
+    target_os = "linux"
 
 AUTOM_LANG_SYMBOLS = {
     "Project": Project,
@@ -201,7 +278,13 @@ AUTOM_LANG_SYMBOLS = {
     "ProjectFileType": ProjectFileType,
     "gn_bridge": gn_bridge,
     "cmake_bridge": cmake_bridge,
-    "glob": glob.glob
+    "glob": glob.glob,
+    # Target OS
+    "target_os": target_os,
+    "is_win":sys.platform == "win32",
+    "is_mac":sys.platform == "darwin",
+    "AppBundle":AppleApplicationBundle,
+    "FrameworkBundle":AppleFrameworkBundle
 }
 
 class __GNGenerator__:
@@ -218,21 +301,27 @@ class __GNGenerator__:
             deps[deps.index(d)] = n
         return deps
 
+    def writeStandardTargetProps(self,t:Target,stream:io.TextIOWrapper):
+        stream.write("  include_dirs = {}\n".format(json.dumps(t.include_dirs)))
+        stream.write("  sources = {}\n".format(json.dumps(t.source_files)))
+        stream.write("  deps = {}\n".format(json.dumps(self.__formatDeps(t.dependencies))))
+        stream.write("  defines = {}\n".format(json.dumps(t.defines)))
+        if len(t.cflags) > 0:
+            stream.write("  cflags = {}\n".format(json.dumps(t.cflags)))
+        stream.write(f"  output_dir = \"$root_out_dir/{t.output_dir}\"\n")
+
     def generate(self,out_file:str):
         out_dir = os.path.dirname(out_file)
         if os.path.exists(out_dir) == False: 
             os.makedirs(out_dir)
         stream  = open(out_file,"w")
         stream.write("# This File Was Generated by AUTOM Build Tool. Do NOT EDIT!!!\n")
-        stream.write('import("//gn-utils/Utils.gni")\n')
+        stream.write('import("//gn-utils/Utils.gni")\n\n')
         print(self.targets)
         for t in self.targets:
             if t.__type__.value == TargetType.EXECUTABLE.value:
                 stream.write(f"executable(\"{t.name}\")" + "{\n")
-                stream.write("  include_dirs = {}\n".format(json.dumps(t.include_dirs)))
-                stream.write("  sources = {}\n".format(json.dumps(t.source_files)))
-                stream.write("  deps = {}".format(json.dumps(self.__formatDeps(t.dependencies))))
-
+                self.writeStandardTargetProps(t,stream)
                 # stream.write("deps = ")
                 stream.write("\n}")
             elif t.__type__.value == TargetType.LIBRARY.value:
@@ -240,12 +329,25 @@ class __GNGenerator__:
                     stream.write(f"shared_library(\"{t.name}\")" + "{\n")
                 else: 
                     stream.write(f"static_library(\"{t.name}\")" + "{\n")
-                stream.write("  include_dirs = {}\n".format(json.dumps(t.include_dirs)))
+                self.writeStandardTargetProps(t,stream)
+                stream.write("\n}")
+            elif t.__type__.value == TargetType.APPLE_FRAMEWORK.value:
+                stream.write(f"mac_framework_bundle(\"{t.name}\")" + "{\n")
+                stream.write(f"  version = \"{t.version}\"\n")
+                stream.write("  resources = {}\n".format(json.dumps(t.resources)))
+                stream.write("  embedded_frameworks = {}\n".format(json.dumps(t.embedded_frameworks)))
+                self.writeStandardTargetProps(t,stream)
+                stream.write("\n}")
+            elif t.__type__.value == TargetType.SCRIPT.value:
+                stream.write(f"action(\"{t.name}\")" + "{\n")
                 stream.write("  sources = {}\n".format(json.dumps(t.source_files)))
-                stream.write("  deps = {}".format(json.dumps(self.__formatDeps(t.dependencies))))
+                stream.write(f"  script = {t.script}\n")
+                stream.write("  deps = {}\n".format(json.dumps(self.__formatDeps(t.dependencies))))
+                stream.write("  outputs = {}".format(json.dumps(t.outputs)))
                 stream.write("\n}")
             stream.write("\n\n")
         stream.close()
+
 
 
 class __CmakeGenerator__:
@@ -294,8 +396,12 @@ class __CmakeGenerator__:
 #     return
 
             
-    
-
+def generateInstallFile(project:Project,output_dir:str):
+    stream = io.open(f"{output_dir}/AUTOMINSTALL","w")
+    out = {
+        "entries":project.install_rules
+    }
+    json.dump(out,stream,indent=2,sort_keys=True)
 
 def generateProjectFiles(project:Project,mode:ProjectFileType,output_dir:str,options:"dict[str,Any]" = {}):
     targets = project.__targets__
@@ -314,10 +420,16 @@ def generateProjectFiles(project:Project,mode:ProjectFileType,output_dir:str,opt
     """
 
     if mode == ProjectFileType.CMAKE:
-        __CmakeGenerator__(targets, project).generate(output_dir + "/CMakeLists.txt")
+        __CmakeGenerator__(targets, project).generate("./CMakeLists.txt")
     elif mode == ProjectFileType.GN:
-        __GNGenerator__(targets).generate(output_dir + "/BUILD.gn")
+        __GNGenerator__(targets).generate("./BUILD.gn")
+
+    if len(project.install_rules) > 0:
+        generateInstallFile(project,output_dir=output_dir)
+
     return
+
+
 
 
 
