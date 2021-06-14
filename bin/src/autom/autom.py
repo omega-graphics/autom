@@ -84,6 +84,10 @@ class Target :
     objcxxflags: "list[str]" = []
     output_dir:str
     defines:"list[str]" = []
+    frameworks:"list[str]" = []
+    framework_dirs:"list[str]" = []
+    libs:"list[str]" = []
+    lib_dirs:"list[str]" = []
 
     def __init__(self,name:str,_type:TargetType,source_files:"list[str]",deps:"list[str]"):
         self.name = name
@@ -401,6 +405,12 @@ class __GNGenerator__:
         stream.write("  sources = {}\n".format(json.dumps(t.source_files,indent=2,sort_keys=True)))
         stream.write("  public_deps = {}\n".format(json.dumps(self.__formatDeps(t.dependencies))))
         stream.write("  defines = {}\n".format(json.dumps(t.defines)))
+        stream.write("  libs = {}\n".format(json.dumps(t.libs)))
+        if len(t.lib_dirs) > 0:
+            stream.write("  lib_dirs = {}\n".format(json.dumps(t.lib_dirs)))
+        stream.write("  frameworks = {}\n".format(json.dumps(t.frameworks)))
+        if len(t.framework_dirs) > 0:
+            stream.write("  framework_dirs = {}\n".format(json.dumps(t.framework_dirs)))
         if len(t.cflags) > 0:
             stream.write("  cflags = {}\n".format(json.dumps(t.cflags)))
         stream.write(f"  output_dir = \"$root_out_dir/{t.output_dir}\"\n")
@@ -548,6 +558,15 @@ class AUTOMInterp(object):
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
                     self.p.add_targets(list=[Library(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir,shared=True)])
                     return
+                elif expr.func.id == "AppBundle" and not self.inInterfaceFileTop:
+                    if not AUTOM_LANG_SYMBOLS["is_mac"]:
+                        self.error(expr.func,"AppBundle target can only be declared if target os is macOS or iOS")
+                    t_name:str = self.evalExpr(expr.args[0],temp_scope)
+                    srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
+                    deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
+                    output_dir:str = self.evalExpr(expr.args[3],temp_scope)
+                    self.p.add_targets(list=[AppleApplicationBundle(t_name,srcs,deps,output_dir)])
+                    return
                 elif expr.func.id == "FrameworkBundle" and not self.inInterfaceFileTop:
                     if not AUTOM_LANG_SYMBOLS["is_mac"]:
                         self.error(expr.func,"FrameworkBundle target can only be declared if target os is macOS or iOS")
@@ -594,18 +613,34 @@ class AUTOMInterp(object):
                                     t.defines = data 
                                 elif prop_name == "include_dirs":
                                     t.include_dirs = data 
+                                elif prop_name == "frameworks":
+                                    t.frameworks = data 
+                                elif prop_name == "framework_dirs":
+                                    t.framework_dirs = data
                                 else:
                                     self.error(expr.func,f"Cannot set property `{prop_name}` on target `{t.name}`")
 
                     return
                 elif expr.func.id == "include":
                     file:str = self.evalExpr(expr.args[0],temp_scope)
+
                     prior_0 = self.inRootFile 
                     prior_1 = self.inInterfaceFileTop
+
                     self.inRootFile = False
                     self.inInterfaceFileTop = True
-                    __module = ast.parse(io.open(file,"r").read(),file)
+
+                    prior_dir = os.path.abspath(os.getcwd())
+                    data = io.open(file,"r").read()
+
+                    os.chdir(os.path.dirname(file))
+
+                    __module = ast.parse(data,file)
+
                     self.interp(__module)
+
+                    os.chdir(prior_dir)
+
                     self.inRootFile = prior_0
                     self.inInterfaceFileTop = prior_1
                     return
@@ -745,6 +780,8 @@ class AUTOMInterp(object):
                 self.returnVal =  None
         elif isinstance(stmt,ast.FunctionDef):
             self.symTable[stmt.name] = stmt
+        elif isinstance(stmt,ast.ClassDef):
+            self.error(stmt,"Class defs are not supported in AUTOM.")
         elif isinstance(stmt,ast.AnnAssign):
 
             name:ast.Name = stmt.target
@@ -802,6 +839,7 @@ class AUTOMInterp(object):
         return
 
     def interp(self,m:ast.Module):
+        
         for stmt in m.body:
             self.evalStmt(stmt)
         return
