@@ -172,6 +172,8 @@ toolchain("llvm") {
             output_prefix = ""
         }
         else {
+            lib_dir_switch = "/LIBPATH"
+            lib_switch =  ""
             default_output_extension = ".lib"
             output_prefix = ""
         }
@@ -186,6 +188,8 @@ toolchain("llvm") {
         }
         # Link MSVC Runtime
         else if(is_windows) {
+            lib_dir_switch = "/LIBPATH"
+            lib_switch =  ""
             command = "clang-cl $debug_flag   -Wl  /LD /Fe$outfile {{inputs}}  /link {{ldflags}} {{solibs}} {{libs}}"
         }
         if(is_windows){
@@ -204,6 +208,8 @@ toolchain("llvm") {
         }
         # Link MSVC Runtime
         else {
+            lib_dir_switch = "/LIBPATH"
+            lib_switch =  ""
             command = "clang-cl $debug_flag  /MT /Fe$outfile -Wl {{ldflags}} {{solibs}} {{inputs}} {{libs}}"
         }
         outputs = [outfile]
