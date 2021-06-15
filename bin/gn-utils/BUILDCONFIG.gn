@@ -20,6 +20,11 @@ is_arm64 = target_cpu == "arm64" && current_cpu == "arm64"
 is_android = current_os == "android" && target_os == "android"
 is_ios = host_os == "mac" && current_os == "ios" && target_os == "ios"
 
+if(is_ios){
+  target_cpu = "arm64"
+  is_arm64 = true
+}
+
 # Desktop Targets
 is_linux = host_os == "linux" && current_os == "linux" && target_os == "linux"
 is_mac = host_os == "mac" && current_os == "mac" && target_os == "mac"

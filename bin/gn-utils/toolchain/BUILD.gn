@@ -14,6 +14,13 @@ if(is_linux){
     fPIC = "-fPIC"
 }
 
+arch = ""
+xcprefix = ""
+if(is_ios){
+    arch = "-arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
+    xcprefix = ""
+}
+
 
 toolchain("llvm") {
     if(is_windows){
@@ -22,7 +29,7 @@ toolchain("llvm") {
         win_cmd_prefix = "cmd.exe /c"
         obj_ext = "obj"
     }
-    if(is_mac || is_linux){
+    if(is_mac || is_linux || is_ios){
         # python_path = python3
         obj_ext = "o"
     }
@@ -30,7 +37,7 @@ toolchain("llvm") {
         # lld_command = "lld-link"
     }
 
-    if(is_mac){
+    if(is_mac || is_ios){
         cc = "clang"
         cxx = "clang++"
         # lld_command = "ld"
@@ -64,9 +71,9 @@ toolchain("llvm") {
     tool("cc") {
         depfile = "{{output}}.d"
         
-        if(is_linux || is_mac){
+        if(is_linux || is_mac || is_ios){
             depsformat = "gcc"
-            command = "$cc -MD -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  -c {{source}}  -o {{output}}"
+            command = "${xcprefix} $cc -MD -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}}  -c {{source}}  -o {{output}}"
         }
         else {
             depsformat = "msvc"
@@ -80,8 +87,8 @@ toolchain("llvm") {
     tool("cxx"){
         depfile = "{{output}}.d"
        
-        if(is_linux || is_mac){
-            command = "$cxx -MD -MF $depfile -std=c++17 ${fPIC} {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
+        if(is_linux || is_mac || is_ios){
+            command = "${xcprefix} $cxx -MD -MF $depfile -std=c++17 ${fPIC} {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
         }
         else {
             command = "clang-cl ${except_flag_cl} /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
@@ -100,9 +107,9 @@ toolchain("llvm") {
     tool("cxx_module"){
         depfile = "{{output}}.d"
         
-        if(is_linux || is_mac){
+        if(is_linux || is_mac || is_ios){
             depsformat = "gcc"
-            command = "$cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} {{cflags_c}} {{cflags_cc}} -fmodules -fmodule-name={{label}} -Xclang -Xclang -emit-module-interface -c {{source}} -o {{output}}"
+            command = "${xcprefix} $cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} {{cflags_c}} ${arch} {{cflags_cc}} -fmodules -fmodule-name={{label}} -Xclang -Xclang -emit-module-interface -c {{source}} -o {{output}}"
         }
         else {
             depsformat = "msvc"
@@ -113,12 +120,12 @@ toolchain("llvm") {
             "{{source_out_dir}}/{{source_name_part}}.pcm"
         ]
     }
-    if(is_mac){
+    if(is_mac || is_ios){
         tool("objc"){
             depfile = "{{output}}.d"
             depsformat = "gcc"
             description = "Compiling OBJC source {{output}}"
-            command = "$cc -MD -MF $depfile  {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_objc}}  -c {{source}}  -o {{output}}"
+            command = "${xcprefix} $cc -MD -MF $depfile  {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_objc}}  -c {{source}}  -o {{output}}"
             outputs = [
                 "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
             ]
@@ -127,7 +134,7 @@ toolchain("llvm") {
             depfile = "{{output}}.d"
             depsformat = "gcc"
             description = "Compiling OBJCXX source {{output}}"
-            command = "$cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} {{cflags_objc}} {{cflags_objcc}} -c {{source}} -o {{output}}"
+            command = "${xcprefix} $cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_cc}} {{cflags_objc}} {{cflags_objcc}} -c {{source}} -o {{output}}"
             outputs = [
                 "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
             ]
@@ -160,7 +167,7 @@ toolchain("llvm") {
         if(is_windows){
             command = "llvm-lib /machine:x64 {{arflags}}  /out:{{output}} {{inputs}}"
         }
-        else if(is_mac || is_linux) {
+        else if(is_mac || is_linux || is_ios) {
             command = "ar -r {{output}} {{inputs}} {{arflags}}"
         }
         outputs = [
@@ -180,7 +187,7 @@ toolchain("llvm") {
     }
     tool("solink") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
-        if(is_mac){
+        if(is_mac || is_ios){
             command = "$cxx -o $outfile -dynamiclib {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{swiftmodules}} {{libs}}"  
         }
         else if(is_linux){
@@ -203,7 +210,7 @@ toolchain("llvm") {
     }
     tool("link") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
-        if(is_mac || is_linux){
+        if(is_mac || is_linux || is_ios){
             command = "$cxx -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{libs}} " 
         }
         # Link MSVC Runtime
