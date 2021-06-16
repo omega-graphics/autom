@@ -96,14 +96,13 @@ class Target :
         self.dependencies = deps
         self.include_dirs = []
 
-    def set_current_dir(self,newCurrentDir:str):
-        for s in self.source_files:
-           i =  self.source_files.index(s)
-           n = newCurrentDir +  "/" + os.path.basename(s)
-           self.source_files[i] = n
+        self.set_current_dir()
 
-    def add_include_dirs(self,includeDirs:"list[str]"):
-        self.include_dirs += includeDirs
+    def set_current_dir(self):
+        for i in range(len(self.source_files)):
+           s = self.source_files[i]
+           self.source_files[i] = os.path.abspath(s)
+
 
 project = None
 
@@ -498,7 +497,11 @@ class __CmakeGenerator__:
                 
         stream.close()
 
-
+def resolve_resources(ls:"list[str]") -> "list[str]":
+    for i in range(len(ls)):
+        s = ls[i]
+        ls[i] = os.path.abspath(s)
+    return ls
 
 class AUTOMInterp(object):
     symTable:"dict[str,Any]"
@@ -532,7 +535,9 @@ class AUTOMInterp(object):
         if isinstance(expr,ast.Call):
             if isinstance(expr.func,ast.Name):
                 # Eval standard lib functions if name matches
-                if expr.func.id == "Project" and self.inRootFile and not self.inInterfaceFileTop:
+                if expr.func.id == "Project" and not self.inInterfaceFileTop:
+                    if not self.inRootFile:
+                        return
                     project_id:str = self.evalExpr(expr.args[0],temp_scope)
                     project_version_str:str = self.evalExpr(expr.args[1],temp_scope)
                     self.p = Project(project_id,project_version_str)
@@ -595,7 +600,7 @@ class AUTOMInterp(object):
                         if t.name == t_name:
                                 if isinstance(t,AppleFrameworkBundle):
                                     if prop_name == "resources":
-                                        t.resources = data 
+                                        t.resources = resolve_resources(data)
                                         return
                                     elif prop_name == "embedded_frameworks":
                                         t.embedded_frameworks = data
@@ -612,11 +617,11 @@ class AUTOMInterp(object):
                                 elif prop_name == "defines":
                                     t.defines = data 
                                 elif prop_name == "include_dirs":
-                                    t.include_dirs = data 
+                                    t.include_dirs = resolve_resources(data) 
                                 elif prop_name == "frameworks":
                                     t.frameworks = data 
                                 elif prop_name == "framework_dirs":
-                                    t.framework_dirs = data
+                                    t.framework_dirs = resolve_resources(data)
                                 else:
                                     self.error(expr.func,f"Cannot set property `{prop_name}` on target `{t.name}`")
 
@@ -629,6 +634,29 @@ class AUTOMInterp(object):
 
                     self.inRootFile = False
                     self.inInterfaceFileTop = True
+
+                    prior_dir = os.path.abspath(os.getcwd())
+                    data = io.open(file,"r").read()
+
+                    os.chdir(os.path.dirname(file))
+
+                    __module = ast.parse(data,file)
+
+                    self.interp(__module)
+
+                    os.chdir(prior_dir)
+
+                    self.inRootFile = prior_0
+                    self.inInterfaceFileTop = prior_1
+                    return
+                elif expr.func.id == "subdir":
+                    file:str = os.path.join(self.evalExpr(expr.args[0],temp_scope),"AUTOM.build")
+
+                    prior_0 = self.inRootFile 
+                    prior_1 = self.inInterfaceFileTop
+
+                    self.inRootFile = False
+                    self.inInterfaceFileTop = False
 
                     prior_dir = os.path.abspath(os.getcwd())
                     data = io.open(file,"r").read()
