@@ -9,16 +9,21 @@ else {
     debug_flag = ""
 }
 
-fPIC = ""
-if(is_linux){
-    fPIC = "-fPIC"
-}
 
-arch = ""
-xcprefix = ""
-if(is_ios){
-    arch = "-arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
+
+if(!is_windows){
+
+    fPIC = ""
+    if(is_linux){
+        fPIC = "-fPIC"
+    }
+    
+    arch = ""
     xcprefix = ""
+    if(is_ios){
+        arch = "-arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk"
+        xcprefix = ""
+    }
 }
 
 

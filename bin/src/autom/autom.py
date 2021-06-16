@@ -851,16 +851,17 @@ class AUTOMInterp(object):
                 for __stmt in stmt.body:
                     self.evalStmt(__stmt,_temp_scope)
                 return
-            elif isinstance(stmt.orelse[0],ast.If):
-                _if = stmt.orelse[0]
-                if self.evalExpr(_if.test,temp_scope):
-                    _temp_scope = {}
-                    _temp_scope.update(temp_scope)
-                    for __stmt in _if.body:
-                        if self.willReturn:
-                            break
-                        self.evalStmt(__stmt,_temp_scope)
-                    return
+            elif len(stmt.orelse) > 0:
+                if isinstance(stmt.orelse[0],ast.If):
+                    _if = stmt.orelse[0]
+                    if self.evalExpr(_if.test,temp_scope):
+                        _temp_scope = {}
+                        _temp_scope.update(temp_scope)
+                        for __stmt in _if.body:
+                            if self.willReturn:
+                                break
+                            self.evalStmt(__stmt,_temp_scope)
+                        return
             
         elif isinstance(stmt,ast.Expr):
             self.evalExpr(stmt.value,temp_scope)
