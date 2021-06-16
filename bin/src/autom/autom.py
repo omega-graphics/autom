@@ -856,7 +856,8 @@ class AUTOMInterp(object):
                     _if = stmt.orelse[0]
                     if self.evalExpr(_if.test,temp_scope):
                         _temp_scope = {}
-                        _temp_scope.update(temp_scope)
+                        if temp_scope is not None:
+                            _temp_scope.update(temp_scope)
                         for __stmt in _if.body:
                             if self.willReturn:
                                 break
