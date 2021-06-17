@@ -36,22 +36,27 @@ __all__ = [
 ]
 
 
-def configure(file:str,output_file:str,__globals):
+def configure(file:str,output_file:str,__globals:"dict[str,Any]",atMode:bool):
     g = __globals
-    cwd = os.getcwd()
 
-    file = g["__project_dir__"] + "/" + os.path.basename(file)
-    print(file)
-    stream = open(file,"r")
+    stream = io.open(file,"r")
     data = stream.read()
     for __g in g:
-        # print(__g)
         try:
-            p  = Regex.compile(r"\$\({}\)".format(__g),Regex.MULTILINE | Regex.DOTALL)
-            data = Regex.sub(p,str(g[__g]),data)
-        except TypeError:
+            if atMode:
+                p  = Regex.compile("@" + __g + "@",flags=Regex.MULTILINE)
+                # print(p)
+                data = p.sub(repl=Regex.sub(r"\\",r"\\\\",str(g[__g])),string=data)
+                # print(data)
+            else:
+                p  = Regex.compile(rf"\$\({__g}\)",Regex.MULTILINE)
+                data = Regex.sub(p,str(g[__g]),data)
+        except TypeError and Regex.error as err:
+            # print(f"Failed to use pattern: {err.pattern}")
             continue
-    write = open(output_file, "w")
+    if not os.path.exists(os.path.dirname(output_file)):
+        os.mkdir(os.path.dirname(output_file))
+    write = io.open(output_file, "w")
     write.write(data)
 
 class Namespace(object):
@@ -68,6 +73,20 @@ class TargetType(Enum):
     APPLE_APP_BUNDLE = 6,
     SOURCE_SET = 7
 
+class TargetConfig:
+    """
+    Config Declaration
+    """
+    name : str
+    deps:"list[str]"
+    include_dirs: "list[str]"
+    defines:"list[str]"
+    def __init__(self,name:str,deps:"list[str]",include_dirs: "list[str]",defines:"list[str]"):
+        self.name = name
+        self.deps = deps 
+        self.include_dirs = include_dirs
+        self.defines = defines
+        return
 
 class Target :
     """
@@ -103,19 +122,28 @@ class Target :
            s = self.source_files[i]
            self.source_files[i] = os.path.abspath(s)
 
+    def resolveConfig(self,conf:TargetConfig):
+        self.dependencies += conf.deps
+        self.defines += conf.defines
+        self.include_dirs += resolve_resources(conf.include_dirs)
+        return
 
 project = None
+
+
 
 class Project:
     name: str
     version: str
     __targets__: "list[Target]"
+    __configs__:"dict[str,TargetConfig]"
     install_rules:"list[dict]"
     
     def __init__(self, name : str, version :str):
         self.name = name
         self.version = version 
         self.__targets__ = []
+        self.__configs__ = {}
         self.install_rules = []
         global project
         project = self
@@ -591,6 +619,13 @@ class AUTOMInterp(object):
                     outputs:"list[str]" = self.evalExpr(expr.args[5],temp_scope)
                     self.p.add_targets(list=[Script(name=t_name,source_files=srcs,dependencies=deps,script=script_n,args=script_args,outputs=outputs)])
                     return
+                elif expr.func.id == "Config" and not self.inInterfaceFileTop:
+                    _name:str = self.evalExpr(expr.args[0],temp_scope)
+                    deps:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
+                    include_dirs:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
+                    defines:"list[str]" = self.evalExpr(expr.args[3],temp_scope)
+                    self.p.__configs__[_name] = TargetConfig(_name,deps,include_dirs,defines)
+                    return
                 elif expr.func.id == "set_property" and not self.inInterfaceFileTop:
                     t_name:str = self.evalExpr(expr.args[0],temp_scope)
                     prop_name:str = self.evalExpr(expr.args[1],temp_scope)
@@ -618,10 +653,18 @@ class AUTOMInterp(object):
                                     t.defines = data 
                                 elif prop_name == "include_dirs":
                                     t.include_dirs = resolve_resources(data) 
+                                elif prop_name == "libs":
+                                    t.libs = data 
+                                elif prop_name == "lib_dirs":
+                                    t.lib_dirs = resolve_resources(data)
                                 elif prop_name == "frameworks":
                                     t.frameworks = data 
                                 elif prop_name == "framework_dirs":
                                     t.framework_dirs = resolve_resources(data)
+                                elif prop_name == "configs":
+                                    confs:"list[str]" = data
+                                    for conf in confs:
+                                        t.resolveConfig(self.p.__configs__[conf])
                                 else:
                                     self.error(expr.func,f"Cannot set property `{prop_name}` on target `{t.name}`")
 
@@ -672,6 +715,11 @@ class AUTOMInterp(object):
                     self.inRootFile = prior_0
                     self.inInterfaceFileTop = prior_1
                     return
+                elif expr.func.id == "configure":
+                    file:str = os.path.abspath(self.evalExpr(expr.args[0],temp_scope))
+                    output_file:str = self.evalExpr(expr.args[1],temp_scope)
+                    configure(file,output_file,self.symTable,atMode=True)
+                    return None
                 # FS Functions
                 elif expr.func.id == "glob":
                     pattern:str = self.evalExpr(expr.args[0],temp_scope)
@@ -863,6 +911,15 @@ class AUTOMInterp(object):
                                 break
                             self.evalStmt(__stmt,_temp_scope)
                         return
+                else:
+                    _temp_scope = {}
+                    if temp_scope is not None:
+                        _temp_scope.update(temp_scope)
+                    for __stmt in stmt.orelse:
+                        if self.willReturn:
+                            break
+                        self.evalStmt(__stmt,_temp_scope)
+                    return
             
         elif isinstance(stmt,ast.Expr):
             self.evalExpr(stmt.value,temp_scope)
