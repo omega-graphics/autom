@@ -31,18 +31,12 @@ def __main():
         # sym = {"build_mode":t} + AUTOM_LANG_SYMBOLS
         filename = os.path.abspath("./AUTOM.build")
         # stream = io.open(filename,"r")
-        m = ast.parse(io.open(filename,"r").read(),filename=filename)
+
+        project = execForProject(filename,t,args.out)
+
     except FileNotFoundError:
         print("\u001b[31mERROR:\u001b[0m AUTOM file not found in current dir")
         exit(1)
-
-    interp = AUTOMInterp()
-    if t == ProjectFileType.GN:
-        interp.symTable["gen_root_out_dir"] = "$root_out_dir"
-    else:
-        interp.symTable["gen_root_out_dir"] = "${CMAKE_BINARY_DIR}"
-    interp.symTable["root_out_dir"] = args.out
-    project = interp.interpForProject(m)
             
     
 
