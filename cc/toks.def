@@ -1,0 +1,7 @@
+#define TOK_ID 0x00
+#define TOK_DOT 0x01
+#define TOK_LBRACE 0x02
+#define TOK_RBRACE 0x03
+#define TOK_AT 0x04
+#define TOK_COLON 0x05
+#define TOK_EOF 0xFF
