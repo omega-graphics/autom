@@ -8,6 +8,7 @@ build
 *.bat
 *.sh
 .cache
+deps
 
 # Compiled Object files
 *.slo
@@ -38,3 +39,11 @@ build
 *.exe
 *.out
 *.app
+
+
+# Added by cargo
+
+/target
+
+# Ignore Gradle project-specific cache directory
+.gradle

@@ -151,11 +151,34 @@ template("mac_framework_bundle"){
         "@rpath/${f_name}.framework/Versions/${invoker.version}/${f_name}"
     ]
 
+    if(defined(invoker.embedded_frameworks)){
+        _frameworks_to_embed = []
+        _frameworks_for_link = []
+        _framework_dirs = []
+        foreach(f,invoker.embedded_frameworks){
+            _frameworks_for_link += [":"+f]
+            f_dir = get_target_outputs(":"+f)
+            _framework_dirs += [get_path_info(f_dir[2],"dir")]
+            _frameworks_to_embed += [f_dir[2]]
+
+        }
+
+        invoker.frameworks += invoker.embedded_frameworks
+        invoker.framework_dirs = _framework_dirs
+
+        bundle_data("${bundle_name}__embed_frameworks"){
+            sources = _frameworks_to_embed
+            public_deps = _frameworks_for_link
+            outputs = [
+                "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}"
+            ]
+        }
+    }
+
     shared_library(target_name){
         forward_variables_from(invoker,["libs","include_dirs",
         "public_configs","configs",
         "deps",
-        "pyblic_deps",
         "sources",
         "defines",
         "public"] + flags_forward_args + framework_link_args)
@@ -234,6 +257,12 @@ template("mac_framework_bundle"){
         public_deps = [
             ":${f_name}__execute_copy"
         ]
+
+        if(defined(invoker.embedded_frameworks)){
+            public_deps += [
+                ":${bundle_name}__embed_frameworks"
+            ]
+        }
 
         if(defined(invoker.embedded_libs)){
             code_signing_args += [

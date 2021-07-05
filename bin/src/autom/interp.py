@@ -29,6 +29,74 @@ class AUTOMInterp(object):
     def error(self,node:ast.AST,message:str):
         print(f"\x1b[31mERROR:\x1b[0m {message} -> LOC {node.lineno}:{node.col_offset}")
         exit(1)
+
+    def evalPropChange(self,t_name:str,prop_name:str,data:Any,expr:ast.Expr,append:bool=False):
+    
+        def append_prop(prop,data):
+            if append:
+                prop += data 
+            else:
+                prop = data
+            return prop
+        
+        # Config Props
+        for c in self.p.__configs__:
+            if c == t_name:
+                _conf = self.p.__configs__[c]
+                if prop_name == "libs":
+                    _conf.libs = append_prop(_conf.libs,data)
+                    return
+                elif prop_name == "configs":
+                    _conf.configs = append_prop(_conf.configs,data)
+                elif prop_name == "include_dirs":
+                    _conf.include_dirs = append_prop(_conf.include_dirs,data)
+
+        # Target Properties
+        for t in self.p.__targets__:
+            if t.name == t_name:
+                    if isinstance(t,AppleApplicationBundle):
+                        if prop_name == "info_plist":
+                            t.plist = append_prop(t.plist,data)
+                            return
+                    if isinstance(t,AppleFrameworkBundle) or isinstance(t,AppleApplicationBundle):
+                        if prop_name == "resources":
+                            t.resources = append_prop(t.resources,resolve_resources(data))
+                            # print(t.resources)
+                            return
+                        elif prop_name == "embedded_frameworks":
+                            t.embedded_frameworks = append_prop(t.embedded_frameworks,data)
+                            return
+
+                    if prop_name == "cflags":
+                        t.cflags = append_prop(t.cflags,data)
+                    elif prop_name == "cxxflags":
+                        t.cxxflags = append_prop(t.cxxflags,data)
+                    elif prop_name == "objcflags":
+                        t.objcflags = append_prop(t.objcflags,data) 
+                    elif prop_name == "objcxxflags":
+                        t.objcxxflags = append_prop(t.objcxxflags,data) 
+                    elif prop_name == "defines":
+                        t.defines = append_prop(t.defines,data) 
+                    elif prop_name == "include_dirs":
+                        t.include_dirs = append_prop(t.include_dirs,resolve_resources(data))
+                    elif prop_name == "libs":
+                        t.libs = append_prop(t.libs,data) 
+                    elif prop_name == "lib_dirs":
+                        t.lib_dirs = append_prop(t.lib_dirs,resolve_resources(data))
+                    elif prop_name == "frameworks":
+                        t.frameworks = append_prop(t.frameworks,data) 
+                    elif prop_name == "framework_dirs":
+                        t.framework_dirs = append_prop(t.framework_dirs,resolve_resources(data))
+                    elif prop_name == "configs":
+                        confs:"list[str]" = data
+                        for conf in confs:
+                            t.resolveConfig(self.p.__configs__[conf],self.p.__configs__)
+                    else:
+                        self.error(expr.func,f"Cannot set property `{prop_name}` on target `{t.name}`")
+        
+        
+
+        return    
         
 
     def evalExpr(self,expr:ast.expr,temp_scope = None) -> Any:
@@ -47,21 +115,27 @@ class AUTOMInterp(object):
                     srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
-                    self.p.add_targets(list=[Executable(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir)])
+                    self.p.add_targets(l=[Executable(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir)])
                     return
                 elif expr.func.id == "StaticLibrary" and not self.inInterfaceFileTop:
                     t_name:str = self.evalExpr(expr.args[0],temp_scope)
                     srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
-                    self.p.add_targets(list=[Library(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir,shared=False)])
+                    self.p.add_targets(l=[Library(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir,shared=False)])
                     return
                 elif expr.func.id == "SharedLibrary" and not self.inInterfaceFileTop:
                     t_name:str = self.evalExpr(expr.args[0],temp_scope)
                     srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
-                    self.p.add_targets(list=[Library(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir,shared=True)])
+                    self.p.add_targets(l=[Library(name=t_name,source_files=srcs,deps=deps,output_dir=output_dir,shared=True)])
+                    return
+                elif expr.func.id == "SourceSet" and not self.inInterfaceFileTop:
+                    t_name:str = self.evalExpr(expr.args[0],temp_scope)
+                    srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
+                    deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
+                    self.p.add_targets(l=[SourceSet(name=t_name,source_files=srcs,deps=deps)])
                     return
                 elif expr.func.id == "AppBundle" and not self.inInterfaceFileTop:
                     if not AUTOM_LANG_SYMBOLS["is_mac"]:
@@ -70,7 +144,7 @@ class AUTOMInterp(object):
                     srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
-                    self.p.add_targets(list=[AppleApplicationBundle(t_name,srcs,deps,output_dir)])
+                    self.p.add_targets(l=[AppleApplicationBundle(t_name,srcs,deps,output_dir)])
                     return
                 elif expr.func.id == "FrameworkBundle" and not self.inInterfaceFileTop:
                     if not AUTOM_LANG_SYMBOLS["is_mac"]:
@@ -80,7 +154,7 @@ class AUTOMInterp(object):
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
                     version:str = self.evalExpr(expr.args[4],temp_scope)
-                    self.p.add_targets(list=[AppleFrameworkBundle(t_name,srcs,deps,version,output_dir)])
+                    self.p.add_targets(l=[AppleFrameworkBundle(t_name,srcs,deps,version,output_dir)])
                     return
                 elif expr.func.id == "Script" and not self.inInterfaceFileTop:
                     t_name:str = self.evalExpr(expr.args[0],temp_scope)
@@ -89,14 +163,14 @@ class AUTOMInterp(object):
                     script_n:str = self.evalExpr(expr.args[3],temp_scope)
                     script_args:"list[str]" = self.evalExpr(expr.args[4],temp_scope)
                     outputs:"list[str]" = self.evalExpr(expr.args[5],temp_scope)
-                    self.p.add_targets(list=[Script(name=t_name,source_files=srcs,dependencies=deps,script=script_n,args=script_args,outputs=outputs)])
+                    self.p.add_targets(l=[Script(name=t_name,source_files=srcs,dependencies=deps,script=script_n,args=script_args,outputs=outputs)])
                     return 
                 elif expr.func.id == "Copy" and not self.inInterfaceFileTop:
                     t_name:str = self.evalExpr(expr.args[0],temp_scope)
                     srcs:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     output_dir:str = self.evalExpr(expr.args[3],temp_scope)
-                    self.p.add_targets(list=[Copy(t_name,srcs,deps,output_dir)])
+                    self.p.add_targets(l=[Copy(t_name,srcs,deps,output_dir)])
                     return
                 elif expr.func.id == "Config" and not self.inInterfaceFileTop:
                     _name:str = self.evalExpr(expr.args[0],temp_scope)
@@ -109,44 +183,17 @@ class AUTOMInterp(object):
                     t_name:str = self.evalExpr(expr.args[0],temp_scope)
                     prop_name:str = self.evalExpr(expr.args[1],temp_scope)
                     data:Any = self.evalExpr(expr.args[2],temp_scope)
+
+                    self.evalPropChange(t_name,prop_name,data,expr,False)
                     
-                    for t in self.p.__targets__:
-                        if t.name == t_name:
-                                if isinstance(t,AppleFrameworkBundle):
-                                    if prop_name == "resources":
-                                        t.resources = resolve_resources(data)
-                                        return
-                                    elif prop_name == "embedded_frameworks":
-                                        t.embedded_frameworks = data
-                                        return
+                    return
+                elif expr.func.id == "append_property" and not self.inInterfaceFileTop:
+                    t_name:str = self.evalExpr(expr.args[0],temp_scope)
+                    prop_name:str = self.evalExpr(expr.args[1],temp_scope)
+                    data:Any = self.evalExpr(expr.args[2],temp_scope)
 
-                                if prop_name == "cflags":
-                                    t.cflags = data 
-                                elif prop_name == "cxxflags":
-                                    t.cxxflags = data
-                                elif prop_name == "objcflags":
-                                    t.objcflags = data 
-                                elif prop_name == "objcxxflags":
-                                    t.objcxxflags = data 
-                                elif prop_name == "defines":
-                                    t.defines = data 
-                                elif prop_name == "include_dirs":
-                                    t.include_dirs = resolve_resources(data) 
-                                elif prop_name == "libs":
-                                    t.libs = data 
-                                elif prop_name == "lib_dirs":
-                                    t.lib_dirs = resolve_resources(data)
-                                elif prop_name == "frameworks":
-                                    t.frameworks = data 
-                                elif prop_name == "framework_dirs":
-                                    t.framework_dirs = resolve_resources(data)
-                                elif prop_name == "configs":
-                                    confs:"list[str]" = data
-                                    for conf in confs:
-                                        t.resolveConfig(self.p.__configs__[conf])
-                                else:
-                                    self.error(expr.func,f"Cannot set property `{prop_name}` on target `{t.name}`")
-
+                    self.evalPropChange(t_name,prop_name,data,expr,True)
+                    
                     return
                 elif expr.func.id == "include":
                     file:str = self.evalExpr(expr.args[0],temp_scope)
@@ -183,7 +230,7 @@ class AUTOMInterp(object):
                     prior_dir = os.path.abspath(os.getcwd())
                     data = io.open(file,"r").read()
 
-                    os.chdir(os.path.dirname(file))
+                    os.chdir(os.path.dirname(os.path.abspath(file)))
 
                     __module = ast.parse(data,file)
 
@@ -206,11 +253,25 @@ class AUTOMInterp(object):
                 elif expr.func.id == "abspath":
                     path:str = self.evalExpr(expr.args[0],temp_scope)
                     return os.path.abspath(path)
+                elif expr.func.id == "assert_expr":
+                    _expr:Any = self.evalExpr(expr.args[0],temp_scope)
+                    if not _expr:
+                        print(f"\x1b[31mASSERT FAILED:\x1b[0m -> LOC {expr.lineno}:{expr.col_offset}")
+                        exit(1)
+                    return None
                 elif expr.func.id == "print":
                     obj:Any = self.evalExpr(expr.args[0],temp_scope)
                     print(obj)
                     return None
-
+                elif expr.func.id == "program_exists":
+                    prog:str = self.evalExpr(expr.args[0],temp_scope)
+                    print(f"Checking program exists `{prog}`")
+                    v = shutil.which(prog) is not None
+                    if v:
+                        print(f"Checking program exists `{prog}` -- found")
+                    else:
+                        print(f"Checking program exists `{prog}` -- not found")
+                    return v
             if not isinstance(expr.func,ast.Name):
                 self.error(expr.func,"Expected a Function Name")
             

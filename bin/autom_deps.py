@@ -87,7 +87,7 @@ def processCommand(c:Command):
             sp = "windows"
         elif current_platform == "Linux":
             sp = "linux"
-        elif current_platform == "macOS":
+        elif current_platform == "Darwin":
             sp = "mac"
 
         cont = False
@@ -344,6 +344,6 @@ def main(args):
         raise "AUTOMDEPS File Not Found in Current Directory. Exiting..."
     return
 if __name__ == "__main__":
-    sys.argv.pop()
+    sys.argv.pop(0)
     main(sys.argv)
     

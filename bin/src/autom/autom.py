@@ -16,7 +16,7 @@ def execForProject(f:str,t:ProjectFileType,output_dir:str):
         interp.symTable["gen_root_out_dir"] = "$root_out_dir"
     else:
         interp.symTable["gen_root_out_dir"] = "${CMAKE_BINARY_DIR}"
-    interp.symTable["root_out_dir"] = output_dir
+    interp.symTable["root_out_dir"] = os.path.abspath(output_dir)
     return interp.interpForProject(m)
 
             
@@ -32,6 +32,10 @@ def generateProjectFiles(project:Project,mode:ProjectFileType,output_dir:str,opt
     target_names = []
     for i in range(0, len(targets)-1):
         t = targets[i]
+        if mode == ProjectFileType.CMAKE:
+            if t.__type__ == TargetType.APPLE_APP_BUNDLE or t.__type__ == TargetType.APPLE_FRAMEWORK:
+                print(f"\u001b[31mERROR:\u001b[0m CMake cannot generate Apple bundle targets properly. Please use GN mode when using Apple Bundle targets")
+                exit(1)
         for d in t.dependencies:
             try: 
                 target_names.index(d)

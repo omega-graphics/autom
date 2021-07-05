@@ -5,7 +5,7 @@ import json
 import sys
 from typing import Any
 import runpy
-import os
+import os,shutil
 import re as Regex
 import glob
 import importlib
@@ -41,7 +41,7 @@ def configure(file:str,output_file:str,__globals:"dict[str,Any]",atMode:bool):
             # print(f"Failed to use pattern: {err.pattern}")
             continue
     if not os.path.exists(os.path.dirname(output_file)):
-        os.mkdir(os.path.dirname(output_file))
+        os.makedirs(os.path.dirname(output_file))
     write = io.open(output_file, "w")
     write.write(data)
 
@@ -50,14 +50,15 @@ class Namespace(object):
     self.__dict__.update(_dict)
 
 class TargetType(Enum):
-    EXECUTABLE = 0,
-    LIBRARY = 1,
-    SCRIPT = 2,
-    COPY = 3,
+    EXECUTABLE = 0
+    LIBRARY = 1
+    SCRIPT = 2
+    COPY = 3
     IMPORTED_LIBRARY = 4
-    APPLE_FRAMEWORK = 5,
-    APPLE_APP_BUNDLE = 6,
+    APPLE_FRAMEWORK = 5
+    APPLE_APP_BUNDLE = 6
     SOURCE_SET = 7
+    JAVA_ARCHIVE = 8
 
 class TargetConfig:
     """
@@ -67,11 +68,15 @@ class TargetConfig:
     deps:"list[str]"
     include_dirs: "list[str]"
     defines:"list[str]"
+    libs:"list[str]"
+    configs:"list[str]"
     def __init__(self,name:str,deps:"list[str]",include_dirs: "list[str]",defines:"list[str]"):
         self.name = name
         self.deps = deps 
         self.include_dirs = include_dirs
         self.defines = defines
+        self.libs = []
+        self.configs = None
         return
 
 class Target :
@@ -83,16 +88,17 @@ class Target :
     source_files: "list[str]"
     dependencies: "list[str]"
     include_dirs: "list[str]"
-    cflags: "list[str]" = []
-    cxxflags: "list[str]" = []
-    objcflags: "list[str]" = []
-    objcxxflags: "list[str]" = []
+    cflags: "list[str]"
+    cxxflags: "list[str]"
+    objcflags: "list[str]"
+    objcxxflags: "list[str]"
     output_dir:str
-    defines:"list[str]" = []
-    frameworks:"list[str]" = []
-    framework_dirs:"list[str]" = []
-    libs:"list[str]" = []
-    lib_dirs:"list[str]" = []
+    defines:"list[str]"
+    frameworks:"list[str]"
+    framework_dirs:"list[str]"
+    libs:"list[str]"
+    lib_dirs:"list[str]"
+    configs:"list[TargetConfig]"
 
     def __init__(self,name:str,_type:TargetType,source_files:"list[str]",deps:"list[str]"):
         self.name = name
@@ -100,6 +106,16 @@ class Target :
         self.source_files = source_files
         self.dependencies = deps
         self.include_dirs = []
+        self.cflags: "list[str]" = []
+        self.cxxflags: "list[str]" = []
+        self.objcflags: "list[str]" = []
+        self.objcxxflags: "list[str]" = []
+        self.defines:"list[str]" = []
+        self.frameworks:"list[str]" = []
+        self.framework_dirs:"list[str]" = []
+        self.libs:"list[str]" = []
+        self.lib_dirs:"list[str]" = []
+        self.configs = []
 
         self.set_current_dir()
 
@@ -108,10 +124,25 @@ class Target :
            s = self.source_files[i]
            self.source_files[i] = os.path.abspath(s)
 
-    def resolveConfig(self,conf:TargetConfig):
+    def resolveConfig(self,conf:TargetConfig,confs:"dict[str,TargetConfig]"):
+        # Check If Config has already been added!
+        for c in self.configs:
+            if c.name == conf.name:
+                return 
+        # Else resolve config as normal
+        self.configs.append(conf)
         self.dependencies += conf.deps
         self.defines += conf.defines
         self.include_dirs += resolve_resources(conf.include_dirs)
+        self.libs += conf.libs
+        if conf.configs is not None:
+            # print(confs)
+            for c in conf.configs:
+                _c = confs.get(c)
+                if _c is None:
+                    print(f"\x1b[31mERROR:\x1b[0m Config `{conf.name}` has an unresolved subconfig `{c}`")
+                    exit(1)
+                self.resolveConfig(_c,confs)
         return
 
 project = None
@@ -146,9 +177,23 @@ class Project:
     #         print(f"\u001b[31mERROR:\u001b[0m The Variable targets is not defined in file scope:{n}")
     #         exit(1)
     #     return
+    def get_target_by_name(self,name:str):
+        for t in self.__targets__:
+            if t.name == name:
+                return t 
+        
+    def add_targets(self,l:"list[Target]"):
+        for t in l:
+            for dep in t.dependencies:
+                _dep_t = self.get_target_by_name(dep)
+                if _dep_t is None:
+                    print(f"\x1b[31mERROR:\x1b[0m Target `{t.name}` has an unresolved dependency {dep}")
+                    exit(1)
+                for c in _dep_t.configs:
+                    t.resolveConfig(c,self.__configs__)
 
-    def add_targets(self,list:"list[Target]"):
-        self.__targets__ += list
+
+        self.__targets__ += l
         return
 
     def install_targets(self,entry:str, targets:"list[Target]",loc:str):
@@ -199,7 +244,7 @@ class SourceSet(Target):
     Defines a source set
     """
     def __init__(self,name:str,source_files:"list[str]",deps:"list[str]"):
-        super(Executable,self).__init__(name,TargetType.SOURCE_SET,source_files,deps)
+        super(SourceSet,self).__init__(name,TargetType.SOURCE_SET,source_files,deps)
         self.output_dir = ""
 
 class Executable(Target):
@@ -218,6 +263,7 @@ class AppleApplicationBundle(Executable):
     """
     embedded_frameworks:"list[str]"
     resources:"list[str]"
+    plist:str
     def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",output_dir:str):
         global target_os
         if target_os != "mac":
@@ -227,6 +273,7 @@ class AppleApplicationBundle(Executable):
         self.output_dir = output_dir
         self.embedded_frameworks = []
         self.resources = []
+        self.plist = ""
 
 class Library(Target):
     """
@@ -292,6 +339,25 @@ class ImportedLibrary(Target):
 class ProjectFileType(Enum):
     GN = 0,
     CMAKE = 1
+    GRADLE = 2
+
+# Gradle Only Functions/Classes
+class GradleRepo:
+    name:str 
+    def __init__(self,name:str):
+        self.name = name 
+
+class GradleDepType(Enum):
+    IMPLEMENATION = 0
+    API = 1
+
+class GradleDep:
+    name:str 
+    __type__:GradleDepType
+    def __init__(self,name:str,_type:GradleDepType):
+        self.name = name 
+        self.__type__ = _type
+
 
 
 

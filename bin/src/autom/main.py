@@ -9,7 +9,7 @@ from ..gnpkg.main import *
 def __main():
     parser = argparse.ArgumentParser(prog="autom",description="AUTOM Build Tool.. Automates the building of Native Projects utlizing CMake or GN")
     parser.add_argument("--apple-codesig",dest="apple_codesig",type=str)
-    parser.add_argument("--mode",type=str)
+    parser.add_argument("--mode",type=str,choices=["gn","cmake","gradle"])
     parser.add_argument("--out",type=str)
     parser.add_argument("--export-comp-db",dest="export_comp_db",action="store_const",const=True,default=False,help=
     """
@@ -23,6 +23,8 @@ def __main():
         t = ProjectFileType.GN
     elif args.mode == "cmake":
         t = ProjectFileType.CMAKE
+    elif args.mode == "gradle":
+        t = ProjectFileType.GRADLE
     else:
         print(f"\u001b[31mERROR:\u001b[0m Unknown project file mode:{args.mode}")
         exit(1)
@@ -32,19 +34,15 @@ def __main():
         filename = os.path.abspath("./AUTOM.build")
         # stream = io.open(filename,"r")
 
-        project = execForProject(filename,t,args.out)
 
     except FileNotFoundError:
         print("\u001b[31mERROR:\u001b[0m AUTOM file not found in current dir")
         exit(1)
             
-    
+    project = execForProject(filename,t,args.out)
 
-    try:
-        generateProjectFiles(project,t,args.out)
-    except KeyError:
-        print(f"\u001b[31mERROR:\u001b[0m Exported project not found in AUTOM file")
-        exit(1)
+    generateProjectFiles(project,t,args.out)
+
 
     if t == ProjectFileType.CMAKE:
         os.system(f"cmake -S . -B {args.out}")
