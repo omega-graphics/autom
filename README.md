@@ -42,4 +42,4 @@ set PATH="%PATH%;C:\Users\example-user\autom\bin"
 
 BSD 3-Clause
 
-See [LICENSE]()
+See [LICENSE](LICENSE)
