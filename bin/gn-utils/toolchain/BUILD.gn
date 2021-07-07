@@ -26,6 +26,62 @@ if(!is_windows){
     }
 }
 
+if(is_windows){
+    toolchain("msvc"){
+        if(debug){
+            debug_flag = "/Zi"
+        }
+        cc = "cl"
+        tool("cc"){
+            depsformat = "msvc"
+            depfile = "{{output}}.d"
+            command = "$cc {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  /c {{source}}  /Fe{{output}}"
+            description = "Compiling C source {{output}}"
+            outputs = [
+                "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
+            ]
+        }
+        tool("cxx"){
+            depsformat = "msvc"
+            depfile = "{{output}}.d"
+            command = "$cc {{cflags}}"
+            description = "Compiling CXX source {{output}}"
+            outputs = [
+                "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
+            ]
+        }
+        tool("link"){
+            outputs = ["{{output_dir}}/{{target_output_name}}{{output_extension}}"]
+            lib_switch = ""
+            lib_dir_switch = "/LIBPATH "
+            command = "$cc $debug_flag /link {{ldflags}} {{inputs}}"
+            default_output_extension = ".exe"
+            description = "Linking executable $outfile"
+        }
+        tool("solink"){
+            outputs = ["{{output_dir}}/{{target_output_name}}.lib","{{output_dir}}/{{target_output_name}}.dll"]
+            command = "$cc $debug_flag /link {{ldflags}} {{inputs}}"
+            description = "Linking shared library $outfile"
+        }
+        tool("alink"){
+            command = "lib {{arflags}}  /out:{{output}} {{inputs}}"
+             outputs = [
+            "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+            ]
+            description = "Linking static archive {{target_output_name}}{{output_extension}}"
+            default_output_extension = ".lib"
+        }
+        tool("rc"){
+            command = "rc.exe /nologo {{defines}} {{include_dirs}} /FO {{output}} {{source}}"
+            outputs = [
+                "{{source_out_dir}}/{{source_name_part}}.res"
+            ]
+            depsformat = "msvc"
+            description = "Compiling rc script {{output}}"
+        }
+    }
+}
+
 
 toolchain("llvm") {
     if(is_windows){
@@ -220,6 +276,7 @@ toolchain("llvm") {
         }
         # Link MSVC Runtime
         else {
+            default_output_extension = ".exe"
             lib_dir_switch = "/LIBPATH"
             lib_switch =  ""
             command = "clang-cl $debug_flag  /MT /Fe$outfile -Wl {{ldflags}} {{solibs}} {{inputs}} {{libs}}"

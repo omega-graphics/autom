@@ -9,6 +9,7 @@ build
 *.sh
 .cache
 deps
+!bin/autom-clone.bat
 
 # Compiled Object files
 *.slo

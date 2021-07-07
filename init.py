@@ -34,5 +34,5 @@ if shutil.which("gn") is None:
     run_python3("./build/gen.py")
     os.system("\"./ninja-build/ninja\" -C ./out")
     
-git("rapidjson","https://github.com/Tencent/rapidjson.git","./deps/rapidjson")    
-git("libarchive","https://github.com/libarchive/libarchive.git","./deps/libarchive")    
+#git("rapidjson","https://github.com/Tencent/rapidjson.git","./deps/rapidjson")    
+#git("libarchive","https://github.com/libarchive/libarchive.git","./deps/libarchive")    

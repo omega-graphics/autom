@@ -136,10 +136,8 @@ def processCommand(c:Command):
         assert(c.get("url"))
         assert(c.get("dest"))
         assert(c.get("branch"))
-        url = c.get("url")
-        url = processStringWithVariables(url)
-        dest = c.get("dest")
-        dest = processStringWithVariables(dest)
+        url = processStringWithVariables(c.get("url"))
+        dest = processStringWithVariables(c.get("dest"))
         branch = None
         if(c.get("branch") != "default"):
             branch = c.get("branch")
@@ -216,6 +214,8 @@ def processCommand(c:Command):
             tar = tarfile.open(t_file,"r:*")
             tar.extractall(dest)
             tar.close()
+            os.remove(t_file)
+            shutil.rmtree(os.path.dirname(t_file))
         elif c.get("type") == "unzip":
             assert(c.get("zipfile"))
             assert(c.get("dest"))

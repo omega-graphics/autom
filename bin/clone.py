@@ -7,7 +7,7 @@ from autom_deps import *
 
 git_regex = Regex.compile(r"\/(.+)\.git$", flags=Regex.MULTILINE | Regex.DOTALL)
 
-parser = argparse.ArgumentParser(prog="clone")
+parser = argparse.ArgumentParser(prog="autom-clone")
 parser.add_argument("--runhooks", dest="runhooks", action="store_const", const=True, default=False)
 parser.add_argument("--branch", type=str)
 parser.add_argument("git_repo_url", type=Text)

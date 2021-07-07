@@ -1,0 +1,14 @@
+#! /usr/bin/python3
+
+Project("TestProject","0.0.0")
+
+TEST_VAR = 1
+
+configure("./Test.txt.in","./Test.txt")
+
+StaticLibrary("TestLib",["./TestLib.cpp"],[],"bin")
+
+Executable("TestExec",s["./test.cpp"],[],"bin")
+
+
+
