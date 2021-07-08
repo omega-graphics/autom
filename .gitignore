@@ -10,6 +10,11 @@ build
 .cache
 deps
 !bin/autom-clone.bat
+*.zip
+*.tar 
+cmake 
+ninja*
+gn-src
 
 # Compiled Object files
 *.slo
