@@ -29,38 +29,42 @@ if(!is_windows){
 if(is_windows){
     toolchain("msvc"){
         if(debug){
-            debug_flag = "/Zi"
+            debug_flag = "/Z7"
+            link_debug_flag = "/DEBUG"
         }
         cc = "cl"
         tool("cc"){
             depsformat = "msvc"
-            depfile = "{{output}}.d"
-            command = "$cc {{defines}} {{include_dirs}} $debug_flag {{cflags_c}}  /c {{source}}  /Fe{{output}}"
+            command = "$cc /nologo {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} /Fo{{output}}  /c {{source}} "
             description = "Compiling C source {{output}}"
             outputs = [
-                "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
+                "{{source_out_dir}}/{{source_name_part}}.obj"
             ]
         }
         tool("cxx"){
             depsformat = "msvc"
-            depfile = "{{output}}.d"
-            command = "$cc {{cflags}}"
+            command = "$cc /nologo {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} /Fo{{output}} /std:c++17 /c {{source}}"
             description = "Compiling CXX source {{output}}"
             outputs = [
-                "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
+                "{{source_out_dir}}/{{source_name_part}}.obj"
             ]
         }
         tool("link"){
-            outputs = ["{{output_dir}}/{{target_output_name}}{{output_extension}}"]
+            outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+            outputs = [outfile]
             lib_switch = ""
             lib_dir_switch = "/LIBPATH "
-            command = "$cc $debug_flag /link {{ldflags}} {{inputs}}"
+            command = "link $link_debug_flag /nologo /OUT:$outfile {{ldflags}} {{inputs}} "
             default_output_extension = ".exe"
             description = "Linking executable $outfile"
         }
         tool("solink"){
             outputs = ["{{output_dir}}/{{target_output_name}}.lib","{{output_dir}}/{{target_output_name}}.dll"]
-            command = "$cc $debug_flag /link {{ldflags}} {{inputs}}"
+            imp_lib_out = "{{output_dir}}/{{target_output_name}}.lib"
+            outfile = "{{output_dir}}/{{target_output_name}}.dll"
+            command = "link $link_debug_flag /nologo /opt:noref /INCREMENTAL  /DLL /OUT:$outfile /IMPLIB:$imp_lib_out {{ldflags}} {{inputs}}"
+            lib_switch = ""
+            lib_dir_switch = "/LIBPATH "
             description = "Linking shared library $outfile"
         }
         tool("alink"){
@@ -71,6 +75,11 @@ if(is_windows){
             description = "Linking static archive {{target_output_name}}{{output_extension}}"
             default_output_extension = ".lib"
         }
+        tool("copy"){  
+            python_copy = rebase_path("../__copy.py")
+            command = "$python_path $python_copy --src {{source}} --dest {{output}}"
+            description = "Copying {{source}} to {{output}}"
+        }
         tool("rc"){
             command = "rc.exe /nologo {{defines}} {{include_dirs}} /FO {{output}} {{source}}"
             outputs = [
@@ -78,6 +87,11 @@ if(is_windows){
             ]
             depsformat = "msvc"
             description = "Compiling rc script {{output}}"
+        }
+
+        tool("stamp"){
+            command = "cmd.exe /c echo > {{output}}"
+            description = "Stamping {{output}}"
         }
     }
 }

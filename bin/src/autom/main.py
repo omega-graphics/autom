@@ -51,7 +51,7 @@ def __main():
             main(args=["utils","--get"])
             stream = io.open("./.gn","w")
             if sys.platform == "win32":
-                python3 = "py -3"
+                python3 = "py"
             else:
                 python3 = "python3"
             stream.write(f"buildconfig = \"//gn-utils/BUILDCONFIG.gn\"\n\nscript_executable = \"{python3}\"")

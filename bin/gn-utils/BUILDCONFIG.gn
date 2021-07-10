@@ -1,3 +1,7 @@
+declare_args(){
+  use_llvm = false
+}
+
 if (target_os == "") {
   target_os = host_os
 }
@@ -31,11 +35,19 @@ is_mac = host_os == "mac" && current_os == "mac" && target_os == "mac"
 is_windows = host_os == "win" && current_os == "win" && target_os == "win"
 
 if(is_windows){
-  set_default_toolchain("./toolchain:msvc")
+  if(use_llvm){
+    set_default_toolchain("./toolchain:llvm")
+  }
+  else {
+    set_default_toolchain("./toolchain:msvc")
+  }
 }
 else if(is_mac) {
   set_default_toolchain("./toolchain:llvm")
 }
 else {
+  if(use_llvm){
+    set_default_toolchain("./toolchain:llvm")
+  }
   set_default_toolchain("./toolchain:gcc")
 }
