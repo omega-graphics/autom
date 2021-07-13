@@ -49,3 +49,12 @@ function(add_framework_bundle _NAME)
 
 endfunction()
 
+function(add_group _NAME)
+    cmake_parse_arguments("_ARG" "" "" "DEPS" ${ARGN})
+    add_custom_target(${_NAME} DEPENDS )\
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/groups/${_NAME}.stamp 
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/groups/${_NAME}.stamp
+    DEPENDS ${_ARG_DEPS})
+endfunction()
+
+

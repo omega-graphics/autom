@@ -32,6 +32,9 @@ if(is_windows){
             debug_flag = "/Z7"
             link_debug_flag = "/DEBUG"
         }
+        else {
+            link_debug_flag = ""
+        }
         cc = "cl"
         tool("cc"){
             depsformat = "msvc"
@@ -54,7 +57,7 @@ if(is_windows){
             outputs = [outfile]
             lib_switch = ""
             lib_dir_switch = "/LIBPATH "
-            command = "link $link_debug_flag /nologo /OUT:$outfile {{ldflags}} {{inputs}} "
+            command = "link $link_debug_flag /nologo /OUT:$outfile {{ldflags}} {{inputs}} {{libs}}"
             default_output_extension = ".exe"
             description = "Linking executable $outfile"
         }
@@ -62,7 +65,7 @@ if(is_windows){
             outputs = ["{{output_dir}}/{{target_output_name}}.lib","{{output_dir}}/{{target_output_name}}.dll"]
             imp_lib_out = "{{output_dir}}/{{target_output_name}}.lib"
             outfile = "{{output_dir}}/{{target_output_name}}.dll"
-            command = "link $link_debug_flag /nologo /opt:noref /INCREMENTAL  /DLL /OUT:$outfile /IMPLIB:$imp_lib_out {{ldflags}} {{inputs}}"
+            command = "link $link_debug_flag /nologo /opt:noref /INCREMENTAL  /DLL /OUT:$outfile /IMPLIB:$imp_lib_out {{ldflags}} {{inputs}} {{libs}}"
             lib_switch = ""
             lib_dir_switch = "/LIBPATH "
             description = "Linking shared library $outfile"

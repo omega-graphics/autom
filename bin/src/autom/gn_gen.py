@@ -54,6 +54,10 @@ class __GNGenerator__:
                 stream.write(f"source_set(\"{t.name}\")" + "{\n")
                 self.writeStandardTargetProps(t,stream)
                 stream.write("\n}")
+            elif t.__type__.value == TargetType.GROUP.value:
+                stream.write(f"group(\"{t.name}\")" + "{\n")
+                stream.write("  public_deps = {}\n".format(json.dumps(self.__formatDeps(t.dependencies))))
+                stream.write("\n}")
             elif t.__type__.value == TargetType.APPLE_FRAMEWORK.value:
                 stream.write(f"mac_framework_bundle(\"{t.name}\")" + "{\n")
                 stream.write(f"  version = \"{t.version}\"\n")

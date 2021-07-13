@@ -58,7 +58,8 @@ class TargetType(Enum):
     APPLE_FRAMEWORK = 5
     APPLE_APP_BUNDLE = 6
     SOURCE_SET = 7
-    JAVA_ARCHIVE = 8
+    GROUP = 8
+    JAVA_ARCHIVE = 9
 
 class TargetConfig:
     """
@@ -325,6 +326,9 @@ class Copy(Target):
         super(Copy,self).__init__(name,TargetType.COPY,source_files,deps)
         self.output_dir = output_dir
 
+class Group(Target):
+    def __init__(self,name:str,deps:"list[str]"):
+        super(Group,self).__init__(name,TargetType.GROUP,[],deps)
 
 class ImportedLibrary(Target):
     lib:str 

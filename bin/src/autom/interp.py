@@ -137,6 +137,11 @@ class AUTOMInterp(object):
                     deps:"list[str]" = self.evalExpr(expr.args[2],temp_scope)
                     self.p.add_targets(l=[SourceSet(name=t_name,source_files=srcs,deps=deps)])
                     return
+                elif expr.func.id == "Group" and not self.inInterfaceFileTop:
+                    t_name:str = self.evalExpr(expr.args[0],temp_scope)
+                    deps:"list[str]" = self.evalExpr(expr.args[1],temp_scope)
+                    self.p.add_targets(l=[Group(name=t_name,deps=deps)])
+                    return
                 elif expr.func.id == "AppBundle" and not self.inInterfaceFileTop:
                     if not AUTOM_LANG_SYMBOLS["is_mac"]:
                         self.error(expr.func,"AppBundle target can only be declared if target os is macOS or iOS")
@@ -329,7 +334,7 @@ class AUTOMInterp(object):
             if self.symTable.get(expr.id) is not None:
                 return self.symTable[expr.id]
             
-            self.error(expr,"Unknown Identifier")
+            self.error(expr,f"Unknown Identifier `{expr.id}`")
         elif isinstance(expr,ast.BoolOp):
             left_val = self.evalExpr(expr.values[0],temp_scope)
             right_val = self.evalExpr(expr.values[1],temp_scope)
@@ -365,6 +370,13 @@ class AUTOMInterp(object):
         
         elif isinstance(expr,ast.Constant):
             return expr.value
+        elif isinstance(expr,ast.Subscript):
+            # Only Supports indexing of lists
+            value_ = self.evalExpr(expr.value,temp_scope)
+            # args:ast.Tuple = expr.slice
+            idx_val = self.evalExpr(expr.slice,temp_scope)
+            # print(idx_val)
+            return value_[idx_val]
         # Make Standard Types
         elif isinstance(expr,ast.List):
             rc = []
