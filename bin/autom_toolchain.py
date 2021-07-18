@@ -1,4 +1,5 @@
-import os,sys,argparse,json
+import io
+import os,sys,argparse,json,shutil
 from enum import Enum
 
 
@@ -11,26 +12,46 @@ class ToolchainType(Enum):
     PERL = 5
     JAVA = 6
 
-sub_regex = r"[\w|.]+"
-
-gcc_regex = rf"gcc (?:\([\w| |.|-|_]+\)) ({sub_regex})"
-clang_regex = rf"clang version ({sub_regex})"
-lld_regex = rf"LLD ({sub_regex})"
 
 
+def testCase(name:str):
+    print(f"Checking for {name}")
+    res = shutil.which(name)
+    if res is None:
+        print(f"-- Checking for {name} - found")
+    else:
+        print(f"-- Checking for {name} - not found")
+    return res is not None
 
-def testForToolchain(type:ToolchainType):
+Toolchain = "dict[str,bool]"
 
-    if type == ToolchainType.LLVM:
-        os.popen("clang --version")
+def testToolchainCase(name:str,progs:"list[str]") -> Toolchain:
+    print(f"Testing for {name}")
+    res:Toolchain = {}
+    success = True
+    for p in progs:
+        r = testCase(p)
+        res[p] = r
+        if not r:
+            success = False
+    
+    if success:
+        print(f"Testing for {name} - succeeded")
+    else:
+        print(f"Testing for {name} - failed")
+    return res
 
 
-def determineToolchains() -> "list[dict[str]]":
+def determineToolchains() -> "dict[str,Toolchain]":
 
+    res = {}
+    res["LLVM"] = testToolchainCase("LLVM",["clang","lld","lldb"])
 
-    return []
+    res["GCC"] = testToolchainCase("GCC",["gcc","ld","ar","gdb"])
 
+    res["MSVC"] = testToolchainCase("MSVC",["cl","lib","link"])
 
+    return res
 
 
 def main():
@@ -41,4 +62,6 @@ def main():
     
     toolchain = determineToolchains()
 
-    json.dump(toolchain,open("./AUTOM.toolchain"))
+    json.dump(toolchain,io.open("./AUTOM.toolchain","w"))
+
+main()

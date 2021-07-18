@@ -413,6 +413,7 @@ AUTOM_LANG_SYMBOLS = {
     "target_os": target_os,
     "is_win":sys.platform == "win32",
     "is_mac":sys.platform == "darwin",
+    "is_linux":sys.platform == "linux",
     "AppBundle":AppleApplicationBundle,
     "FrameworkBundle":AppleFrameworkBundle
 }
