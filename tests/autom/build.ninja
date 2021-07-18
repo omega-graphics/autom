@@ -1,0 +1,20 @@
+ninja_required_version = 1.1
+
+cflags = -Wall
+
+rule cxx
+    command = clang++ $cflags -c $in -o $out
+
+rule ar
+    command = ar -r $out $in 
+
+rule ld 
+    command = clang++ $in -o $out
+
+build TestLib.o : cxx TestLib.cpp
+
+build test.o: cxx test.cpp
+
+build test: ld test.o
+
+build libtestlib.a: ar TestLib.o
