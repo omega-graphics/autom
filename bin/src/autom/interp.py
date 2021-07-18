@@ -323,6 +323,8 @@ class AUTOMInterp(object):
                 return AUTOM_LANG_SYMBOLS['is_mac']
             elif expr.id == "is_win":
                 return AUTOM_LANG_SYMBOLS['is_win'] 
+            elif expr.id == "is_linux":
+                return AUTOM_LANG_SYMBOLS['is_linux'] 
 
             # 2. - Eval Temp Scope Identifiers
             if temp_scope is not None:
@@ -453,16 +455,10 @@ class AUTOMInterp(object):
                 return
             elif len(stmt.orelse) > 0:
                 if isinstance(stmt.orelse[0],ast.If):
-                    _if = stmt.orelse[0]
-                    if self.evalExpr(_if.test,temp_scope):
-                        _temp_scope = {}
-                        if temp_scope is not None:
-                            _temp_scope.update(temp_scope)
-                        for __stmt in _if.body:
-                            if self.willReturn:
-                                break
-                            self.evalStmt(__stmt,_temp_scope)
-                        return
+                    _temp_scope = {}
+                    if temp_scope is not None:
+                        _temp_scope.update(temp_scope)
+                    self.evalStmt(stmt.orelse[0],_temp_scope)
                 else:
                     _temp_scope = {}
                     if temp_scope is not None:

@@ -49,5 +49,7 @@ else {
   if(use_llvm){
     set_default_toolchain("./toolchain:llvm")
   }
-  set_default_toolchain("./toolchain:gcc")
+  else {
+    set_default_toolchain("./toolchain:gcc")
+  }
 }
