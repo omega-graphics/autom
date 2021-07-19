@@ -17,7 +17,7 @@ class ToolchainType(Enum):
 def testCase(name:str):
     print(f"Checking for {name}")
     res = shutil.which(name)
-    if res is None:
+    if res is not None:
         print(f"-- Checking for {name} - found")
     else:
         print(f"-- Checking for {name} - not found")
@@ -54,14 +54,16 @@ def determineToolchains() -> "dict[str,Toolchain]":
     return res
 
 
-def main():
+def main(__args):
     parser = argparse.ArgumentParser()
     parser.add_argument("--toolchain",choices=["msvc","llvm","gcc","vulkan","spirv","perl","java"],nargs="?")
 
-    args = parser.parse_args()
+    args = parser.parse_args(__args)
     
     toolchain = determineToolchains()
 
     json.dump(toolchain,io.open("./AUTOM.toolchain","w"))
 
-main()
+if __name__ == "__main__":
+    sys.argv.pop(0)
+    main(sys.argv)
