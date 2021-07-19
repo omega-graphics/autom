@@ -20,23 +20,23 @@ def git(name:str,url:str,dest:str):
     print(f"Cloning {name} from: {url}")
     os.system(f"git clone {url} {dest}")
 
-if shutil.which("cmake") is None:
-    url:str
-    if is_win:
-        url = "https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-windows-x86_64.zip"
-    else:
-        url = "https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-macos-universal.tar.gz"
+# if shutil.which("cmake") is None:
+#     url:str
+#     if is_win:
+#         url = "https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-windows-x86_64.zip"
+#     else:
+#         url = "https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-macos-universal.tar.gz"
 
-    if is_win:
-        download("cmake",url,"./cmake.zip")
-        z = zipfile.ZipFile("./cmake.zip","r")
-        z.extractall("./cmake")
-        z.close()
-    else:
-        download("cmake",url,"./cmake.tar.gz")
-        z = tarfile.open("./cmake.tar.gz","r:*")
-        z.extractall("./cmake")
-        z.close()
+#     if is_win:
+#         download("cmake",url,"./cmake.zip")
+#         z = zipfile.ZipFile("./cmake.zip","r")
+#         z.extractall("./cmake")
+#         z.close()
+#     else:
+#         download("cmake",url,"./cmake.tar.gz")
+#         z = tarfile.open("./cmake.tar.gz","r:*")
+#         z.extractall("./cmake")
+#         z.close()
 
 if shutil.which("ninja") is None:
     url:str
@@ -49,14 +49,15 @@ if shutil.which("ninja") is None:
     z.extractall("./ninja-build")
     z.close()
 
-if shutil.which("gn") is None:
-    git("GN","https://gn.googlesource.com/gn","./gn-src")
-    run_python3("./build/gen.py")
-    if is_win:
-        os.system("bin\\vc-init && ninja-build\\ninja.exe -C ./gn-src/out")
-    else:
-        os.chdir("./gn-src")
-        os.system("\"./ninja-build/ninja\" -C ./out")
+# if shutil.which("gn") is None:
+#     git("GN","https://gn.googlesource.com/gn","./gn-src")
+#     run_python3("./build/gen.py")
+#     if is_win:
+#         os.system("bin\\vc-init && ninja-build\\ninja.exe -C ./gn-src/out")
+#     else:
+#         os.chdir("./gn-src")
+#         os.system("\"./ninja-build/ninja\" -C ./out")
     
-#git("rapidjson","https://github.com/Tencent/rapidjson.git","./deps/rapidjson")    
+git("rapidjson","https://github.com/Tencent/rapidjson.git","./deps/rapidjson")    
 #git("libarchive","https://github.com/libarchive/libarchive.git","./deps/libarchive")    
+

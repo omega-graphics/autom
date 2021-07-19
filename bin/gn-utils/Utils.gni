@@ -160,7 +160,7 @@ template("mac_framework_bundle"){
             f_dir = get_target_outputs(":"+f)
             _framework_dirs += [get_path_info(f_dir[2],"dir")]
             _frameworks_to_embed += [f_dir[2]]
-
+            f_dir = []
         }
 
         invoker.frameworks += invoker.embedded_frameworks
@@ -317,7 +317,7 @@ template("mac_app_bundle"){
             f_dir = get_target_outputs(":"+f)
             _framework_dirs += [get_path_info(f_dir[2],"dir")]
             _frameworks_to_embed += [f_dir[2]]
-
+            f_dir = []
         }
 
         invoker.frameworks += invoker.embedded_frameworks

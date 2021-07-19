@@ -66,6 +66,11 @@ class AUTOMInterp(object):
                         elif prop_name == "embedded_frameworks":
                             t.embedded_frameworks = append_prop(t.embedded_frameworks,data)
                             return
+                    
+                    if isinstance(t,AppleFrameworkBundle):
+                        if prop_name == "embedded_libs":
+                            t.embedded_libs = append_prop(t.embedded_libs,data)
+                            return
 
                     if prop_name == "cflags":
                         t.cflags = append_prop(t.cflags,data)
@@ -75,6 +80,8 @@ class AUTOMInterp(object):
                         t.objcflags = append_prop(t.objcflags,data) 
                     elif prop_name == "objcxxflags":
                         t.objcxxflags = append_prop(t.objcxxflags,data) 
+                    elif prop_name == "ldflags":
+                        t.ldflags = append_prop(t.ldflags,data) 
                     elif prop_name == "defines":
                         t.defines = append_prop(t.defines,data) 
                     elif prop_name == "include_dirs":

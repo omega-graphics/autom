@@ -93,6 +93,7 @@ class Target :
     cxxflags: "list[str]"
     objcflags: "list[str]"
     objcxxflags: "list[str]"
+    ldflags:"list[str]"
     output_dir:str
     defines:"list[str]"
     frameworks:"list[str]"
@@ -111,6 +112,7 @@ class Target :
         self.cxxflags: "list[str]" = []
         self.objcflags: "list[str]" = []
         self.objcxxflags: "list[str]" = []
+        self.ldflags = []
         self.defines:"list[str]" = []
         self.frameworks:"list[str]" = []
         self.framework_dirs:"list[str]" = []
@@ -294,6 +296,7 @@ class AppleFrameworkBundle(Library):
     version:str
     embedded_frameworks:"list[str]"
     resources:"list[str]"
+    embedded_libs:"list[str]"
     def __init__(self,name:str,source_files:"list[str]",deps:"list[str]",version:str,output_dir:str):
         global target_os
         if target_os != "mac":
@@ -303,6 +306,7 @@ class AppleFrameworkBundle(Library):
         self.output_dir = output_dir
         self.version = version
         self.embedded_frameworks = []
+        self.embedded_libs = []
         self.resources = []
 
 

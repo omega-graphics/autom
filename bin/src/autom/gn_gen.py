@@ -58,12 +58,22 @@ class __GNGenerator__:
                 stream.write(f"group(\"{t.name}\")" + "{\n")
                 stream.write("  public_deps = {}\n".format(json.dumps(self.__formatDeps(t.dependencies))))
                 stream.write("\n}")
+            elif t.__type__.value == TargetType.APPLE_APP_BUNDLE.value:
+                stream.write(f"mac_app_bundle(\"{t.name}\")" + "{\n")
+                stream.write(f"  plist = \"{t.plist}\"\n")
+                stream.write("  resources = {}\n".format(json.dumps(t.resources)))
+                if len(t.embedded_frameworks) > 0:
+                    stream.write("  embedded_frameworks = {}\n".format(json.dumps(t.embedded_frameworks)))
+                self.writeStandardTargetProps(t,stream)
+                stream.write("\n}")
             elif t.__type__.value == TargetType.APPLE_FRAMEWORK.value:
                 stream.write(f"mac_framework_bundle(\"{t.name}\")" + "{\n")
                 stream.write(f"  version = \"{t.version}\"\n")
                 stream.write("  resources = {}\n".format(json.dumps(t.resources)))
                 if len(t.embedded_frameworks) > 0:
                     stream.write("  embedded_frameworks = {}\n".format(json.dumps(t.embedded_frameworks)))
+                if len(t.embedded_libs) > 0:
+                    stream.write("  embedded_libs = {}\n".format(json.dumps(t.embedded_libs)))
                 self.writeStandardTargetProps(t,stream)
                 stream.write("\n}")
             elif t.__type__.value == TargetType.SCRIPT.value:
