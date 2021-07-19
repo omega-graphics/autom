@@ -348,7 +348,7 @@ toolchain("llvm") {
     tool("link") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
         if(is_mac || is_ios){
-            command = "$cxx -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{libs}} " 
+            command = "$cxx -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{libs}} {{frameworks}} " 
         }
         else if(is_linux){
             command = "$cxx -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{libs}} "

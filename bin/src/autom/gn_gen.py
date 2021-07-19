@@ -26,7 +26,12 @@ class __GNGenerator__:
         if len(t.framework_dirs) > 0:
             stream.write("  framework_dirs = {}\n".format(json.dumps(t.framework_dirs)))
         if len(t.cflags) > 0:
-            stream.write("  cflags = {}\n".format(json.dumps(t.cflags)))
+            stream.write("  cflags_c = {}\n".format(json.dumps(t.cflags)))
+        if len(t.cxxflags) > 0:
+            stream.write("  cflags_cc = {}\n".format(json.dumps(t.cxxflags)))
+        if len(t.ldflags) > 0:
+            stream.write("  ldflags = {}\n".format(json.dumps(t.ldflags)))
+        
         stream.write(f"  output_dir = \"$root_out_dir/{t.output_dir}\"\n")
 
     def generate(self,out_file:str):
