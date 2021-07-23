@@ -69,6 +69,7 @@ class NinjaBuildRuleTy(enum.Enum):
     COMPILE = 0,
     LINK_SHARED = 1,
     LINK_STATIC = 2,
+    LINK_EXE = 3,
 
 class NinjaBuildRule(object):
     ty:NinjaBuildRuleTy
@@ -92,6 +93,8 @@ def make_ninja_build(file:str):
             if r.ty == NinjaBuildRuleTy.COMPILE:
                 stream.write(f"cxx {r.src}")
             elif r.ty == NinjaBuildRuleTy.LINK_SHARED:
+                stream.write(f"so_ld {r.src}")
+            elif r.ty == NinjaBuildRuleTy.LINK_EXE:
                 stream.write(f"ld {r.src}")
             stream.write("\n")
 
@@ -107,27 +110,35 @@ def make_ninja_build(file:str):
     elif toolchains["GCC"]["g++"]:
         stream.write("g++ -std=c++17 -fPIC -o $out $in\n")
 
-    # Create LD Rule
-    stream.write("rule ld\n command = ")
+    # Create SO_LD Rule
+    stream.write("rule so_ld\n command = ")
     if toolchains["LLVM"]["lld"]:
         stream.write("clang++ -shared -o $out $in\n")
     elif toolchains["GCC"]["ld"]:
         stream.write("g++ -std=c++17 -shared -o $out $in\n")
+
+     # Create LD Rule
+    stream.write("rule ld\n command = ")
+    if toolchains["LLVM"]["lld"]:
+        stream.write("clang++ -o $out $in\n")
+    elif toolchains["GCC"]["ld"]:
+        stream.write("g++ -std=c++17 -pie -o $out $in\n")
     
     stream.write("\n\n")
-    lib_srcs = glob("./src/*.cpp") + glob("./src/parser/*.cpp") + glob("./src/gen/*.cpp") + glob("./src/bridge/*.cpp")
+
+    _srcs = glob("./src/*.cpp") + glob("./src/parser/*.cpp") + glob("./src/gen/*.cpp") + glob("./src/bridge/*.cpp") + ["./src/driver/main.cpp"]
 
     rules = []
 
     outputs = []
 
-    for ls in lib_srcs:
+    for ls in _srcs:
         s =  os.path.basename(ls)
         src,ext = os.path.splitext(s)
         o = f"./out/obj/{os.path.basename(src)}.o"
         rules.append(NinjaBuildRule(NinjaBuildRuleTy.COMPILE,ls,o))
         outputs.append(o)
-    rules.append(NinjaBuildRule(NinjaBuildRuleTy.LINK_SHARED," ".join(outputs),"./out/libautom.dylib"))
+    rules.append(NinjaBuildRule(NinjaBuildRuleTy.LINK_EXE," ".join(outputs),"./out/autom"))
 
     generate_build_rules(rules)
 

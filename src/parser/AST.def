@@ -1,0 +1,26 @@
+#ifndef AUTOM_PARSER_AST_DEF
+#define  AUTOM_PARSER_AST_DEF
+
+
+namespace autom {
+    typedef int ASTNodeType;
+}
+
+
+#define DECL (0x100)
+
+#define FUNC_DECL (0x001 | DECL)
+#define VAR_DECL (0x002 | DECL)
+#define COND_DECL (0x003 | DECL)
+#define IMPORT_DECL (0x004 | DECL)
+
+#define EXPR (0x200)
+
+#define EXPR_ID (0x001 | EXPR)
+#define EXPR_INDEX (0x002 | EXPR)
+#define EXPR_IVKE (0x003 | EXPR)
+#define EXPR_MEMBER (0x004 | EXPR)
+#define EXPR_LITERAL (0x005 | EXPR)
+#define EXPR_ARRAY (0x006 | EXPR)
+
+#endif

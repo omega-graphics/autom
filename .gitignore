@@ -15,6 +15,7 @@ deps
 cmake 
 ninja*
 gn-src
+*.ninja
 
 # Compiled Object files
 *.slo

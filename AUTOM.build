@@ -1,0 +1,20 @@
+
+
+Project("AUTOM","0.8")
+
+func myfunc (hello,world){
+
+    print("$(hello) + $(world)")
+
+}
+
+# If Statement
+
+if (hello)
+{
+
+}
+
+
+
+

@@ -1,0 +1,44 @@
+#ifndef AUTOM_PARSER_TOKENS_DEF
+#define  AUTOM_PARSER_TOKENS_DEF
+
+namespace autom {
+
+typedef int TokType;
+
+}
+
+#define TOKEN_MAX_LEN 200
+
+#define TOKEN(content) content 
+
+/// Token Categories
+#define OP(content) TOKEN(content)
+#define KW(content) TOKEN(content)
+
+/// Token Types
+
+#define TOK_ID 0x00
+#define TOK_KW 0x01
+#define TOK_COLON 0x02
+#define TOK_COMMA 0x03
+#define TOK_LPAREN 0x04
+#define TOK_RPAREN 0x05
+#define TOK_LBRACKET 0x06
+#define TOK_RBRACKET 0x07
+#define TOK_EQUALS 0x08
+#define TOK_LBRACE 0x09
+#define TOK_RBRACE 0x0A
+#define TOK_DOT 0x0B
+#define TOK_STRLITERAL 0x0C
+#define TOK_EOF 0xFF
+
+/// Keywords
+#define KW_IMPORT KW("import")
+#define KW_IF KW("if")
+#define KW_ELIF KW("elif")
+#define KW_ELSE KW("else")
+#define KW_FUNC KW("func")
+#define KW_VAR KW("var")
+
+
+#endif
