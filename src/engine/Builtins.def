@@ -1,0 +1,13 @@
+#ifndef AUTOM_ENGINE_BUILTINS_DEF
+#define  AUTOM_ENGINE_BUILTINS_DEF
+
+
+typedef int AutomBuiltinFunc;
+
+
+#define BUILTIN_PROJECT  "Project"
+#define BUILTIN_EXECUTABLE "Executable"
+#define BUILTIN_ARCHIVE "Archive"
+#define BUILTIN_SHARED "Shared"
+
+#endif

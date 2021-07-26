@@ -6,8 +6,8 @@
 #include <unordered_map>
 #include <optional>
 
-#ifndef AUTOM_PARSER_AST_H
-#define  AUTOM_PARSER_AST_H
+#ifndef AUTOM_ENGINE_AST_H
+#define  AUTOM_ENGINE_AST_H
 
 
 namespace autom {
@@ -26,24 +26,28 @@ namespace autom {
 
     
 
-    struct ASTLiteral : public ASTNode {
+    struct ASTExpr : public ASTNode {
+
+        ASTExpr *lhs,*rhs;
+
+        std::string id;
+
+        std::vector<ASTExpr *> children;
+
+        std::unordered_map<std::string,ASTExpr *> func_args;
+
+        std::unordered_map<ASTExpr *,ASTExpr *> map_children;
+
+
+    };
+
+    struct ASTLiteral : public ASTExpr {
         std::optional<std::string> str;
 
         std::optional<bool> boolean;
 
         bool isString();
         bool isBoolean();
-    };
-
-    struct ASTExpr : public ASTNode {
-
-        std::string id;
-
-        std::vector<ASTExpr *> children;
-
-        std::unordered_map<ASTExpr *,ASTExpr *> map_children;
-
-
     };
 
     struct ASTBlock {

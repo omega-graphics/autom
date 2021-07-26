@@ -3,6 +3,8 @@ from typing import Any
 from .autom_types import *
 from .bridge import *
 
+import pathlib
+
 class AUTOMInterp(object):
     symTable:"dict[str,Any]"
 
@@ -265,6 +267,22 @@ class AUTOMInterp(object):
                 elif expr.func.id == "abspath":
                     path:str = self.evalExpr(expr.args[0],temp_scope)
                     return os.path.abspath(path)
+                elif expr.func.id == "pathdir":
+                    path:str = self.evalExpr(expr.args[0],temp_scope)
+                    return os.path.dirname(path)
+                elif expr.func.id == "pathresolve":
+                    path:str = self.evalExpr(expr.args[0],temp_scope)
+                    return os.path.normpath(path)
+                elif expr.func.id == "pathjoin":
+                    path:str = self.evalExpr(expr.args[0],temp_scope)
+                    kwargs:str = self.evalExpr(expr.args[1],temp_scope)
+                    return os.path.join(path,kwargs)
+                elif expr.func.id == "pathext":
+                    path:str = self.evalExpr(expr.args[0],temp_scope)
+                    return os.path.splitext(path)[1]
+                elif expr.func.id == "pathbase":
+                    path:str = self.evalExpr(expr.args[0],temp_scope)
+                    return os.path.basename(path)
                 elif expr.func.id == "assert_expr":
                     _expr:Any = self.evalExpr(expr.args[0],temp_scope)
                     if not _expr:
@@ -284,6 +302,13 @@ class AUTOMInterp(object):
                     else:
                         print(f"Checking program exists `{prog}` -- not found")
                     return v
+                # Find Funcs
+                elif expr.func.id == "find_prog":
+                    prog:str = self.evalExpr(expr.args[0],temp_scope)
+                    r = shutil.which(prog)
+                    if r is None:
+                        r = ""
+                    return os.path.realpath(r)
             if not isinstance(expr.func,ast.Name):
                 self.error(expr.func,"Expected a Function Name")
             

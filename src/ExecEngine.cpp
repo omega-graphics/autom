@@ -1,14 +1,15 @@
-#include "Parser.h"
+#include "ExecEngine.h"
 
 namespace autom {
-    Parser::Parser(TargetConsumer &targetConsumer):
+    ExecEngine::ExecEngine(TargetConsumer &targetConsumer,ExecEngineOpts & opts):
+    opts(opts),
     lexer(std::make_unique<Lexer>()),
     astFactory(std::make_unique<ASTFactory>(*lexer)),
     exec(std::make_unique<eval::Eval>(targetConsumer,this)){
        
     };
 
-    void Parser::parseAndEvaluate(std::istream * in){
+    void ExecEngine::parseAndEvaluate(std::istream * in){
         std::vector<Tok> tokenVector;
 
         lexer->setInputStream(in);
@@ -19,14 +20,14 @@ namespace autom {
 
         ASTNode *node;
         while((node = astFactory->nextStmt()) != nullptr){
-            exec->evalStmt(node);
+            if(!exec->evalStmt(node)){
+                break;
+            };
         };
-      
- 
         
     };
 
-    Parser::~Parser(){
+    ExecEngine::~ExecEngine(){
         lexer->finish();
     };
 

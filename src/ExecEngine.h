@@ -1,8 +1,8 @@
 #include <memory>
 
-#include "parser/Lexer.h"
-#include "parser/ASTFactory.h"
-#include "parser/Execution.h"
+#include "engine/Lexer.h"
+#include "engine/ASTFactory.h"
+#include "engine/Execution.h"
 
 #ifndef AUTOM_PARSER_H
 #define  AUTOM_PARSER_H
@@ -13,7 +13,13 @@ namespace autom {
         class Eval;
     };
 
-    class Parser final {
+    struct ExecEngineOpts {
+        std::vector<StrRef> interfaceSearchPaths;
+    };
+
+    class ExecEngine final {
+
+        ExecEngineOpts & opts;
 
         std::unique_ptr<Lexer> lexer;
 
@@ -22,9 +28,9 @@ namespace autom {
         std::unique_ptr<eval::Eval> exec;
 
     public:
-        Parser(TargetConsumer &targetConsumer);
+        ExecEngine(TargetConsumer &targetConsumer,ExecEngineOpts & opts);
         void parseAndEvaluate(std::istream * in);
-        ~Parser();
+        ~ExecEngine();
     };
 };
 

@@ -1,13 +1,17 @@
 #include "../Target.h"
 #include "AST.h"
 #include "../ADT.h"
+#include "Autom.h"
 
-#ifndef AUTOM_PARSER_EXECUTION_H
-#define  AUTOM_PARSER_EXECUTION_H
+#include <filesystem>
+
+
+#ifndef AUTOM_ENGINE_EXECUTION_H
+#define  AUTOM_ENGINE_EXECUTION_H
 
 namespace autom {
 
-    class Parser;
+    class ExecEngine;
 
     namespace eval {
 
@@ -15,11 +19,15 @@ namespace autom {
 
         class Eval {
 
-            Parser *parser;
+            std::vector<Extension *> loadedExts;
+
+            ExecEngine *engine;
 
             TargetConsumer &targetConsumer;
 
             std::vector<ASTFuncDecl *> funcs;
+
+            Object * tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code);
 
             struct VarStore {
                 std::unordered_map<std::string,Object *> body;
@@ -35,9 +43,11 @@ namespace autom {
 
             Object *evalExpr(ASTExpr *expr);
 
+            Extension *loadExtension(std::filesystem::path path);
+            void closeExtensions();
         public:
             bool evalStmt(ASTNode *node);
-            Eval(TargetConsumer &targetConsumer,Parser *parser);
+            Eval(TargetConsumer &targetConsumer,ExecEngine *engine);
 
         };
 

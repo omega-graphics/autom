@@ -1,7 +1,7 @@
 #include "AST.h"
 
-#ifndef AUTOM_PARSER_ASTFACTORY_H
-#define  AUTOM_PARSER_ASTFACTORY_H
+#ifndef AUTOM_ENGINE_ASTFACTORY_H
+#define  AUTOM_ENGINE_ASTFACTORY_H
 
 namespace autom {
 
@@ -21,10 +21,18 @@ namespace autom {
         Tok & nextToken();
 
         Tok & aheadToken();
+
+        void incToNextToken();
         
         ASTNode *buildDecl(Tok & first_tok,ASTScope *scope);
 
-        ASTNode *buildExpr(Tok & first_tok,ASTScope *scope);
+        ASTExpr *buildExpr(Tok & first_tok,ASTScope *scope);
+        /// @name Expression Builder Funcs
+        /// @{
+        ASTExpr *evalObjExpr(Tok &first_tok,ASTScope *scope);
+        ASTExpr *evalArgsExpr(Tok &first_tok,ASTScope *scope);
+        ASTExpr *evalOpExpr(Tok &first_tok,ASTExpr *lhs,ASTScope *scope);
+        /// @}
     public:
         void setTokenVector(std::vector<Tok> *tokStream);
         ASTNode * nextStmt();

@@ -1,5 +1,5 @@
-#ifndef AUTOM_PARSER_AST_DEF
-#define  AUTOM_PARSER_AST_DEF
+#ifndef AUTOM_ENGINE_AST_DEF
+#define  AUTOM_ENGINE_AST_DEF
 
 
 namespace autom {
@@ -22,5 +22,6 @@ namespace autom {
 #define EXPR_MEMBER (0x004 | EXPR)
 #define EXPR_LITERAL (0x005 | EXPR)
 #define EXPR_ARRAY (0x006 | EXPR)
+#define EXPR_ASSIGN (0x007 | EXPR)
 
 #endif

@@ -157,27 +157,37 @@ function(add_app_bundle)
 
     message("EMBEDDED_FRAMEWORKS:${_ARG_EMBEDDED_FRAMEWORKS}")
 
-    add_executable(${_ARG_NAME} MACOSX_BUNDLE ${_ARG_SOURCES} ${_ARG_RESOURCES})
-    set_target_properties(${_ARG_NAME}
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/MacOS")
+    file(COPY ${_ARG_INFO_PLIST} DESTINATION ${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents)
+
+    add_executable("${_ARG_NAME}__exec" ${_ARG_SOURCES})
+    set_target_properties("${_ARG_NAME}__exec"
     PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST ${_ARG_INFO_PLIST}
-    RESOURCE "${_ARG_RESOURCES}"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Apps")
+    RUNTIME_OUTPUT_NAME ${_ARG_NAME}
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/MacOS")
 
-    add_custom_target("${_NAME}__prep")
+    add_custom_target(${_NAME})
 
-    add_custom_target("${_NAME}__res" DEPENDS ${_ARG_RESOURCES})
-    add_dependencies(${_NAME} "${_NAME}__res")
+    set(_RES_FINAL)
 
     foreach(r ${_ARG_RESOURCES})
-        set_target_properties(${_NAME} PROPERTIES RESOURCE ${_ARG_RESOURCES})
+        get_filename_component(RES_NAME ${r} NAME)
+        list(APPEND _RES_FINAL ${RES_NAME})
+        add_custom_command(
+            OUTPUT "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/${RES_NAME}"
+            COMMAND ${PYEXEC} "${CMAKE_SOURCE_DIR}/gn-utils/__copy.py" --src ${r} --dest "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/${RES_NAME}"  
+            DEPENDS ${f})
     endforeach()
+
+    add_custom_target("${_NAME}__res" DEPENDS ${_RES_FINAL})
+    add_dependencies(${_NAME} "${_NAME}__res")
 
     if(XCODE)
         set_target_properties(${_NAME} PROPERTIES XCODE_EMBED_FRAMEWORKS ${_ARG_EMBEDDED_FRAMEWORKS})
     else()
 
         set(__outputted_frameworks)
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/Frameworks")
         foreach(f ${_ARG_EMBEDDED_FRAMEWORKS})
             set(__outputted_frameworks ${__outputted_frameworks} "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/Frameworks/${f}.framework")
             add_dependencies(${_ARG_NAME} ${f})

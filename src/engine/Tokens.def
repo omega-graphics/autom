@@ -30,6 +30,7 @@ typedef int TokType;
 #define TOK_RBRACE 0x0A
 #define TOK_DOT 0x0B
 #define TOK_STRLITERAL 0x0C
+#define TOK_REGEXLITERAL 0x0D
 #define TOK_EOF 0xFF
 
 /// Keywords

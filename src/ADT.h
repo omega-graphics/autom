@@ -174,7 +174,69 @@ namespace autom {
 
         };
 
+        operator std::string(){
+            return {begin(),end()};
+        }; 
+
     };
+
+    /// @brief A constant reference to an Array (std::vector or std::array)
+    template<class T>
+    class ArrayRef {
+        T *_data;
+    public:
+        typedef unsigned size_type;
+    private:
+        const size_type _size;
+    public:
+        typedef const T *iterator;
+        typedef const T &reference;
+
+        CONSTEXPR_CXX17 const size_type & size() const NOEXCEPT{
+            return _size;
+        };
+        CONSTEXPR_CXX17 const T *data() const NOEXCEPT{
+            return _data;
+        };
+
+        iterator begin() const{
+            return _data;
+        };
+        iterator end() const{
+            return _data + _size;
+        };
+
+        reference front() const {
+            return begin()[0];
+        };
+
+        reference back() const {
+            return end()[-1];
+        };
+
+        template<class _It>
+        ArrayRef(_It begin,_It end):_data(begin),_size(end - begin){
+
+        };
+
+        ArrayRef(T *data,size_type len):_data(data),_size(len){
+
+        };
+
+        ArrayRef(std::vector<T> & str):_data(str.data()),_size(str.size()){
+
+        };
+
+        reference operator[](size_type i) const{
+            return begin()[i];
+        };
+
+        operator std::vector<T>(){
+            return {begin(),end()};
+        }; 
+
+    };
+
     template<class T,class ..._Args>
     auto unpackToArray(_Args && ...args) 
     -> std::array<T,sizeof...(args)> {

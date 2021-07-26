@@ -3,8 +3,8 @@
 #include <vector>
 
 
-#ifndef AUTOM_PARSER_LEXER_H
-#define  AUTOM_PARSER_LEXER_H
+#ifndef AUTOM_ENGINE_LEXER_H
+#define  AUTOM_ENGINE_LEXER_H
 
 namespace autom {
     /**

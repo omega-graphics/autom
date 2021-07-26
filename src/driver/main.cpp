@@ -1,6 +1,6 @@
-#include "../Parser.h"
-#include "../ADT.h"
-#include "../Gen.h"
+#include "ExecEngine.h"
+#include "ADT.h"
+#include "Gen.h"
 
 #include <iostream>
 #include <filesystem>
@@ -55,7 +55,8 @@ int main(int argc,char * argv[]){
 
     
     auto ninja = autom::TargetNinja();
-    autom::Parser parser(*ninja);
+    autom::ExecEngineOpts opts;
+    autom::ExecEngine eng(*ninja,opts);
 
     auto entry_exists = std::filesystem::exists("./AUTOM.build");
     if(!entry_exists){
@@ -64,7 +65,7 @@ int main(int argc,char * argv[]){
 
     std::ifstream in("./AUTOM.build");
 
-    parser.parseAndEvaluate(&in);
+    eng.parseAndEvaluate(&in);
 
     return 0;
 };

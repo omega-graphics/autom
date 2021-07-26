@@ -1,5 +1,6 @@
 #include "Lexer.h"
 #include "../ADT.h"
+#include "engine/Tokens.def"
 #include <cctype>
 
 namespace autom {
@@ -19,8 +20,13 @@ namespace autom {
         char *bufSt = chBuf,*bufEnd = bufSt;
 
         #define PUSH_TOKEN(type)\
+            auto t = type;\
             auto bufLen = bufEnd - bufSt;\
-            tokenVector->push_back(Tok {std::string(chBuf,bufLen),type});\
+            auto str = autom::StrRef(chBuf,bufLen);\
+            if(isKeyword(str)){\
+                 t = TOK_KW;    \
+            };\
+            tokenVector->push_back(Tok {str,t});\
             bufEnd = bufSt;
 
         #define PUSH_CHAR(c)\
@@ -41,6 +47,11 @@ namespace autom {
         char c;
         while((c = getChar()) != -1){
             switch(c){
+                case '=' : {
+                    PUSH_CHAR(c)
+                    PUSH_TOKEN(TOK_EQUALS)
+                    break;
+                }
                 case ':' : {
                     PUSH_CHAR(c)
                     PUSH_TOKEN(TOK_COLON)
@@ -84,6 +95,31 @@ namespace autom {
                 case '.' : {
                     PUSH_CHAR(c)
                     PUSH_TOKEN(TOK_DOT)
+                    break;
+                }
+                case '"' : {
+                    PUSH_CHAR(c)
+                    while((c = getChar()) != '"') {
+                        PUSH_CHAR(c)
+                    }
+                    PUSH_CHAR(c)
+                    PUSH_TOKEN(TOK_STRLITERAL)
+                    break;
+                }
+                case '/' : {
+                    char prevChar;
+                    while(true) {
+                        prevChar = c;
+                        c = getChar();
+                        
+                        if(prevChar != '\\' && c == '/'){
+                            break;
+                        }
+
+                        PUSH_CHAR(c)
+                    }
+                    // Last Char in Regex
+                    PUSH_TOKEN(TOK_REGEXLITERAL)
                     break;
                 }
                 default: {
