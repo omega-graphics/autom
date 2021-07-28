@@ -210,7 +210,7 @@ toolchain("llvm") {
         
         if(is_linux || is_mac || is_ios){
             depsformat = "gcc"
-            command = "${xcprefix} $cc -MD -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}}  -c {{source}}  -o {{output}}"
+            command = "${xcprefix} $cc -Wall -MD -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}}  -c {{source}}  -o {{output}}"
         }
         else {
             depsformat = "msvc"
@@ -225,7 +225,7 @@ toolchain("llvm") {
         depfile = "{{output}}.d"
        
         if(is_linux || is_mac || is_ios){
-            command = "${xcprefix} $cxx -MD -MF $depfile -std=c++17 ${fPIC} {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
+            command = "${xcprefix} $cxx -Wall -MD -MF $depfile -std=c++17 ${fPIC} {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
         }
         else {
             command = "clang-cl ${except_flag_cl} /clang:-MD /clang:-MF /clang:$depfile /std:c++17 {{defines}} {{include_dirs}} $debug_flag {{cflags_c}} {{cflags_cc}} -c {{source}} -o {{output}}"
@@ -262,7 +262,7 @@ toolchain("llvm") {
             depfile = "{{output}}.d"
             depsformat = "gcc"
             description = "Compiling OBJC source {{output}}"
-            command = "${xcprefix} $cc -MD -MF $depfile  {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_objc}}  -c {{source}}  -o {{output}}"
+            command = "${xcprefix} $cc -MD -MF $depfile -Wall  {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_objc}}  -c {{source}}  -o {{output}}"
             outputs = [
                 "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
             ]
@@ -271,7 +271,7 @@ toolchain("llvm") {
             depfile = "{{output}}.d"
             depsformat = "gcc"
             description = "Compiling OBJCXX source {{output}}"
-            command = "${xcprefix} $cxx -MD -MF $depfile -std=c++17 {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_cc}} {{cflags_objc}} {{cflags_objcc}} -c {{source}} -o {{output}}"
+            command = "${xcprefix} $cxx -MD -MF $depfile -Wall -std=c++17 {{defines}} {{include_dirs}} $debug_flag ${arch} {{cflags_c}} {{cflags_cc}} {{cflags_objc}} {{cflags_objcc}} -c {{source}} -o {{output}}"
             outputs = [
                 "{{source_out_dir}}/{{source_name_part}}.${obj_ext}"
             ]
@@ -325,7 +325,7 @@ toolchain("llvm") {
     tool("solink") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
         if(is_mac || is_ios){
-            command = "$cxx -o $outfile -dynamiclib {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{swiftmodules}} {{libs}}"  
+            command = "$cxx -Wall -o $outfile -dynamiclib {{ldflags}} {{inputs}} {{solibs}} {{frameworks}} {{swiftmodules}} {{libs}}"  
         }
         else if(is_linux){
             command = "$cxx -fuse-ld=lld -o $outfile -Wl,-shared {{ldflags}} {{inputs}} {{solibs}} {{libs}}" 
@@ -348,7 +348,7 @@ toolchain("llvm") {
     tool("link") {
         outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
         if(is_mac || is_ios){
-            command = "$cxx -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{libs}} {{frameworks}} " 
+            command = "$cxx -Wall -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{libs}} {{frameworks}} " 
         }
         else if(is_linux){
             command = "$cxx -o $outfile -Wl, {{ldflags}} {{inputs}} {{solibs}} {{libs}} "

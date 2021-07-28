@@ -2,15 +2,24 @@
 
 namespace autom {
 
-    class GenNinja : public TargetConsumer {
+    class GenNinja : public Gen {
 
         void consumeTarget(Target *target) override{
+            
+        };
+        bool supportsCustomToolchainRules() override {
+            return true;
+        };
+        void genToolchainRules() override {
+
+        };
+        void finish() override {
 
         };
         
     };
 
-    TargetConsumer *TargetNinja(){
+    Gen *TargetNinja(){
         return new GenNinja();
     };
 };

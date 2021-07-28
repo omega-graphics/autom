@@ -1,11 +1,11 @@
 #include "ExecEngine.h"
 
 namespace autom {
-    ExecEngine::ExecEngine(TargetConsumer &targetConsumer,ExecEngineOpts & opts):
+    ExecEngine::ExecEngine(ExecEngineOpts & opts):
     opts(opts),
     lexer(std::make_unique<Lexer>()),
     astFactory(std::make_unique<ASTFactory>(*lexer)),
-    exec(std::make_unique<eval::Eval>(targetConsumer,this)){
+    exec(std::make_unique<eval::Eval>(opts.gen,this)){
        
     };
 
@@ -25,6 +25,21 @@ namespace autom {
             };
         };
         
+    };
+
+    bool ExecEngine::checkDependencyTree(){
+        return true;
+    };
+
+    void ExecEngine::generate(){
+        if(opts.gen.supportsCustomToolchainRules()){
+            opts.gen.genToolchainRules();
+        };
+        while(!exec->targets.empty()){
+            opts.gen.consumeTarget(exec->targets.front());
+            exec->targets.pop();
+        };
+        opts.gen.finish();
     };
 
     ExecEngine::~ExecEngine(){

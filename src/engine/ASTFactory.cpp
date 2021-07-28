@@ -3,7 +3,9 @@
 #include "engine/AST.def"
 #include "engine/Tokens.def"
 
+#include "ADT.h"
 
+#include <iostream>
 
 namespace autom {
 
@@ -16,11 +18,15 @@ namespace autom {
     };
 
     Tok & ASTFactory::nextToken(){
-        return tokStream->at(privTokIndex++);
+        return tokStream->at(++privTokIndex);
     };
 
     Tok & ASTFactory::aheadToken(){
          return tokStream->at(privTokIndex + 1);
+    };
+
+    Tok & ASTFactory::currentToken(){
+         return tokStream->at(privTokIndex);
     };
 
     void ASTFactory::incToNextToken(){
@@ -38,6 +44,7 @@ namespace autom {
             }
             else {
                 /// Error!
+                std::cout << "Expected A STR Literal" << std::endl;
                 return nullptr;
             }
             node = decl;
@@ -48,6 +55,7 @@ namespace autom {
             first_tok = nextToken();
             if(first_tok.type != TOK_ID){
                 /// Error!
+                std::cout << "Expected An ID" << std::endl;
                 return nullptr;
             }
             decl->id = first_tok.str;
@@ -74,12 +82,14 @@ namespace autom {
         switch (first_tok.type) {
             case TOK_ID : {
                 auto _expr = new ASTExpr();
+                _expr->type = EXPR_ID;
                 _expr->id = first_tok.str;
                 expr = _expr;
                 break;
             }
             case TOK_STRLITERAL : {
                 auto _expr = new ASTLiteral();
+                _expr->type = EXPR_LITERAL;
                 _expr->str = first_tok.str.substr(1,first_tok.str.size()-2);
                 expr = _expr;
                 break;
@@ -99,18 +109,26 @@ namespace autom {
             return nullptr;
         };
         ASTExpr *expr = obj;
+        first_tok = aheadToken();
+        // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
         switch (first_tok.type) {
             case TOK_LPAREN : {
+                incToNextToken();
                 ASTExpr *_expr= new ASTExpr();
                 _expr->type = EXPR_IVKE;
                 _expr->lhs = obj;
-                
+
                 first_tok = nextToken();
+
+                 // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
+                
                 while(first_tok.type != TOK_RPAREN){
-                    auto & paramId = first_tok.str;
+                    auto paramId = first_tok.str;
+                     // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
                     first_tok = nextToken();
                     if(first_tok.type != TOK_COLON){
                         /// Expected Colon
+                        std::cout << "Expected COLON" << std::endl;
                         return nullptr;
                     };
                     first_tok = nextToken();
@@ -123,6 +141,9 @@ namespace autom {
                     if(first_tok.type != TOK_COMMA && aheadToken().type == TOK_RPAREN){
                         incToNextToken();
                         break;
+                    }
+                    else if(first_tok.type == TOK_COMMA){
+                        first_tok = nextToken();
                     };
                 };
                 expr = _expr;
@@ -153,6 +174,7 @@ namespace autom {
                     return nullptr;
                 };
                 _expr->rhs = rhs;
+                expr = _expr;
                 break;
             }
             default : {
@@ -184,7 +206,16 @@ namespace autom {
     };
 
     ASTNode *ASTFactory::nextStmt(){
-       Tok &tok = nextToken();
+        std::cout << "Next Stmt" << std::endl;
+        Tok tok;
+
+        if(privTokIndex == 0){
+            tok = tokStream->at(0);
+        }
+        else {
+            tok = nextToken();
+        }
+
        if(tok.type == TOK_EOF) {
           return nullptr;
        }

@@ -35,6 +35,7 @@ typedef int TokType;
 
 /// Keywords
 #define KW_IMPORT KW("import")
+#define KW_LOAD KW("load")
 #define KW_IF KW("if")
 #define KW_ELIF KW("elif")
 #define KW_ELSE KW("else")

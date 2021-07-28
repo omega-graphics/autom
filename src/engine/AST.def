@@ -9,19 +9,20 @@ namespace autom {
 
 #define DECL (0x100)
 
-#define FUNC_DECL (0x001 | DECL)
-#define VAR_DECL (0x002 | DECL)
-#define COND_DECL (0x003 | DECL)
+#define FUNC_DECL (0x001 | DECL) // func myFunc(params...) {...}
+#define VAR_DECL (0x002 | DECL) // var myVar = expr 
+#define COND_DECL (0x003 | DECL) // if(cond){...} [elif(cond1){...}]+ [else(cond2){...}]
 #define IMPORT_DECL (0x004 | DECL)
 
 #define EXPR (0x200)
 
-#define EXPR_ID (0x001 | EXPR)
-#define EXPR_INDEX (0x002 | EXPR)
-#define EXPR_IVKE (0x003 | EXPR)
-#define EXPR_MEMBER (0x004 | EXPR)
-#define EXPR_LITERAL (0x005 | EXPR)
-#define EXPR_ARRAY (0x006 | EXPR)
-#define EXPR_ASSIGN (0x007 | EXPR)
+#define EXPR_ID (0x001 | EXPR) // id
+#define EXPR_INDEX (0x002 | EXPR) // id[0]
+#define EXPR_IVKE (0x003 | EXPR) // Executable() or fs::copy()
+#define EXPR_MEMBER (0x004 | EXPR) // foo.bar
+#define EXPR_LITERAL (0x005 | EXPR) // "foo"
+#define EXPR_ARRAY (0x006 | EXPR) // [id,id2,"foo bar"]
+#define EXPR_ASSIGN (0x007 | EXPR) // id = 1
+#define EXPR_NAMESPACE_ACCESS (0x008 | EXPR) // id::id2
 
 #endif

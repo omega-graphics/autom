@@ -1,8 +1,11 @@
 
+import "fs"
 
-Project(
-    name:"AUTOM",
-    version:"0.8")
+print(msg:"Hello AUTOM!")
+
+Project(name:"AUTOM",version:"0.8")
+
+
 
 
 

@@ -4,7 +4,7 @@
 
 typedef int AutomBuiltinFunc;
 
-
+#define BUILTIN_PRINT  "print"
 #define BUILTIN_PROJECT  "Project"
 #define BUILTIN_EXECUTABLE "Executable"
 #define BUILTIN_ARCHIVE "Archive"

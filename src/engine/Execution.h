@@ -4,6 +4,7 @@
 #include "Autom.h"
 
 #include <filesystem>
+#include <queue>
 
 
 #ifndef AUTOM_ENGINE_EXECUTION_H
@@ -12,18 +13,21 @@
 namespace autom {
 
     class ExecEngine;
+    class Gen;
 
     namespace eval {
 
         struct Object;
 
         class Eval {
+            friend class ::autom::ExecEngine;
+            std::queue<Target *> targets;
 
             std::vector<Extension *> loadedExts;
 
             ExecEngine *engine;
 
-            TargetConsumer &targetConsumer;
+            Gen &gen;
 
             std::vector<ASTFuncDecl *> funcs;
 
@@ -41,13 +45,13 @@ namespace autom {
             Object *invokeFunc(StrRef name);
             Object *evalBlock(ASTBlock *block);
 
-            Object *evalExpr(ASTExpr *expr);
+            Object *evalExpr(ASTExpr *expr,bool *failed);
 
             Extension *loadExtension(std::filesystem::path path);
             void closeExtensions();
         public:
             bool evalStmt(ASTNode *node);
-            Eval(TargetConsumer &targetConsumer,ExecEngine *engine);
+            Eval(Gen &gen,ExecEngine *engine);
 
         };
 

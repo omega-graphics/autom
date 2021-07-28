@@ -17,13 +17,13 @@ namespace autom {
         
     };
 
-    TargetConsumer *TargetNinja();
+    Gen *TargetNinja();
 
-    TargetConsumer *TargetCMake();
+    Gen *TargetCMake();
 
-    TargetConsumer *TargetVisualStudio();
+    Gen *TargetVisualStudio();
 
-    TargetConsumer *TargetXcode();
+    Gen *TargetXcode();
 
 };
 

@@ -22,6 +22,8 @@ namespace autom {
 
         Tok & aheadToken();
 
+        Tok & currentToken();
+
         void incToNextToken();
         
         ASTNode *buildDecl(Tok & first_tok,ASTScope *scope);

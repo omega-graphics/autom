@@ -3,6 +3,8 @@
 #include "engine/Lexer.h"
 #include "engine/ASTFactory.h"
 #include "engine/Execution.h"
+#include "Gen.h"
+#include "TargetDumper.h"
 
 #ifndef AUTOM_PARSER_H
 #define  AUTOM_PARSER_H
@@ -14,6 +16,7 @@ namespace autom {
     };
 
     struct ExecEngineOpts {
+        Gen &gen;
         std::vector<StrRef> interfaceSearchPaths;
     };
 
@@ -28,8 +31,10 @@ namespace autom {
         std::unique_ptr<eval::Eval> exec;
 
     public:
-        ExecEngine(TargetConsumer &targetConsumer,ExecEngineOpts & opts);
+        ExecEngine(ExecEngineOpts & opts);
         void parseAndEvaluate(std::istream * in);
+        bool checkDependencyTree();
+        void generate();
         ~ExecEngine();
     };
 };

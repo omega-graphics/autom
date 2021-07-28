@@ -55,8 +55,8 @@ int main(int argc,char * argv[]){
 
     
     auto ninja = autom::TargetNinja();
-    autom::ExecEngineOpts opts;
-    autom::ExecEngine eng(*ninja,opts);
+    autom::ExecEngineOpts opts {*ninja};
+    autom::ExecEngine eng(opts);
 
     auto entry_exists = std::filesystem::exists("./AUTOM.build");
     if(!entry_exists){
@@ -66,6 +66,9 @@ int main(int argc,char * argv[]){
     std::ifstream in("./AUTOM.build");
 
     eng.parseAndEvaluate(&in);
+    if(eng.checkDependencyTree()){
+        eng.generate();
+    };
 
     return 0;
 };
