@@ -16,6 +16,8 @@ cmake
 ninja*
 gn-src
 *.ninja
+.idea
+cmake-build*
 
 # Compiled Object files
 *.slo

@@ -244,7 +244,12 @@ namespace autom {
                 }
             };
             return nullptr;
-        };
+        }
+
+        Object * Eval::evalBlock(ASTBlock *block) {
+            
+        }
+
 
         bool Eval::evalStmt(ASTNode *node){
             std::cout << "Eval Node" << std::endl;
@@ -338,15 +343,18 @@ namespace autom {
         return ((Object::ArrayData *)object->data)->data;
     };
 
-    Extension * eval::Eval::loadExtension(std::filesystem::path path){
+    Extension * eval::Eval::loadExtension(const std::filesystem::path& path){
 
         #ifdef _DLFCN_H_
         auto data = dlopen(path.c_str(),RTLD_NOW);
         auto cb =  (AutomExtEntryFunc)dlsym(data,STR_WRAP(nativeExtMain));
         auto ext = cb();
         ext->libData = data;
-        #else 
-
+        #else
+        auto data = LoadLibrary((LPCSTR)path.c_str());
+        auto cb = (AutomExtEntryFunc) GetProcAddress(data,STR_WRAP(nativeExtMain));
+        auto ext = cb();
+        ext->libData = data;
         #endif
         loadedExts.push_back(ext);
         return ext;
@@ -354,7 +362,11 @@ namespace autom {
 
     void eval::Eval::closeExtensions(){
         for(auto ext : loadedExts){
+        #ifdef _DLFCN_H_
             dlclose(ext->libData);
+        #else
+            FreeLibrary((HMODULE)ext->libData);
+        #endif
             delete ext;
         };
     };

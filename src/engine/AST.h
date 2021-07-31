@@ -50,7 +50,7 @@ namespace autom {
         bool isBoolean();
     };
 
-    struct ASTBlock {
+    struct ASTBlock : public ASTNode {
          std::vector<ASTNode *> body;
     };
 

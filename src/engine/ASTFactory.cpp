@@ -9,7 +9,7 @@
 
 namespace autom {
 
-    ASTFactory::ASTFactory(Lexer &lexer):lexer(lexer){
+    ASTFactory::ASTFactory(Lexer &lexer):lexer(lexer),privTokIndex(0){
 
     };
 

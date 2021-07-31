@@ -35,6 +35,7 @@ is_mac = host_os == "mac" && current_os == "mac" && target_os == "mac"
 is_windows = host_os == "win" && current_os == "win" && target_os == "win"
 
 if(is_windows){
+  print("Win")
   if(use_llvm){
     set_default_toolchain("./toolchain:llvm")
   }
@@ -43,9 +44,11 @@ if(is_windows){
   }
 }
 else if(is_mac) {
+   print("macOS")
   set_default_toolchain("./toolchain:llvm")
 }
 else {
+   print("Linux")
   if(use_llvm){
     set_default_toolchain("./toolchain:llvm")
   }

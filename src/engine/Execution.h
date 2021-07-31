@@ -47,7 +47,7 @@ namespace autom {
 
             Object *evalExpr(ASTExpr *expr,bool *failed);
 
-            Extension *loadExtension(std::filesystem::path path);
+            Extension *loadExtension(const std::filesystem::path& path);
             void closeExtensions();
         public:
             bool evalStmt(ASTNode *node);

@@ -99,63 +99,67 @@ if(is_windows){
     }
 }
 
-toolchain("gcc"){
-    if(debug){
-        debug_flag = "-gdwarf"
-    }
-    tool("cc"){
-        depfile = "{{output}}.d"
-        depsformat = "gcc"
-        command = "gcc -MMD -MP -MF $depfile ${fPIC} {{defines}} {{include_dirs}} $debug_flag -fPIC {{cflags_c}} -o {{output}}  -c {{source}} "
-        description = "Compiling C source {{output}}"
-        outputs = [
-            "{{source_out_dir}}/{{source_name_part}}.o"
-        ]
-    }
-    tool("cxx"){
-        depfile = "{{output}}.d"
-        depsformat = "gcc"
-        command = "g++ -MMD -MP -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag -fPIC {{cflags_c}} {{cflags_cc}} -std=c++17 -o {{output}} -c {{source}}"
-        description = "Compiling CXX source {{output}}"
-        outputs = [
-            "{{source_out_dir}}/{{source_name_part}}.o"
-        ]
-    }
-    tool("link"){
-        outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
-        outputs = [outfile]
-        lib_switch = "-l"
-        lib_dir_switch = "-L"
-        command = "g++ ${fPIC} $debug_flag -pie -o $outfile {{ldflags}} {{libs}} {{inputs}}"
-        default_output_extension = ""
-        description = "Linking executable $outfile"
-    }
-    tool("solink"){
-        outputs = ["{{output_dir}}/{{target_output_name}}.so"]
-        outfile = "{{output_dir}}/{{target_output_name}}.so"
-        command = "g++ $debug_flag -fPIC -dynamic  -o $outfile {{ldflags}} {{libs}} {{inputs}} "
-        lib_switch = "-l"
-        lib_dir_switch = "-L"
-        description = "Linking shared library $outfile"
-    }
-    tool("alink"){
-        command = "ar -r {{arflags}} {{output}} {{inputs}}"
+else {
+
+    toolchain("gcc"){
+        if(debug){
+            debug_flag = "-gdwarf"
+        }
+        tool("cc"){
+            depfile = "{{output}}.d"
+            depsformat = "gcc"
+            command = "gcc -MMD -MP -MF $depfile ${fPIC} {{defines}} {{include_dirs}} $debug_flag -fPIC {{cflags_c}} -o {{output}}  -c {{source}} "
+            description = "Compiling C source {{output}}"
             outputs = [
-        "{{output_dir}}/{{target_output_name}}{{output_extension}}"
-        ]
-        description = "Linking static archive {{target_output_name}}{{output_extension}}"
-        default_output_extension = ".a"
-    }
-    tool("copy"){  
-        python_copy = rebase_path("../__copy.py")
-        command = "$python_path $python_copy --src {{source}} --dest {{output}}"
-        description = "Copying {{source}} to {{output}}"
+                "{{source_out_dir}}/{{source_name_part}}.o"
+            ]
+        }
+        tool("cxx"){
+            depfile = "{{output}}.d"
+            depsformat = "gcc"
+            command = "g++ -MMD -MP -MF $depfile ${fPIC}  {{defines}} {{include_dirs}} $debug_flag -fPIC {{cflags_c}} {{cflags_cc}} -std=c++17 -o {{output}} -c {{source}}"
+            description = "Compiling CXX source {{output}}"
+            outputs = [
+                "{{source_out_dir}}/{{source_name_part}}.o"
+            ]
+        }
+        tool("link"){
+            outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+            outputs = [outfile]
+            lib_switch = "-l"
+            lib_dir_switch = "-L"
+            command = "g++ ${fPIC} $debug_flag -pie -o $outfile {{ldflags}} {{libs}} {{inputs}}"
+            default_output_extension = ""
+            description = "Linking executable $outfile"
+        }
+        tool("solink"){
+            outputs = ["{{output_dir}}/{{target_output_name}}.so"]
+            outfile = "{{output_dir}}/{{target_output_name}}.so"
+            command = "g++ $debug_flag -fPIC -dynamic  -o $outfile {{ldflags}} {{libs}} {{inputs}} "
+            lib_switch = "-l"
+            lib_dir_switch = "-L"
+            description = "Linking shared library $outfile"
+        }
+        tool("alink"){
+            command = "ar -r {{arflags}} {{output}} {{inputs}}"
+                outputs = [
+            "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+            ]
+            description = "Linking static archive {{target_output_name}}{{output_extension}}"
+            default_output_extension = ".a"
+        }
+        tool("copy"){  
+            python_copy = rebase_path("../__copy.py")
+            command = "$python_path $python_copy --src {{source}} --dest {{output}}"
+            description = "Copying {{source}} to {{output}}"
+        }
+
+        tool("stamp"){
+            command = "touch {{output}}"
+            description = "Stamping {{output}}"
+        }
     }
 
-    tool("stamp"){
-        command = "touch {{output}}"
-        description = "Stamping {{output}}"
-    }
 }
 
 
