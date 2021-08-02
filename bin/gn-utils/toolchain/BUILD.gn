@@ -57,7 +57,7 @@ if(is_windows){
             outputs = [outfile]
             lib_switch = ""
             lib_dir_switch = "/LIBPATH "
-            command = "link $link_debug_flag /nologo /OUT:$outfile {{ldflags}} {{inputs}} {{libs}}"
+            command = "link $link_debug_flag /nologo /SUBSYSTEM:CONSOLE /OUT:$outfile {{ldflags}} {{inputs}} {{libs}}"
             default_output_extension = ".exe"
             description = "Linking executable $outfile"
         }
@@ -362,7 +362,7 @@ toolchain("llvm") {
             default_output_extension = ".exe"
             lib_dir_switch = "/LIBPATH"
             lib_switch =  ""
-            command = "clang-cl $debug_flag  /MT /Fe$outfile -Wl {{ldflags}} {{solibs}} {{inputs}} {{libs}}"
+            command = "clang-cl $debug_flag  /MT /Fe$outfile  {{solibs}} {{inputs}} {{libs}} /link /SUBSYSTEM:CONSOLE {{ldflags}}"
         }
         outputs = [outfile]
         description = "Linking executable $outfile"

@@ -18,6 +18,9 @@ gn-src
 *.ninja
 .idea
 cmake-build*
+tm/pyyaml
+*.tmbundle
+*.tmLanguage
 
 # Compiled Object files
 *.slo

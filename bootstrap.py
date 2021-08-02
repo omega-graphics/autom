@@ -1,6 +1,6 @@
 import io
-import os,shutil
-import sys,zipfile,tarfile
+import os, shutil
+import sys, zipfile, tarfile
 from urllib.request import urlretrieve
 import enum
 from glob import glob
@@ -10,17 +10,20 @@ is_win = sys.platform == "win32"
 is_mac = sys.platform == "darwin"
 is_linux = sys.platform == "linux"
 
+
 def run_python3(script:str):
     if sys.platform == "win32":
         os.system(f"py -3 {script}")
     else:
         os.system(f"python3 {script}")
 
-def download(name:str,url:str,dest:str):
-    print(f"Downloading {name} from: {url}")
-    d = urlretrieve(url,dest)
 
-def git(name:str,url:str,dest:str):
+def download(name: str, url: str, dest: str):
+    print(f"Downloading {name} from: {url}")
+    d = urlretrieve(url, dest)
+
+
+def git(name: str, url: str, dest: str):
     print(f"Cloning {name} from: {url}")
     os.system(f"git clone {url} {dest}")
 
@@ -42,13 +45,14 @@ def git(name:str,url:str,dest:str):
 #         z.extractall("./cmake")
 #         z.close()
 
+
 if shutil.which("ninja") is None:
-    url:str
+    url: str
     if is_win:
         url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-win.zip"
     else:
         url = "https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-mac.zip"
-    download("Ninja",url,"./ninja.zip")
+    download("Ninja", url, "./ninja.zip")
     z = zipfile.ZipFile("./ninja.zip")
     z.extractall("./ninja-build")
     z.close()
@@ -62,8 +66,10 @@ if shutil.which("ninja") is None:
 #         os.chdir("./gn-src")
 #         os.system("\"./ninja-build/ninja\" -C ./out")
     
-git("rapidjson","https://github.com/Tencent/rapidjson.git","./deps/rapidjson")    
-#git("libarchive","https://github.com/libarchive/libarchive.git","./deps/libarchive")    
+git("rapidjson", "https://github.com/Tencent/rapidjson.git","./deps/rapidjson")
+git("pyyaml", "https://github.com/yaml/pyyaml.git", "./tm/pyyaml")
+
+
 
 class NinjaBuildRuleTy(enum.Enum):
     COMPILE = 0,
@@ -71,11 +77,13 @@ class NinjaBuildRuleTy(enum.Enum):
     LINK_STATIC = 2,
     LINK_EXE = 3,
 
-class NinjaBuildRule(object):
-    ty:NinjaBuildRuleTy
-    src:str
-    output:str
+
+class NinjaBuildRule:
+    ty: NinjaBuildRuleTy
+    src: str
+    output: str
     # deps:"list[str]"
+
     def __init__(self,ty:NinjaBuildRuleTy,src: str,output: str):
         self.ty = ty
         self.src = src
@@ -84,7 +92,7 @@ class NinjaBuildRule(object):
         return
 
 
-def make_ninja_build(file:str):
+def make_ninja_build(file: str):
 
     def generate_build_rules(rules: "list[NinjaBuildRule]"):
         for r in rules:
@@ -117,7 +125,7 @@ def make_ninja_build(file:str):
     elif toolchains["GCC"]["ld"]:
         stream.write("g++ -std=c++17 -shared -o $out $in\n")
 
-     # Create LD Rule
+    # Create LD Rule
     stream.write("rule ld\n command = ")
     if toolchains["LLVM"]["lld"]:
         stream.write("clang++ -o $out $in\n")
@@ -133,12 +141,12 @@ def make_ninja_build(file:str):
     outputs = []
 
     for ls in _srcs:
-        s =  os.path.basename(ls)
-        src,ext = os.path.splitext(s)
+        s = os.path.basename(ls)
+        src, ext = os.path.splitext(s)
         o = f"./out/obj/{os.path.basename(src)}.o"
-        rules.append(NinjaBuildRule(NinjaBuildRuleTy.COMPILE,ls,o))
+        rules.append(NinjaBuildRule(NinjaBuildRuleTy.COMPILE, ls, o))
         outputs.append(o)
-    rules.append(NinjaBuildRule(NinjaBuildRuleTy.LINK_EXE," ".join(outputs),"./out/autom"))
+    rules.append(NinjaBuildRule(NinjaBuildRuleTy.LINK_EXE, " ".join(outputs), "./out/autom"))
 
     generate_build_rules(rules)
 
