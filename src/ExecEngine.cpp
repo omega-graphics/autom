@@ -1,7 +1,7 @@
 #include "ExecEngine.h"
 
 namespace autom {
-    ExecEngine::ExecEngine(ExecEngineOpts & opts):
+    ExecEngine::ExecEngine(ExecEngineOpts &opts) :
     opts(opts),
     lexer(std::make_unique<Lexer>()),
     astFactory(std::make_unique<ASTFactory>(*lexer)),

@@ -8,8 +8,25 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SRCS "./src/*.cpp" "./src/*.h" "./src/bridge/*.cpp" "./src/gen/*.cpp" "src/engine/*.cpp" "src/parser/*.h")
 
-add_library("autom-lib" STATIC ${SRCS})
-set_target_properties("autom-lib" PROPERTIES ARCHIVE_OUTPUT_NAME "autom")
+if(NOT APPLE AND UNIX)
+    # Required, because some standard libs are not compiled with -fPIC.
+    add_library("autom-lib" SHARED ${SRCS})
+    set_target_properties("autom-lib" PROPERTIES LIBRARY_OUTPUT_NAME "autom")
+else()
+    add_library("autom-lib" STATIC ${SRCS})
+    set_target_properties("autom-lib" PROPERTIES ARCHIVE_OUTPUT_NAME "autom")
+endif()
+
+# If using LLVM on Linux, prefer linking to libc++
+#if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#    if(NOT APPLE AND UNIX)
+#        set(CMAKE_CXX_FLAGS "-stdlib=libc++")
+#    endif()
+#endif()
+
+if(NOT APPLE AND UNIX)
+    target_link_libraries("autom-lib" PRIVATE dl)
+endif()
 
 add_executable("autom" "src/driver/main.cpp")
 target_link_libraries("autom" PRIVATE "autom-lib")
@@ -38,6 +55,10 @@ endmacro()
 
 add_stdlib_module("fs" "stdlib/fs")
 add_stdlib_module("bridge" "stdlib/bridge")
+
+file(GLOB STDLIB_MODS "${CMAKE_SOURCE_DIR}/stlib/*.autom")
+
+install(FILES ${STDLIB_MODS} DESTINATION "mods")
 
 install(TARGETS "autom" DESTINATION "bin")
 install(TARGETS "autom-lib" ARCHIVE DESTINATION "lib")

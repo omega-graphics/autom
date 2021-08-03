@@ -22,8 +22,6 @@ namespace autom {
 
     class ExecEngine final {
 
-        ExecEngineOpts & opts;
-
         std::unique_ptr<Lexer> lexer;
 
         std::unique_ptr<ASTFactory> astFactory;
@@ -31,7 +29,9 @@ namespace autom {
         std::unique_ptr<eval::Eval> exec;
 
     public:
-        ExecEngine(ExecEngineOpts & opts);
+        ExecEngineOpts & opts;
+
+        ExecEngine(ExecEngineOpts &opts);
         void parseAndEvaluate(std::istream * in);
         bool checkDependencyTree();
         void generate();

@@ -6,7 +6,7 @@
 namespace autom {
 
     inline bool isKeyword(StrRef subject){
-        return (subject == KW_IF ) || (subject == KW_ELIF) || (subject == KW_FUNC) || (subject == KW_VAR);
+        return (subject == KW_IF ) || (subject == KW_ELIF) || (subject == KW_FUNC) || (subject == KW_VAR) || (subject == KW_IMPORT);
     };
 
 

@@ -37,9 +37,25 @@ namespace autom {
         ASTNode *node;
         if(first_tok.str == KW_IMPORT){
             auto decl = new ASTImportDecl();
+            decl->interface = true;
             decl->type = IMPORT_DECL;
             first_tok = nextToken();
-            if(first_tok.type != TOK_STRLITERAL) {
+            if(first_tok.type == TOK_STRLITERAL) {
+                decl->value = first_tok.str.substr(1,first_tok.str.size()-2);
+            }
+            else {
+                /// Error!
+                std::cout << "Expected A STR Literal" << std::endl;
+                return nullptr;
+            }
+            node = decl;
+        }
+        else if(first_tok.str == KW_LOAD){
+            auto decl = new ASTImportDecl();
+            decl->interface = false;
+            decl->type = IMPORT_DECL;
+            first_tok = nextToken();
+            if(first_tok.type == TOK_STRLITERAL) {
                 decl->value = first_tok.str.substr(1,first_tok.str.size()-2);
             }
             else {

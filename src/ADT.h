@@ -8,6 +8,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <array>
 
 #ifndef AUTOM_ADT_H
 #define  AUTOM_ADT_H
@@ -174,7 +175,7 @@ namespace autom {
 
         };
 
-        operator std::string(){
+        operator std::string() const{
             return {begin(),end()};
         }; 
 
@@ -237,8 +238,8 @@ namespace autom {
 
     };
 
-    template<class T,class ..._Args>
-    auto unpackToArray(_Args && ...args) 
+    template<class T,class ...Args>
+    auto unpackToArray(Args && ...args)
     -> std::array<T,sizeof...(args)> {
         return {T(args)...};
     };

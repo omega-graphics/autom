@@ -13,7 +13,6 @@ class ToolchainType(Enum):
     JAVA = 6
 
 
-
 def testCase(name:str):
     print(f"Checking for {name}")
     res = shutil.which(name)
@@ -23,7 +22,9 @@ def testCase(name:str):
         print(f"-- Checking for {name} - not found")
     return res is not None
 
+
 Toolchain = "dict[str,bool]"
+
 
 def testToolchainCase(name:str,progs:"list[str]") -> Toolchain:
     print(f"Testing for {name}")
@@ -63,6 +64,7 @@ def main(__args):
     toolchain = determineToolchains()
 
     json.dump(toolchain,io.open("./AUTOM.toolchain","w"))
+
 
 if __name__ == "__main__":
     sys.argv.pop(0)

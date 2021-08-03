@@ -11,9 +11,11 @@ int main(int argc,char *argv[]){
     
     autom::StrRef file(argv[1]);
 
-    autom::ExecEngineOpts opts;
+    auto t = autom::TargetNinja();
+
+    autom::ExecEngineOpts opts {*t};
     autom::TargetDumper dumper(std::cout);
-    autom::ExecEngine execEngine(dumper,opts);
+    autom::ExecEngine execEngine(opts);
 
     std::ifstream in(file);
 

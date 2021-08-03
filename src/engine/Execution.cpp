@@ -263,19 +263,31 @@ namespace autom {
             else {
                 switch (node->type) {
                     case IMPORT_DECL : {
-                    auto *decl = (ASTImportDecl *)node;
-                    /// Relative I File
-                    if(std::filesystem::exists(decl->value)){
-                        std::ifstream in(decl->value);
-                        engine->parseAndEvaluate(&in);
-                    }
-                    else {
-                        /// I File in Search Paths
-                        
-                        /// Throw Error!
-                            return false;
-                    };
-                    break;
+                        auto *decl = (ASTImportDecl *)node;
+                        /// Relative Interface File
+                        if(std::filesystem::exists(decl->value)){
+                            std::ifstream in(decl->value);
+                            engine->parseAndEvaluate(&in);
+                            break;
+                        }
+                        else {
+                            /// Interface File in Search Paths
+
+                            for(auto & dir : engine->opts.interfaceSearchPaths){
+                                auto p = std::filesystem::path(dir).append(decl->value);
+                                if(std::filesystem::exists(p)){
+                                    std::ifstream in(p);
+                                    engine->parseAndEvaluate(&in);
+                                    break;
+                                }
+                            };
+
+                            std::cout << "Cannot import file:" << decl->value << std::endl;
+
+                            /// Throw Error!
+                                return false;
+                        }
+                        break;
                     }
                     case FUNC_DECL : {
                         funcs.push_back((ASTFuncDecl *)node);
@@ -345,7 +357,7 @@ namespace autom {
 
     Extension * eval::Eval::loadExtension(const std::filesystem::path& path){
 
-        #ifdef _DLFCN_H_
+        #if !defined(DLL)
         auto data = dlopen(path.c_str(),RTLD_NOW);
         auto cb =  (AutomExtEntryFunc)dlsym(data,STR_WRAP(nativeExtMain));
         auto ext = cb();
@@ -362,7 +374,7 @@ namespace autom {
 
     void eval::Eval::closeExtensions(){
         for(auto ext : loadedExts){
-        #ifdef _DLFCN_H_
+        #if !defined(DLL)
             dlclose(ext->libData);
         #else
             FreeLibrary((HMODULE)ext->libData);

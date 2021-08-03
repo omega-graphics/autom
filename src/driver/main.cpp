@@ -46,7 +46,7 @@ Options:
 
 int main(int argc,char * argv[]){
 
-    for(unsigned i = 0;i < argc;i++){
+    for(unsigned i = 1;i < argc;i++){
         autom::StrRef flag(argv[i]);
         if(flag == "--help" || flag == "-h"){
             printHelp();
@@ -60,7 +60,7 @@ int main(int argc,char * argv[]){
 
     auto entry_exists = std::filesystem::exists("./AUTOM.build");
     if(!entry_exists){
-        std::cerr << "\x1b[31mERROR:\x1b[0m" << "AUTOM.build file not found in current directory!\nExiting..." << std::endl;
+        std::cout << "\x1b[31mERROR:\x1b[0m" << "AUTOM.build file not found in current directory!\nExiting..." << std::endl;
     };
 
     std::ifstream in("./AUTOM.build");
