@@ -17,7 +17,31 @@ namespace autom {
 
     namespace eval {
 
-        struct Object;
+        struct Object {
+            typedef enum : int {
+                Target, // data = Target *
+                String, // data = StrData *
+                Array, // data = ArrayData *
+                Boolean, // data = BoolData *,
+                Any = (Target | String | Array | Boolean)
+            } Ty;
+            Ty type;
+            void *data = nullptr;
+
+            struct BoolData {
+                bool data;
+            };
+
+            struct StrData {
+                std::string data;
+            };
+
+            struct ArrayData {
+                std::vector<Object *> data;
+            };
+            unsigned refCount = 1;
+
+        };
 
         class Eval {
             friend class ::autom::ExecEngine;
@@ -46,6 +70,8 @@ namespace autom {
             Object *evalBlock(ASTBlock *block);
 
             Object *evalExpr(ASTExpr *expr,bool *failed);
+
+            void importFile(const autom::StrRef & path);
 
             Extension *loadExtension(const std::filesystem::path& path);
             void closeExtensions();

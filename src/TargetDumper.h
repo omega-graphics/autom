@@ -9,12 +9,13 @@ namespace autom {
      @brief Dumps Target Info to Output Stream. Useful for debugging
     */
     class TargetDumper : public Gen {
+        unsigned t_count;
         std::ostream & out;
     public:
-        TargetDumper(std::ostream & out);
+        explicit TargetDumper(std::ostream & out);
         void consumeTarget(Target *target) override;
         bool supportsCustomToolchainRules() override {return false;};
-        void genToolchainRules() override{};
+        void genToolchainRules(std::shared_ptr<Toolchain> &toolchain) override {};
         void finish() override{};
     };
 

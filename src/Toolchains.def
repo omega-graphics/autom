@@ -1,0 +1,40 @@
+#ifndef AUTOM_TOOLCHAINS_DEF
+#define AUTOM_TOOLCHAINS_DEF
+
+
+#define TOOLCHAIN_NULL 0x00
+
+
+#define TOOLCHAIN_LLVM 0x01
+
+#define LLVM_CLANG "clang"
+#define LLVM_CLANGPP "clang++"
+#define LLVM_CLANGMSVC "clang-cl"
+#define LLVM_AR "llvm-ar"
+#define LLVM_LLDLD "ld.lld"
+#define LLVM_LLDLINK "lld-link"
+#define LLVM_LLDLD64 "ld64.lld"
+
+#define TOOLCHAIN_MSVC 0x02
+
+#define MSVC_CL "cl"
+#define MSVC_LIB "lib"
+#define MSVC_LINK "link"
+#define MSVC_RC "rc"
+
+#define TOOLCHAIN_GCC 0x03
+
+
+#define TOOLCHAIN_CFAMILY_ASM (TOOLCHAIN_LLVM | TOOLCHAIN_MSVC | TOOLCHAIN_GCC)
+
+#define TOOLCHAIN_JDK 0x04
+
+
+
+#define TOOLCHAIN_SWIFT 0x05
+
+
+
+
+
+#endif

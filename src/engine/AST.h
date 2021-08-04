@@ -55,7 +55,7 @@ namespace autom {
     };
 
     struct ASTImportDecl : public ASTNode {
-        bool interface;
+        bool isInterface;
         std::string value;
     };
 

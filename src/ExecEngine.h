@@ -5,6 +5,7 @@
 #include "engine/Execution.h"
 #include "Gen.h"
 #include "TargetDumper.h"
+#include "Toolchain.h"
 
 #ifndef AUTOM_PARSER_H
 #define  AUTOM_PARSER_H
@@ -22,6 +23,8 @@ namespace autom {
 
     class ExecEngine final {
 
+        std::shared_ptr<Toolchain> toolchain;
+
         std::unique_ptr<Lexer> lexer;
 
         std::unique_ptr<ASTFactory> astFactory;
@@ -30,9 +33,12 @@ namespace autom {
 
     public:
         ExecEngineOpts & opts;
+        OutputTargetOpts & outputTargetOpts;
 
-        ExecEngine(ExecEngineOpts &opts);
+        explicit ExecEngine(ExecEngineOpts &opts,OutputTargetOpts & outputTargetOpts);
         void parseAndEvaluate(std::istream * in);
+        unsigned resetASTFactoryTokenIndex(unsigned new_value);
+        std::vector<Tok> * resetASTFactoryTokenVector(std::vector<Tok> *new_vec);
         bool checkDependencyTree();
         void generate();
         ~ExecEngine();

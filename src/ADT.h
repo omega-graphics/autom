@@ -163,6 +163,10 @@ namespace autom {
             return compare(other.data(),other.size());
         };
 
+        StrRef():_data(nullptr),_size(0){
+
+        };
+
         StrRef(const char *c_str):_data(c_str),_size(std::strlen(c_str)){
 
         };
@@ -172,6 +176,10 @@ namespace autom {
         };
 
         StrRef(std::string & str):_data(str.data()),_size(str.size()){
+
+        };
+
+        StrRef(const std::string & str):_data(str.data()),_size(str.size()){
 
         };
 

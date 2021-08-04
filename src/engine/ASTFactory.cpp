@@ -9,12 +9,12 @@
 
 namespace autom {
 
-    ASTFactory::ASTFactory(Lexer &lexer):lexer(lexer),privTokIndex(0){
+    ASTFactory::ASTFactory(Lexer &lexer):lexer(lexer),privTokIndex(0),tokStream(nullptr){
 
     };
 
-    void ASTFactory::setTokenVector(std::vector<Tok> *tokStream){
-        this->tokStream = tokStream;
+    void ASTFactory::setTokenVector(std::vector<Tok> *_tokStream){
+        this->tokStream = _tokStream;
     };
 
     Tok & ASTFactory::nextToken(){
@@ -37,7 +37,7 @@ namespace autom {
         ASTNode *node;
         if(first_tok.str == KW_IMPORT){
             auto decl = new ASTImportDecl();
-            decl->interface = true;
+            decl->isInterface = true;
             decl->type = IMPORT_DECL;
             first_tok = nextToken();
             if(first_tok.type == TOK_STRLITERAL) {
@@ -52,7 +52,7 @@ namespace autom {
         }
         else if(first_tok.str == KW_LOAD){
             auto decl = new ASTImportDecl();
-            decl->interface = false;
+            decl->isInterface = false;
             decl->type = IMPORT_DECL;
             first_tok = nextToken();
             if(first_tok.type == TOK_STRLITERAL) {
@@ -107,6 +107,26 @@ namespace autom {
                 auto _expr = new ASTLiteral();
                 _expr->type = EXPR_LITERAL;
                 _expr->str = first_tok.str.substr(1,first_tok.str.size()-2);
+                expr = _expr;
+                break;
+            }
+            /// Array Expr
+            case TOK_LBRACKET : {
+                auto _expr = new ASTExpr();
+                _expr->type = EXPR_ARRAY;
+                first_tok = nextToken();
+                while(first_tok.type != TOK_RBRACKET){
+                    auto e = buildExpr(first_tok,scope);
+                    _expr->children.push_back(e);
+                    first_tok = nextToken();
+
+                    if(first_tok.type == TOK_RBRACKET){
+                        break;
+                    }
+                    else if(first_tok.type != TOK_COMMA){
+                        std::cout << "ERROR: Comma or RBracket Expected" << std::endl;
+                    }
+                }
                 expr = _expr;
                 break;
             }
@@ -181,7 +201,7 @@ namespace autom {
         switch (first_tok.type) {
             case TOK_EQUALS : {
                 incToNextToken();
-                ASTExpr *_expr = new ASTExpr();
+                auto *_expr = new ASTExpr();
                 _expr->type = EXPR_ASSIGN;
                 _expr->lhs = lhs;
                 first_tok = nextToken();
@@ -223,23 +243,23 @@ namespace autom {
 
     ASTNode *ASTFactory::nextStmt(){
         std::cout << "Next Stmt" << std::endl;
-        Tok tok;
+        Tok *tok;
 
         if(privTokIndex == 0){
-            tok = tokStream->at(0);
+            tok = &tokStream->at(0);
         }
         else {
-            tok = nextToken();
+            tok = &nextToken();
         }
 
-       if(tok.type == TOK_EOF) {
+       if(tok->type == TOK_EOF) {
           return nullptr;
        }
 
-       if(tok.type == TOK_KW) { 
-           return buildDecl(tok,GLOBAL_SCOPE);
+       if(tok->type == TOK_KW) {
+           return buildDecl(*tok,GLOBAL_SCOPE);
        }
-       else return buildExpr(tok,GLOBAL_SCOPE);
+       else return buildExpr(*tok,GLOBAL_SCOPE);
     };
     
 }

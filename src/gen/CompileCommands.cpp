@@ -8,10 +8,12 @@
 #include <iostream>
 #include <fstream>
 
+#include <filesystem>
+
 
 namespace autom {
-    class GenCompileCommands : public Gen {
-        Toolchain *toolchain;
+    class GenCompileCommands final : public Gen {
+        std::shared_ptr<Toolchain> toolchain;
 
         std::ofstream out;
         rapidjson::OStreamWrapper wrap_out;
@@ -33,8 +35,8 @@ namespace autom {
             return true;
         }
 
-        void genToolchainRules() override {
-
+        void genToolchainRules(std::shared_ptr<Toolchain> & _toolchain) override {
+            toolchain = _toolchain;
         }
 
         void consumeTarget(Target *target) override {
@@ -48,8 +50,27 @@ namespace autom {
                 }
                 default: {
                     auto * t = (CompiledTarget *)target;
-                    for(autom::StrRef s : t->sources){
+                    for(auto & s_obj_pair : t->source_object_map){
+                        auto & s = s_obj_pair.first;
+                        std::ostringstream cmdOut;
+                        if(isCSrc(s))
+                            toolchain->formatter.startCommandFormat(Toolchain::Formatter::cc);
+                        else if(isCXXSrc(s))
+                            toolchain->formatter.startCommandFormat(Toolchain::Formatter::cxx);
+                        else if(isOBJCSrc(s))
+                            toolchain->formatter.startCommandFormat(Toolchain::Formatter::objc);
+                        else if(isOBJCXXSrc(s))
+                            toolchain->formatter.startCommandFormat(Toolchain::Formatter::objcxx);
 
+                        toolchain->formatter.writeCommandPrefix();
+                        toolchain->formatter.writeDefines(t->defines);
+                        toolchain->formatter.writeFlags(t->cflags);
+                        toolchain->formatter.writeIncludes(t->include_dirs);
+                        toolchain->formatter.writeSource(s);
+                        toolchain->formatter.writeOutput(s_obj_pair.second);
+                        toolchain->formatter.endCommandFormat(cmdOut);
+                        auto dir = std::filesystem::path(s.data()).root_directory();
+                        writeCommand(cmdOut.str(),dir.string().data(),s);
                     };
                     break;
                 }
@@ -60,12 +81,16 @@ namespace autom {
             w.EndArray();
         };
 
-        GenCompileCommands():out("./hello.poop"),wrap_out(out),w(wrap_out){
+        explicit GenCompileCommands(autom::StrRef output_path):out(output_path),wrap_out(out),w(wrap_out){
            w.StartArray();
         };
 
         ~GenCompileCommands(){
 
         };
+    };
+
+    Gen *TargetCompileCommands(autom::StrRef output_path){
+        return new GenCompileCommands(output_path);
     };
 };

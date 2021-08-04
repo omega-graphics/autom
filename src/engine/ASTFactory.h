@@ -12,6 +12,7 @@ namespace autom {
      Constructs AST for Evaluation Engine.
     */
     class ASTFactory {
+        friend class ExecEngine;
         Lexer & lexer;
 
         unsigned privTokIndex;

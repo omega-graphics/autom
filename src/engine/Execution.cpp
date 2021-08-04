@@ -19,167 +19,12 @@ namespace autom {
 
     namespace eval {
 
-        struct Object {
-            typedef enum : int {
-                Target, // data = Target *
-                String, // data = StrData * 
-                Array, // data = ArrayData *
-                Boolean, // data = BoolData *,
-                Any = (Target | String | Array | Boolean)
-            } Ty;
-            Ty type;
-            void *data;
-
-            struct BoolData {
-                bool data;
-            };
-
-            struct StrData {
-                std::string data;
-            };
-
-            struct ArrayData {
-                std::vector<Object *> data;
-            };
-            unsigned refCount = 1;
-
-        };
-
         void object_inc_ref(Object *obj){
             obj->refCount += 1;
         };
 
         void object_dec_ref(Object *obj){
             obj->refCount -= 1;
-        };
-
-        #define INVOKE_FAILED -0x01
-        #define INVOKE_SUCCESS 0x00
-        #define INVOKE_NOTBUILTIN 0x01
-
-        #define STRING_OBJECT(o) ((Object::StrData *)o->data)->data
-        #define ARRAY_OBJECT(o) ((Object::ArrayData *)o->data)->data
-        #define TARGET_OBJECT(o) (Target *)o->data)
-
-        #define STRING_ARRAY_OBJECT(ob,v)\
-        auto & s = ARRAY_OBJECT(ob);\
-        std::vector<std::string> v;\
-        for(auto & _o : s){\
-            TYPECHECK_STRICT(_o,Object::String)\
-            v.push_back(STRING_OBJECT(_o));\
-        \
-        }
-
-        inline void _print_to_stream(std::ostream & out,Object *obj){
-            switch (obj->type) {
-                case Object::String : {
-                    out << "\x1b[33m" << std::quoted(STRING_OBJECT(obj)) << "\x1b[0m" << std::endl;
-                    break;
-                }
-                case Object::Array : {
-                    auto & array = ARRAY_OBJECT(obj);
-                    out << "[";
-                    for(unsigned i = 0;i < array.size();i++){
-                        if(i != 0){
-                            out << ",";
-                        };
-                        _print_to_stream(out,array[i]);
-                    };
-                    out << "]";
-                }
-            }
-        };
-
-        
-
-        Object * Eval::tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code){
-            #define ERROR_RETURN \
-            *code = INVOKE_FAILED;\
-             return nullptr;
-
-             *code = INVOKE_SUCCESS;
-
-            #define TYPECHECK_STRICT(object,t) if(t != Object::Any && object->type != t){ std::cout << "TYPECHECK FAILED!" << std::endl; ERROR_RETURN }
-
-            #define BUILTIN_FUNC(name,...)\
-            if(subject == name) {\
-                std::vector<std::pair<autom::StrRef,Object::Ty>> _args = {__VA_ARGS__};\
-                for(auto & a : args){ /*std::cout << "ARG:" << a.first << std::endl;*/}\
-                if(_args.size() != args.size()){ \
-                /* Incorrect Number of Args*/ \
-                ERROR_RETURN };\
-                \
-                std::unordered_map<std::string,Object *> funcArgs;\
-                for(auto & a : _args){\
-                    /*std::cout << "ARG:" << a.first.data() << std::endl;*/\
-                    auto it = args.find(a.first);\
-                    if(it == args.end()){ /*std::cout << "ARG NOT FOUND!" << std::endl;*/ ERROR_RETURN; break;}\
-                    else { bool failed;\
-                    auto expr = evalExpr(it->second,&failed);\
-                     if(failed) { /*std::cout << "FAILED TO EVAL EXPR!" << std::endl;*/ ERROR_RETURN }\
-                    TYPECHECK_STRICT(expr,a.second)\
-                    funcArgs.insert(std::make_pair(a.first,expr));}\
-                }\
-                {\
-
-
-            #define BUILTIN_FUNC_END(name) }} // end name
-
-
-
-            #define VOID_RETURN return nullptr;
-
-            // std::cout << "Invoking Function:" << subject.data() << std::endl;
-
-            /**
-            @brief Prints a Message
-             func print(message) -> void
-            */
-
-            BUILTIN_FUNC(BUILTIN_PRINT,{"msg",Object::Any})
-
-                auto & arg = funcArgs["msg"];
-
-                _print_to_stream(std::cout,arg);
-                
-                VOID_RETURN
-
-            BUILTIN_FUNC_END(BUILTIN_PRINT)
-
-            /**
-            @brief Declares the Project
-             func Project(name,version) -> void
-            */
-
-            BUILTIN_FUNC(BUILTIN_PROJECT,{"name",Object::String},{"version",Object::String})
-                
-                auto & n = STRING_OBJECT(funcArgs["name"]);
-                auto & v = STRING_OBJECT(funcArgs["version"]);
-
-                std::cout << "Configuring Project:" << n << " " << v << std::endl;
-
-                VOID_RETURN
-
-            BUILTIN_FUNC_END(BUILTIN_PROJECT)
-
-             /**
-             @brief Defines an Executable Target to be Compiled
-             func Executable(name,sources) -> Executable
-            */
-
-            BUILTIN_FUNC(BUILTIN_EXECUTABLE,{"name",Object::String},{"sources",Object::Array})
-
-                auto & n = STRING_OBJECT(funcArgs["name"]);
-                STRING_ARRAY_OBJECT(funcArgs["sources"],srcs_array);
-
-                auto t = CompiledTarget::Executable(n,srcs_array);
-                targets.push(t);
-                return new Object{Object::Target,t};
-
-            BUILTIN_FUNC_END(BUILTIN_EXECUTABLE)
-
-            *code = INVOKE_NOTBUILTIN;
-            return nullptr;
         };
 
 
@@ -190,7 +35,7 @@ namespace autom {
         Object *Eval::referVarWithScope(ASTScope *scope,StrRef name){
             /// TODO: Enhance impl with multi scope eval!
             auto & first_store = vars[scope];
-            return first_store.body[name];
+            auto found_it = first_store.body.find(name);
         };
 
         Object * Eval::evalExpr(ASTExpr *node,bool *failed){
@@ -208,7 +53,7 @@ namespace autom {
                             return nullptr;
                         }
                         else if(code == INVOKE_FAILED){
-                            std::cout << "Failed to invoke function" << std::endl;
+//                            std::cout << "Failed to invoke function" << std::endl;
                             return nullptr;
                         };
                         return returnT;
@@ -264,28 +109,51 @@ namespace autom {
                 switch (node->type) {
                     case IMPORT_DECL : {
                         auto *decl = (ASTImportDecl *)node;
-                        /// Relative Interface File
-                        if(std::filesystem::exists(decl->value)){
-                            std::ifstream in(decl->value);
-                            engine->parseAndEvaluate(&in);
-                            break;
-                        }
-                        else {
-                            /// Interface File in Search Paths
+                        if(decl->isInterface){
+                            /// Relative Interface File
+                            if(std::filesystem::exists(decl->value)){
+                                std::filesystem::path p(decl->value);
+                                if(!p.has_extension())
+                                    p.replace_extension(".autom");
+                                importFile(p.string().c_str());
+                                break;
+                            }
+                            else {
+                                /// Interface File in Search Paths
+                                for(auto & dir : engine->opts.interfaceSearchPaths){
+                                    auto p = std::filesystem::path(dir.data()).append(decl->value);
+                                    if(std::filesystem::exists(p)){
+                                        if(!p.has_extension())
+                                            p.replace_extension(".autom");
+                                        importFile(p.string().c_str());
+                                        break;
+                                    }
+                                };
 
-                            for(auto & dir : engine->opts.interfaceSearchPaths){
-                                auto p = std::filesystem::path(dir).append(decl->value);
-                                if(std::filesystem::exists(p)){
-                                    std::ifstream in(p);
-                                    engine->parseAndEvaluate(&in);
-                                    break;
-                                }
-                            };
+                                std::cout << "Cannot import file:" << decl->value << std::endl;
 
-                            std::cout << "Cannot import file:" << decl->value << std::endl;
-
-                            /// Throw Error!
+                                /// Throw Error!
                                 return false;
+                            }
+                        }
+                        /// Import Interface Extension
+                        else {
+                            if(std::filesystem::exists(decl->value)){
+                                loadExtension(decl->value);
+                            }
+                            else {
+                                for(auto & dir : engine->opts.interfaceSearchPaths){
+                                    auto p = std::filesystem::path(dir.data()).append(decl->value);
+                                    if(std::filesystem::exists(p)){
+                                        loadExtension(p);
+                                    }
+                                }
+
+                                std::cout << "ERROR: Cannot load extension: " << decl->value << std::endl;
+
+                                /// Throw Error!
+                                return false;
+                            }
                         }
                         break;
                     }
@@ -357,19 +225,26 @@ namespace autom {
 
     Extension * eval::Eval::loadExtension(const std::filesystem::path& path){
 
-        #if !defined(DLL)
-        auto data = dlopen(path.c_str(),RTLD_NOW);
-        auto cb =  (AutomExtEntryFunc)dlsym(data,STR_WRAP(nativeExtMain));
-        auto ext = cb();
-        ext->libData = data;
-        #else
-        auto data = LoadLibrary((LPCSTR)path.c_str());
-        auto cb = (AutomExtEntryFunc) GetProcAddress(data,STR_WRAP(nativeExtMain));
-        auto ext = cb();
-        ext->libData = data;
-        #endif
-        loadedExts.push_back(ext);
-        return ext;
+        if(path.has_extension() && path.extension() == "aext"){
+
+            #if !defined(DLL)
+                auto data = dlopen(path.c_str(),RTLD_NOW);
+                auto cb =  (AutomExtEntryFunc)dlsym(data,STR_WRAP(nativeExtMain));
+                auto ext = cb();
+                ext->libData = data;
+            #else
+                auto data = LoadLibrary((LPCSTR)path.c_str());
+                auto cb = (AutomExtEntryFunc) GetProcAddress(data,STR_WRAP(nativeExtMain));
+                auto ext = cb();
+                ext->libData = data;
+            #endif
+                loadedExts.push_back(ext);
+                return ext;
+        }
+        else {
+            std::cout << "ERROR:" << "Failed to load extension: " << path << std::endl;
+            return nullptr;
+        }
     };
 
     void eval::Eval::closeExtensions(){
@@ -381,6 +256,15 @@ namespace autom {
         #endif
             delete ext;
         };
-    };
+    }
 
-}
+    void eval::Eval::importFile(const autom::StrRef & path) {
+        std::ifstream in(path.data());
+        auto old_value = engine->resetASTFactoryTokenIndex(0);
+        auto old_vec = engine->resetASTFactoryTokenVector(nullptr);
+        engine->parseAndEvaluate(&in);
+        in.close();
+        engine->resetASTFactoryTokenIndex(old_value);
+        engine->resetASTFactoryTokenVector(old_vec);
+    }
+};
