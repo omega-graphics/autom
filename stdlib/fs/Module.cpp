@@ -5,14 +5,14 @@
 using namespace autom;
 
 AUTOM_NATIVE_FUNC(exists){
-    auto & val = objectToString(object[0]);
-    auto res = std::filesystem::exists(val);
+    auto val = objectToString(object->second);
+    auto res = std::filesystem::exists(val.data());
     return toObject(res);
 };
 
 AUTOM_NATIVE_FUNC(abspath){
-    auto & val = objectToString(object[0]);
-    auto res = std::filesystem::absolute(val).string();
+    auto val = objectToString(object->second);
+    auto res = std::filesystem::absolute(val.data()).string();
     return toObject(res);
 };
 

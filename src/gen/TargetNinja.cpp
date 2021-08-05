@@ -51,24 +51,24 @@ namespace autom {
 
                         // Write CFLAGS
                         mainNinja << INDENT"CFLAGS =";
-                        if(!t->cflags.empty()){
+                        if(!t->cflags->empty()){
                             mainNinja << "\"\"";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
-                            toolchain->formatter.writeFlags(t->cflags);
+                            toolchain->formatter.writeFlags(t->cflags->toStringVector());
                             toolchain->formatter.endCommandFormat(mainNinja);
                         }
                         mainNinja << std::endl;
 
                         // Write INCLUDE_DIRS
                         mainNinja << INDENT"INCLUDE_DIRS =";
-                        if(t->include_dirs.empty()){
+                        if(t->include_dirs->empty()){
                             mainNinja << "";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
-                            toolchain->formatter.writeIncludes(t->include_dirs);
+                            toolchain->formatter.writeIncludes(t->include_dirs->toStringVector());
                             toolchain->formatter.endCommandFormat(mainNinja);
                         }
                         mainNinja << std::endl << std::endl;
@@ -79,13 +79,13 @@ namespace autom {
                     switch (t->type) {
                         case EXECUTABLE : {
                             mainNinja << "build " << t->name;
-                            if(!t->output_ext.empty())
+                            if(!t->output_ext->empty())
                                 mainNinja << "." << t->output_ext;
 
-                            if(!t->output_ext.empty())
-                                phony_name = t->name + "." + t->output_ext;
+                            if(!t->output_ext->empty())
+                                phony_name = std::string(t->name->value()) + "." + t->output_ext->value().data();
                             else
-                                phony_name = t->name;
+                                phony_name = t->name->value();
                             mainNinja << ": exe ";
                             for(auto & obj_src_p : t->source_object_map){
                                 mainNinja << obj_src_p.second << " ";
@@ -94,13 +94,13 @@ namespace autom {
                         }
                         case SHARED_LIBRARY : {
                             mainNinja << "build " << t->name;
-                            if(!t->output_ext.empty())
+                            if(!t->output_ext->empty())
                                 mainNinja << "." << t->output_ext;
 
-                            if(!t->output_ext.empty())
-                                phony_name = t->name + "." + t->output_ext;
+                            if(!t->output_ext->empty())
+                                phony_name = std::string(t->name->value()) + "." + t->output_ext->value().data();
                             else
-                                phony_name = t->name;
+                                phony_name = t->name->value();
                             mainNinja << ": so ";
                             for(auto & obj_src_p : t->source_object_map){
                                 mainNinja << obj_src_p.second << " ";
@@ -108,13 +108,13 @@ namespace autom {
                         }
                         case STATIC_LIBRARY : {
                             mainNinja << "build " << t->name;
-                            if(!t->output_ext.empty())
+                             if(!t->output_ext->empty())
                                 mainNinja << "." << t->output_ext;
 
-                            if(!t->output_ext.empty())
-                                phony_name = t->name + "." + t->output_ext;
+                            if(!t->output_ext->empty())
+                                phony_name = std::string(t->name->value()) + "." + t->output_ext->value().data();
                             else
-                                phony_name = t->name;
+                                phony_name = t->name->value();
                             mainNinja << ": ar ";
                             for(auto & obj_src_p : t->source_object_map){
                                 mainNinja << obj_src_p.second << " ";
@@ -125,12 +125,12 @@ namespace autom {
                     if(t->type & EXECUTABLE | SHARED_LIBRARY){
                         mainNinja << std::endl;
                         mainNinja << INDENT"LDFLAGS =";
-                        if(t->ldflags.empty()){
+                        if(t->ldflags->empty()){
                             mainNinja << "";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
-                            toolchain->formatter.writeFlags(t->ldflags);
+                            toolchain->formatter.writeFlags(t->ldflags->toStringVector());
                             toolchain->formatter.endCommandFormat(mainNinja);
                         }
                     }
@@ -139,12 +139,12 @@ namespace autom {
                         /// Any Compiled Target Except for Source Group
                         mainNinja << std::endl;
                         mainNinja << INDENT"LIBS =";
-                        if(t->libs.empty()){
+                        if(t->libs->empty()){
                             mainNinja << "";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
-                            toolchain->formatter.writeLibs(t->libs);
+                            toolchain->formatter.writeLibs(t->libs->toStringVector());
                             toolchain->formatter.endCommandFormat(mainNinja);
                         }
                     }

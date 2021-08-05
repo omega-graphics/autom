@@ -1,6 +1,8 @@
 #include <vector>
 #include <string>
 
+#include "ADT.h"
+
 #ifndef AUTOM_AUTOM_H
 #define  AUTOM_AUTOM_H
 
@@ -21,16 +23,16 @@ namespace autom {
     Object *toObject(std::string &val);
     Object *toObject(std::vector<Object *> &val);
 
-    bool & objectToBool(Object *object);
-    std::string & objectToString(Object *object);
-    std::vector<Object *> objectToVector(Object *object);
+    bool objectToBool(Object *object);
+    StrRef objectToString(Object *object);
+    ArrayRef<Object *> objectToVector(Object *object);
     
 
     typedef const char *CString;
 
-    typedef Object *(NativeFunc)(unsigned c,Object **object);
+    typedef Object *(NativeFunc)(unsigned c,std::pair<std::string,Object *> * object);
 
-    #define AUTOM_NATIVE_FUNC(name) Object * name(unsigned c,Object **object)
+    #define AUTOM_NATIVE_FUNC(name) Object * name(unsigned c,std::pair<std::string,Object *> * object)
 
     typedef NativeFunc *NativeFuncRef;
 

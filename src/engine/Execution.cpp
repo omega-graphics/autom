@@ -1,12 +1,18 @@
 #include "Execution.h"
 #include "../ExecEngine.h"
 #include "Gen.h"
+#include "Diagnostic.h"
 
 #include "Builtins.def"
+#include "engine/AST.def"
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+
+#include <iterator>
+#include <sstream>
 
 #if __has_include(<dlfcn.h>)
 #include <dlfcn.h>
@@ -19,23 +25,31 @@ namespace autom {
 
     namespace eval {
 
-        void object_inc_ref(Object *obj){
-            obj->refCount += 1;
-        };
-
-        void object_dec_ref(Object *obj){
-            obj->refCount -= 1;
-        };
-
-
         Eval::Eval(Gen &gen,ExecEngine *engine):engine(engine),gen(gen){
 
         };
 
+        void Eval::addTarget(Target *target){
+            targets.push_back(target);
+        };
+
         Object *Eval::referVarWithScope(ASTScope *scope,StrRef name){
-            /// TODO: Enhance impl with multi scope eval!
+            
             auto & first_store = vars[scope];
             auto found_it = first_store.body.find(name);
+            if(found_it != first_store.body.end())
+                return found_it->second;
+                
+            for(auto & scope_var_store_p : vars){
+                if(scope->isChildScopeOfParent(scope_var_store_p.first)){
+                    auto __found_it = scope_var_store_p.second.body.find(name);
+                    if(__found_it != scope_var_store_p.second.body.end()){
+                        return __found_it->second;
+                    }
+                }
+            }
+
+            return nullptr;
         };
 
         Object * Eval::evalExpr(ASTExpr *node,bool *failed){
@@ -47,13 +61,35 @@ namespace autom {
                     if(node->lhs->type == EXPR_ID){
                         std::string & v = node->lhs->id;
                         int code;
-                        Object * returnT = tryInvokeBuiltinFunc(v,node->func_args,&code);
+                        auto * returnT = tryInvokeBuiltinFunc(v,node->func_args,&code);
                         if(code == INVOKE_NOTBUILTIN){
-                            std::cout << "Failed to invoke function" << std::endl;
+                            
+                            auto evalArgs = [&](std::vector<std::pair<std::string,Object *>> & args){
+                                
+                            };
+
+                            /// 1. Check Functions Defined!
+
+                            for(auto & func : funcs){
+                                if(func->id == v){
+
+                                };
+                            };
+
+                            /// 2. Check Extension Modules!
+                            
+                            for(auto & extension : loadedExts){
+                                for(auto & f : extension->funcs){
+                                    if(f.name == v){
+                                        return f.func(0,nullptr);
+                                    };
+                                }
+                            };
+
                             return nullptr;
                         }
                         else if(code == INVOKE_FAILED){
-//                            std::cout << "Failed to invoke function" << std::endl;
+                            *failed = true;
                             return nullptr;
                         };
                         return returnT;
@@ -63,10 +99,15 @@ namespace autom {
                 case EXPR_LITERAL : {
                     auto literal = (ASTLiteral *)node;
                     if(literal->isString()){
-                        return new Object {Object::String,new Object::StrData {literal->str.value()}};
+                        auto str = literal->str.value();
+                        if(!processString(&str,node->scope)){
+                            engine->printError("Failed to Process String!");
+                            return nullptr;
+                        };
+                        return new eval::String(str);
                     }
                     else if(literal->isBoolean()){
-                        return new Object {Object::Boolean,new Object::BoolData {literal->boolean.value()}};
+                        return new eval::Boolean(literal->boolean.value());
                     };
                     break;
                 }
@@ -84,7 +125,32 @@ namespace autom {
                             return nullptr;
                         };
                     };
-                    return new Object {Object::Array,new Object::ArrayData {objData}};
+                    return new eval::Array(objData);
+                    break;
+                }
+                case EXPR_MEMBER : {
+                    bool f;
+                    auto obj = evalExpr(node->lhs,&f);
+                    if(f){
+                        *failed = true;
+                        return nullptr;
+                    }
+
+                    autom::StrRef propName {node->id};
+               
+                    if(obj->type == Object::Target){
+
+                        auto tw = (TargetWrapper *)obj;
+
+                        if(propName == "sources"){
+                            
+                        }
+                    }
+                    else {
+                        std::cout << "ERROR:" << "Target and Config are the only objects that have properties!" << std::endl;
+                        *failed = true;
+                        return nullptr;
+                    }
                     break;
                 }
             };
@@ -95,9 +161,68 @@ namespace autom {
             
         }
 
+        bool Eval::processString(std::string * str,ASTScope *scope){
+            
+            std::istringstream in(str->data());
+
+            auto getChar = [&](){
+                return (char)in.get();
+            };
+
+            auto aheadChar = [&](){
+                char c = in.get();
+                in.seekg(-1,std::ios::cur);
+                return c;
+            };
+
+            std::ostringstream out;
+            char c;
+            while(!in.eof() && ((c = getChar()) != -1)){
+                switch (c) {
+                    case '$': {
+                        char aheadC =aheadChar();
+                        if(aheadC == '{'){
+                            in.seekg(1,std::ios::cur);
+                            std::string var_name = "";
+                            while((c = getChar()) != '}'){
+                                var_name += c;
+                            }
+                            auto obj = referVarWithScope(scope,var_name);
+                            if(!obj){
+                                engine->printError(formatmsg("Undeclared Var `@0`",var_name));
+                                return false;
+                            }
+                            else if(objectIsString(obj)){
+                                auto str = (eval::String *)obj;
+                                out << str->value().data();
+                            }
+                            else {
+                                engine->printError(formatmsg("Var `@0` is not a String!",var_name));
+                                return false;
+                            }
+                        }
+                        else {
+                            out << c;
+                        }
+                        break;
+                    }
+                    default : {
+                        out << c;
+                        break;
+                    }
+                }
+                
+            }
+
+            *str = out.str();
+
+
+            return true;
+        };
+
 
         bool Eval::evalStmt(ASTNode *node){
-            std::cout << "Eval Node" << std::endl;
+            // std::cout << "Eval Node" << std::endl;
             if(node->type & EXPR){
                 bool f;
                 evalExpr((ASTExpr *)node,&f);
@@ -183,45 +308,6 @@ namespace autom {
         };
         
     }
-
-    typedef eval::Object Object;
-
-    bool objectIsBool(Object *object){
-        return object->type == Object::Boolean;
-    };
-
-    bool objectIsString(Object *object){
-        return object->type == Object::String;
-    };
-
-    bool objectIsArray(Object *object){
-        return object->type == Object::Array;
-    };
-
-    Object *toObject(bool & val){
-        return new Object {Object::Boolean,new Object::BoolData {val}};
-    };
-
-    Object *toObject(std::string &val){
-        return new Object {Object::String,new Object::StrData {val}};
-    };
-
-    Object *toObject(std::vector<Object *> &val){
-        return new Object {Object::String,new Object::ArrayData {val}};
-    };
-
-
-    bool & objectToBool(Object *object){
-        return ((Object::BoolData *)object->data)->data;
-    };
-
-    std::string & objectToString(Object *object){
-        return ((Object::StrData *)object->data)->data;
-    };
-
-    std::vector<Object *> objectToVector(Object *object){
-        return ((Object::ArrayData *)object->data)->data;
-    };
 
     Extension * eval::Eval::loadExtension(const std::filesystem::path& path){
 

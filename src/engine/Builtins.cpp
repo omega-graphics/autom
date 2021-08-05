@@ -3,7 +3,37 @@
 #include "Execution.h"
 #include "Builtins.def"
 #include "ExecEngine.h"
+#include "Diagnostic.h"
+#include <initializer_list>
 #include <iostream>
+
+namespace autom {
+
+    template<>
+    struct Format<eval::Object::Ty> {
+        static void format(std::ostream & out,eval::Object::Ty & val){
+            switch (val) {
+                case eval::Object::String : {
+                    out << "String";
+                    break;
+                }
+                case eval::Object::Boolean : {
+                    out << "Boolean";
+                    break;
+                }
+                case eval::Object::Array : {
+                    out << "Array";
+                    break;
+                }
+                case eval::Object::Target : {
+                    out << "Target";
+                    break;
+                }
+            }
+        }
+    };
+
+}
 
 namespace autom::eval {
 
@@ -26,115 +56,140 @@ namespace autom::eval {
     inline void _print_to_stream(std::ostream & out,Object *obj){
         switch (obj->type) {
             case Object::String : {
-                out << "\x1b[33m" << std::quoted(STRING_OBJECT(obj)) << "\x1b[0m" << std::endl;
+                out << "\x1b[33m" << std::quoted(castToString(obj)->value().data()) << "\x1b[0m" << std::endl;
                 break;
             }
             case Object::Array : {
-                auto & array = ARRAY_OBJECT(obj);
+                auto * array = castToArray(obj);
                 out << "[";
-                for(unsigned i = 0;i < array.size();i++){
+                for(unsigned i = 0;i < array->length();i++){
                     if(i != 0){
                         out << ",";
                     };
-                    _print_to_stream(out,array[i]);
+                    _print_to_stream(out,array->getBeginIterator()[i]);
                 };
                 out << "]";
             }
         }
     };
 
+    struct EvalContext {
+        Eval *eval;
+        ExecEngine *execEngine;
+        int code;
+        inline void logError(const std::string & msg){
+            execEngine->printError(msg);
+        };
+        inline void setCode(int c){
+            code = c;
+        };
+    };
+
+
+    Object *bf_print(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        _print_to_stream(std::cout,args["msg"]);
+        return nullptr;
+    };
+
+
+
+    Object *bf_Project(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        
+        auto *name = castToString(args["name"]);
+        auto *version = castToString(args["version"]);
+
+        std::cout << "Configuring Project " << name->value().data() << " " << version->value().data() << std::endl;
+
+        return nullptr;
+    };
+
+    Object *bf_Executable(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *srcs = castToArray(args["sources"]);
+
+        auto t = CompiledTarget::Executable(name,srcs);
+
+         ctxt.eval->addTarget(t);
+
+        return new TargetWrapper(t);
+    };
+
+    Object *bf_Archive(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *srcs = castToArray(args["sources"]);
+        auto t = CompiledTarget::Archive(name,srcs);
+
+        ctxt.eval->addTarget(t);
+
+        return new TargetWrapper(t);
+    };
+
+    Object *bf_Shared(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *srcs = castToArray(args["sources"]);
+        auto t = CompiledTarget::Shared(name,srcs);
+
+        ctxt.eval->addTarget(t);
+
+        return new TargetWrapper(t);
+    };
+
 
 
     Object * Eval::tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code){
-            #define ERROR_RETURN \
-            *code = INVOKE_FAILED;\
-            return nullptr;
 
         *code = INVOKE_SUCCESS;
 
-            #define TYPECHECK_STRICT(object,t) if((t) != Object::Any && (object)->type != (t)){ std::cout << "TYPECHECK FAILED!" << std::endl; ERROR_RETURN }
+        std::vector<std::pair<std::string,Object *>> ready_args;
 
-            #define BUILTIN_FUNC(name,...)\
-            if(subject == name) {\
-            std::vector<std::pair<autom::StrRef,Object::Ty>> _args = {__VA_ARGS__};\
-            for(auto & a : args){ /*std::cout << "ARG:" << a.first << std::endl;*/}\
-            if(_args.size() != args.size()){ \
-            /* Incorrect Number of Args*/ \
-            ERROR_RETURN };\
-            \
-            std::unordered_map<std::string,Object *> funcArgs;\
-            for(auto & a : _args){\
-            /*std::cout << "ARG:" << a.first.data() << std::endl;*/\
-            auto it = args.find(a.first);\
-            if(it == args.end()){ /*std::cout << "ARG NOT FOUND!" << std::endl;*/ ERROR_RETURN; break;}\
-            else { bool failed;\
-            auto expr = evalExpr(it->second,&failed);\
-            if(failed) { /*std::cout << "FAILED TO EVAL EXPR!" << std::endl;*/ ERROR_RETURN }\
-            TYPECHECK_STRICT(expr,a.second)\
-            funcArgs.insert(std::make_pair(a.first,expr));}\
+        auto checkArgs = [&](std::initializer_list<std::pair<CString,Object::Ty>> params){
+            #define TYPECHECK_STRICT(object,t) if((t) != Object::Any && (object)->type != (t)){ engine->printError(formatmsg("Param `@0` is not a typeof @1",autom::StrRef(p.first),t));return false; }
+            bool rc = true;
+            for(auto & p : params){
+                auto found_it = args.find(p.first);
+                if(found_it == args.end()){
+                    engine->printError(formatmsg("Function `@0` does not take argument named `@1`",subject,p.first));
+                    rc = false;
+                    break;
+                }
+                else {
+                    bool f;
+                    auto obj = evalExpr(found_it->second,&f);
+                    if(f){
+                        rc = false;
+                        break;
+                    }
+                    TYPECHECK_STRICT(obj,p.second);
+                    ready_args.push_back(std::make_pair(p.first,obj));
+                };
+            };
+            return rc;
+            #undef TYPECHECK_STRICT
+        };
+
+        EvalContext ctxt {this,engine,0};
+
+        #define BUILTIN_FUNC(name,func,...)if(subject == name){\
+            if(checkArgs({__VA_ARGS__})){\
+                return func({ready_args.data(),ready_args.data() + ready_args.size()},ctxt);\
             }\
-            {\
+            else {\
+                *code = INVOKE_FAILED;\
+                return nullptr;\
+            };\
+        }
+        
+        BUILTIN_FUNC(BUILTIN_PRINT,bf_print,{"msg",Object::Any});    
 
+        BUILTIN_FUNC(BUILTIN_PROJECT,bf_Project,{"name",Object::String},{"version",Object::String});
+         
+        BUILTIN_FUNC(BUILTIN_EXECUTABLE,bf_Executable,{"name",Object::String},{"sources",Object::Array});
 
-            #define BUILTIN_FUNC_END(name) }} // end name
+        BUILTIN_FUNC(BUILTIN_ARCHIVE,bf_Archive,{"name",Object::String},{"sources",Object::Array});
 
+        BUILTIN_FUNC(BUILTIN_SHARED,bf_Shared,{"name",Object::String},{"sources",Object::Array});
 
-
-            #define VOID_RETURN return nullptr;
-
-        // std::cout << "Invoking Function:" << subject.data() << std::endl;
-
-        /**
-        @brief Prints a Message
-         func print(message) -> void
-        */
-
-        BUILTIN_FUNC(BUILTIN_PRINT,{"msg",Object::Any})
-
-            auto & arg = funcArgs["msg"];
-
-            _print_to_stream(std::cout,arg);
-
-            VOID_RETURN
-
-        BUILTIN_FUNC_END(BUILTIN_PRINT)
-
-        /**
-        @brief Declares the Project
-         func Project(name,version) -> void
-        */
-
-        BUILTIN_FUNC(BUILTIN_PROJECT,{"name",Object::String},{"version",Object::String})
-
-            auto & n = STRING_OBJECT(funcArgs["name"]);
-            auto & v = STRING_OBJECT(funcArgs["version"]);
-
-            std::cout << "Configuring Project:" << n << " " << v << std::endl;
-
-            VOID_RETURN
-
-        BUILTIN_FUNC_END(BUILTIN_PROJECT)
-
-        /**
-        @brief Defines an Executable Target to be Compiled
-        func Executable(name,sources) -> Executable
-       */
-
-        BUILTIN_FUNC(BUILTIN_EXECUTABLE,{"name",Object::String},{"sources",Object::Array})
-
-            auto & n = STRING_OBJECT(funcArgs["name"]);
-            STRING_ARRAY_OBJECT(funcArgs["sources"],srcs_array);
-
-            auto t = CompiledTarget::Executable(n,srcs_array);
-            if(engine->outputTargetOpts.os == TargetOS::Windows){
-                t->output_ext = "exe";
-            }
-
-            targets.push_back(t);
-            return new Object{Object::Target,t};
-
-        BUILTIN_FUNC_END(BUILTIN_EXECUTABLE)
-
+        
         *code = INVOKE_NOTBUILTIN;
         return nullptr;
     };

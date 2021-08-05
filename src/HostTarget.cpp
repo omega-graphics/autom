@@ -6,12 +6,15 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#else 
+#include <sys/utsname.h>
 #endif
 
 namespace autom {
     TargetArch hostArch(){
-#ifdef _WIN32
         TargetArch arch;
+#ifdef _WIN32
+        
         SYSTEM_INFO systemInfo;
         GetSystemInfo(&systemInfo);
         switch (systemInfo.wProcessorArchitecture) {
@@ -32,19 +35,43 @@ namespace autom {
                 break;
             }
         }
-        return arch;
+       
+    #else 
+        utsname info;
+        uname(&info);
+        
+        StrRef archStr {info.machine};
+
+        if(archStr == "arm64"){
+            arch = TargetArch::AARCH64;
+        }
+        else if(archStr == "arm"){
+            arch = TargetArch::ARM;
+        }
+        else if(archStr == "x86"){
+            arch = TargetArch::x86;
+        }
+        else if(archStr == "x86_64"){
+            arch = TargetArch::x86_64;
+        }
+        
 #endif
+     return arch;
     }
 
     TargetOS hostOS(){
 #ifdef _WIN32
         return TargetOS::Windows;
+#elif defined(__APPLE__)
+        return TargetOS::Darwin;
 #endif
     }
 
     TargetPlatform hostPlatform(){
 #ifdef _WIN32
         return TargetPlatform::Windows;
+#elif defined(__APPLE__)
+        return TargetPlatform::macOS;
 #endif
     }
 }

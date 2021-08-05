@@ -38,7 +38,7 @@ namespace autom {
                         c = getChar();
 
                         if(std::isdigit(c)){
-                            return {true,c - 0x8,""};
+                            return {true,int(c - 48),""};
                         }
                         else {
                             *bufferEnd = tmpc;

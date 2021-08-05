@@ -1,4 +1,4 @@
-#include "../Target.h"
+
 #include "AST.h"
 #include "../ADT.h"
 #include "Autom.h"
@@ -12,11 +12,12 @@
 
 namespace autom {
 
+    class Target;
     class ExecEngine;
     class Gen;
 
     namespace eval {
-
+        /// @brief A Runtime Object
         struct Object {
             typedef enum : int {
                 Target, // data = Target *
@@ -26,22 +27,78 @@ namespace autom {
                 Any = (Target | String | Array | Boolean)
             } Ty;
             Ty type;
-            void *data = nullptr;
-
-            struct BoolData {
-                bool data;
-            };
-
-            struct StrData {
-                std::string data;
-            };
-
-            struct ArrayData {
-                std::vector<Object *> data;
-            };
             unsigned refCount = 1;
 
+            /// @brief Increment object reference count
+            void incRef();
+
+            /// @brief Decrement object reference count
+            void decRec();
+            Object(Ty type);
+            virtual ~Object(){};
         };
+
+        class Boolean : public Object {
+            bool data;
+        public:
+            bool value();
+            Boolean(bool & val);
+            ~Boolean();
+        };
+
+        class String : public Object {
+            std::string data;
+        public:
+            size_t length();
+            bool empty();
+            StrRef value() const;
+            String(std::string & val);
+            ~String();
+        };
+
+        class Array : public Object {
+            std::vector<Object *> data;
+        public:
+            typedef std::vector<Object *>::iterator Iterator;
+            Iterator getBeginIterator();
+            Iterator getEndIterator(); 
+            size_t length();
+            bool empty();
+            
+            ArrayRef<Object *> value()const;
+            std::vector<std::string> toStringVector();
+
+            template<Object::Ty _t>
+            bool isArrayOf(){
+                for(auto it = getBeginIterator();it != getEndIterator();it++){
+                    if((*it)->type != _t){
+                        return false;
+                    };
+                };
+                return true;
+            };
+
+            Array(std::vector<Object *> & val);
+            ~Array();
+        };
+
+
+        class TargetWrapper : public Object {
+            ::autom::Target *t;
+        public:
+            TargetWrapper(::autom::Target *_t):Object(Object::Target),t(_t){};
+            ::autom::Target *value() const;
+            ~TargetWrapper();
+        };
+
+        Boolean * castToBool(Object *object);
+
+        String * castToString(Object *object);
+
+        Array * castToArray(Object *object);
+
+
+
 
         class Eval {
             friend class ::autom::ExecEngine;
@@ -57,9 +114,13 @@ namespace autom {
 
             Object * tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code);
 
+        public:
             struct VarStore {
                 std::unordered_map<std::string,Object *> body;
             };
+            void addTarget(Target *target);
+        private:
+            bool processString(std::string * str,ASTScope *scope);
 
             std::unordered_map<ASTScope *,VarStore> vars;
 
@@ -76,6 +137,7 @@ namespace autom {
             Extension *loadExtension(const std::filesystem::path& path);
             void closeExtensions();
         public:
+    
             bool evalStmt(ASTNode *node);
             Eval(Gen &gen,ExecEngine *engine);
 

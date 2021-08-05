@@ -9,11 +9,17 @@
 
 namespace autom {
 
+    template<typename T>
+    struct Format;
+
     struct FormatterTemplateBase {
         virtual void sub(std::ostream & out) = 0;
     };
 
-    template<typename T>
+    template<class T>
+    using has_format_provider = std::is_function<decltype(Format<T>::format)>;
+
+    template<typename T,typename F = Format<T>>
     struct FormatterTemplate : public FormatterTemplateBase {
         T val;
         explicit FormatterTemplate(T && val):val(val){
@@ -21,12 +27,11 @@ namespace autom {
         };
 
         void sub(std::ostream &out) override {
-            Format<T>::format(out,val);
+            F::format(out,val);
         };
     };
 
-    template<typename T>
-    struct Format;
+    
 
     template<>
     struct Format<std::string> {
@@ -42,20 +47,37 @@ namespace autom {
         };
     };
 
+    template<>
+    struct Format<const char *> {
+        static void format(std::ostream & out,const char *& val){
+            out << val;
+        };
+    };
 
-    template<typename T>
-    FormatterTemplateBase * make_formatter(T val){
-        return (FormatterTemplateBase *)new FormatterTemplate<T>(std::forward<T>(val));
+
+
+
+    template<typename T,std::enable_if_t<has_format_provider<T>::value,int> = 0>
+    FormatterTemplate<T> * make_formatter(T val){
+        return new FormatterTemplate<T>(std::forward<T>(val));
     };
 
     void formatWithTemplate(StrRef & msg,std::ostringstream & out,FormatterTemplateBase **formatters,size_t formattersN);
 
+    template<typename ...Formatters>
+    struct FormatResult {
+        std::string res;
+        inline operator std::string(){
+            return res;
+        };
+    };
+
     template<typename ...Args>
-    std::string formatmsg(StrRef msg,Args && ...args){
-        std::array<FormatterTemplateBase *,sizeof...(args)> formatters{make_formatter(std::forward<Args>(args))...};
+    auto formatmsg(StrRef msg,Args && ...args){
+        std::array<FormatterTemplateBase *,sizeof...(args)> formatters{(FormatterTemplateBase *)make_formatter(std::forward<Args>(args))...};
         std::ostringstream out;
         formatWithTemplate(msg,out,formatters.data(),formatters.size());
-        return out.str();
+        return FormatResult<decltype(std::make_tuple(make_formatter(std::forward<Args>(args))...))> {out.str()};
     };
 
 }

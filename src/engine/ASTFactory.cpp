@@ -147,49 +147,71 @@ namespace autom {
         ASTExpr *expr = obj;
         first_tok = aheadToken();
         // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
-        switch (first_tok.type) {
-            case TOK_LPAREN : {
-                incToNextToken();
-                ASTExpr *_expr= new ASTExpr();
-                _expr->type = EXPR_IVKE;
-                _expr->lhs = obj;
+        bool stop = false;
+        while(!stop) {
+            switch (first_tok.type) {
+                case TOK_LPAREN : {
+                    incToNextToken();
+                    ASTExpr *_expr= new ASTExpr();
+                    _expr->type = EXPR_IVKE;
+                    _expr->lhs = expr;
 
-                first_tok = nextToken();
+                    first_tok = nextToken();
 
-                 // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
-                
-                while(first_tok.type != TOK_RPAREN){
-                    auto paramId = first_tok.str;
-                     // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
-                    first_tok = nextToken();
-                    if(first_tok.type != TOK_COLON){
-                        /// Expected Colon
-                        std::cout << "Expected COLON" << std::endl;
-                        return nullptr;
-                    };
-                    first_tok = nextToken();
-                    auto e = buildExpr(first_tok,scope);
-                    if(!e){
-                        return nullptr;
-                    };
-                    _expr->func_args.insert(std::make_pair(paramId,e));
-                    first_tok = nextToken();
-                    if(first_tok.type != TOK_COMMA && aheadToken().type == TOK_RPAREN){
-                        incToNextToken();
-                        break;
-                    }
-                    else if(first_tok.type == TOK_COMMA){
+                    // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
+                    
+                    while(first_tok.type != TOK_RPAREN){
+                        auto paramId = first_tok.str;
+                        // std::cout << "Tok T:" << "0x" << std::hex << first_tok.type << std::dec << "Tok C:" << first_tok.str << std::endl;
                         first_tok = nextToken();
+                        if(first_tok.type != TOK_COLON){
+                            /// Expected Colon
+                            std::cout << "Expected COLON" << std::endl;
+                            return nullptr;
+                        };
+                        first_tok = nextToken();
+                        auto e = buildExpr(first_tok,scope);
+                        if(!e){
+                            return nullptr;
+                        };
+                        _expr->func_args.insert(std::make_pair(paramId,e));
+                        first_tok = nextToken();
+                        if(first_tok.type != TOK_COMMA && aheadToken().type == TOK_RPAREN){
+                            incToNextToken();
+                            break;
+                        }
+                        else if(first_tok.type == TOK_COMMA){
+                            first_tok = nextToken();
+                        };
                     };
-                };
-                expr = _expr;
-                break;
+                    expr = _expr;
+                    break;
+                }
+                case TOK_DOT : {
+                    incToNextToken();
+                    ASTExpr *_expr= new ASTExpr();
+                    _expr->type = EXPR_MEMBER;
+                    _expr->lhs = expr;
+
+                    first_tok = nextToken();
+
+                    if(first_tok.type != TOK_ID){
+                           /// Expected Colon
+                        std::cout << "Expected ID" << std::endl;
+                    }
+                    _expr->id = first_tok.str;
+                    expr = _expr;
+                    break;
+                }
+                default : { 
+                    stop = true;
+                    break;
+                }
             }
-            default : { 
-                break;
-            }
+            first_tok = aheadToken();
+            expr->scope = scope;
         }
-        expr->scope = scope;
+    
         return expr;
     };
     /// @note FIRST TOK IN THIS FUNCTION IS THE AHEAD TOKEN!!!!
@@ -242,7 +264,7 @@ namespace autom {
     };
 
     ASTNode *ASTFactory::nextStmt(){
-        std::cout << "Next Stmt" << std::endl;
+        // std::cout << "Next Stmt" << std::endl;
         Tok *tok;
 
         if(privTokIndex == 0){

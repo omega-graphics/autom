@@ -38,14 +38,25 @@ namespace autom {
 
     bool ExecEngine::checkDependencyTree(){
 
+        if(exec->targets.empty()){
+            printError("No targets have been created in this project!");
+            return false;
+        }
+
         std::vector<std::pair<autom::StrRef,Target *>> graph;
         for(auto & t : exec->targets){
 
             if(t->type & COMPILED_OUTPUT_TARGET){
+             
+
                 auto *compiledTarget = (CompiledTarget *)t;
+                /// Put Sources into map
+                for(auto s_it =  compiledTarget->srcs->getBeginIterator();s_it != compiledTarget->srcs->getEndIterator();s_it++){
+                    compiledTarget->source_object_map.insert(std::make_pair(eval::castToString(*s_it)->value(),""));
+                }
                 /// 1.  Check sources count!
                 if(compiledTarget->source_object_map.empty()){
-                    printError(formatmsg("Target `@0` must has no sources!",compiledTarget->name));
+                    printError(formatmsg("Target `@0` must has no sources!",compiledTarget->name->value()));
                     return false;
                 }
                 /// 2.Resolve Object Files
@@ -55,7 +66,7 @@ namespace autom {
                         src_name.replace_extension("obj");
                     else
                         src_name.replace_extension("o");
-                    src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name).append(src_name.c_str()).string();
+                    src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name->value().data()).append(src_name.c_str()).string();
                 }
             }
 
@@ -63,7 +74,7 @@ namespace autom {
 
             }
 
-            graph.emplace_back(std::make_pair(t->name,t));
+            graph.emplace_back(std::make_pair(t->name->value(),t));
 
         }
 

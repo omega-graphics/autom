@@ -15,6 +15,12 @@ namespace autom {
     struct ASTScope {
         std::string name;
         ASTScope *parent;
+        /** 
+         @brief Recursively checks scope inheritance.
+         @param parent The ASTScope used to check for inheritance.
+         @returns bool
+         */
+        bool isChildScopeOfParent(ASTScope *parent);
     };
 
     extern ASTScope *GLOBAL_SCOPE;

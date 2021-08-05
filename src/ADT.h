@@ -9,6 +9,8 @@
 #include <type_traits>
 #include <vector>
 #include <array>
+#include <map>
+#include <unordered_map>
 
 #ifndef AUTOM_ADT_H
 #define  AUTOM_ADT_H
@@ -192,7 +194,7 @@ namespace autom {
     /// @brief A constant reference to an Array (std::vector or std::array)
     template<class T>
     class ArrayRef {
-        T *_data;
+        const T *_data;
     public:
         typedef unsigned size_type;
     private:
@@ -232,7 +234,15 @@ namespace autom {
 
         };
 
-        ArrayRef(std::vector<T> & str):_data(str.data()),_size(str.size()){
+        ArrayRef(std::vector<T> & d):_data(d.data()),_size(d.size()){
+
+        };
+
+        ArrayRef(const std::vector<T> & d):_data(d.data()),_size(d.size()){
+
+        };
+        template<size_t length>
+        ArrayRef(std::array<T,length> & d):_data(d.data()),_size(length){
 
         };
 
@@ -246,10 +256,43 @@ namespace autom {
 
     };
 
-    template<class T,class ...Args>
-    auto unpackToArray(Args && ...args)
-    -> std::array<T,sizeof...(args)> {
-        return {T(args)...};
+    template<class K,class V>
+    class MapRef {
+        std::pair<K,V> * _data;
+    public:
+        typedef unsigned size_type;
+    private:
+        const size_type _size;
+    public:
+        std::pair<K,V> *data() const{
+            return _data;
+        };
+        size_type size()const {
+            return _size;
+        };
+        typedef const std::pair<K,V> * iterator;
+        typedef const K & key_reference;
+        typedef const V & value_reference;
+        iterator begin()const {
+            return _data;
+        };
+        iterator end(){
+            return _data + _size;
+        };
+        value_reference operator[](key_reference key){
+            auto it = begin();
+            while(it != end()){
+                if(it->first == key){
+                    return it->second;
+                };
+                ++it;
+            };
+            return begin()->second;
+        };
+        template<class InputIterator>
+        MapRef(InputIterator _beg,InputIterator _end):_data(_beg),_size(_end - _beg){
+
+        };
     };
 
 };

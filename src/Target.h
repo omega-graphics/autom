@@ -1,3 +1,5 @@
+#include "engine/Execution.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -12,6 +14,7 @@
 
 
 namespace autom {
+    
 
     /// @name Output Target Options
     /// @{
@@ -54,12 +57,20 @@ namespace autom {
     /// @{
 
     struct Target {
+
         TargetType type = 0;
-        std::string name;
-        std::vector<std::string> deps;
+
+        /// type = string
+        eval::String *name;
+
+        /// type = string[]
+        eval::String *deps;
     };
 
     struct CompiledTarget : public Target {
+
+        /// type = string[]
+        eval::Array * srcs;
 
         std::unordered_map<std::string,std::string> source_object_map;
 
@@ -67,45 +78,45 @@ namespace autom {
 
         std::vector<std::string> other_objs;
 
-        std::string output_ext;
+        /// type = string
+        eval::String * output_ext;
 
-        std::vector<std::string> cflags;
+        /// type = string[]
+        eval::Array * cflags;
 
-        std::vector<std::string> ldflags;
+        /// type = string[]
+        eval::Array * ldflags;
 
-        std::vector<std::string> libs;
+        /// type = string[]
+        eval::Array * libs;
 
-        std::vector<std::string> defines;
+        /// type = string[]
+        eval::Array * defines;
 
-        std::vector<std::string> include_dirs;
+        /// type = string[]
+        eval::Array * include_dirs;
 
-        static CompiledTarget * Executable(autom::StrRef name,autom::ArrayRef<std::string> sources){
+        static CompiledTarget * Executable(eval::String * name,eval::Array * sources){
             auto * t = new CompiledTarget;
             t->name = name;
+            t->srcs = sources;
             t->type = EXECUTABLE;
-            for(auto & s : sources){
-                t->source_object_map.insert(std::make_pair(s,""));
-            }
             return t;
         };
 
-        static CompiledTarget * Archive(autom::StrRef name,autom::ArrayRef<std::string> sources){
+        static CompiledTarget * Archive(eval::String * name,eval::Array * sources){
             auto * t = new CompiledTarget;
             t->name = name;
+            t->srcs = sources;
             t->type = STATIC_LIBRARY;
-            for(auto & s : sources){
-                t->source_object_map.insert(std::make_pair(s,""));
-            }
             return t;
         };
 
-        static CompiledTarget * Shared(autom::StrRef name,autom::ArrayRef<std::string> sources){
+        static CompiledTarget * Shared(eval::String * name,eval::Array * sources){
             auto * t = new CompiledTarget;
             t->name = name;
+            t->srcs = sources;
             t->type = SHARED_LIBRARY;
-            for(auto & s : sources){
-                t->source_object_map.insert(std::make_pair(s,""));
-            }
             return t;
         };
 

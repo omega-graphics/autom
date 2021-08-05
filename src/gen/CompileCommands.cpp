@@ -63,9 +63,9 @@ namespace autom {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::objcxx);
 
                         toolchain->formatter.writeCommandPrefix();
-                        toolchain->formatter.writeDefines(t->defines);
-                        toolchain->formatter.writeFlags(t->cflags);
-                        toolchain->formatter.writeIncludes(t->include_dirs);
+                        toolchain->formatter.writeDefines(t->defines->toStringVector());
+                        toolchain->formatter.writeFlags(t->cflags->toStringVector());
+                        toolchain->formatter.writeIncludes(t->include_dirs->toStringVector());
                         toolchain->formatter.writeSource(s);
                         toolchain->formatter.writeOutput(s_obj_pair.second);
                         toolchain->formatter.endCommandFormat(cmdOut);
