@@ -10,14 +10,14 @@ namespace autom {
 
 #define SOURCE_MATCHER(name,reg) \
 inline bool name(StrRef subject){ \
-        std::regex r(reg,std::regex_constants::ECMAScript | std::regex_constants::extended);\
-        return std::regex_match(subject.data(),r);\
+        std::regex r(reg,std::regex_constants::ECMAScript);\
+        return std::regex_search(subject.data(),r);\
         };
 
-    SOURCE_MATCHER(isCSrc,R"(\.c$)")
-    SOURCE_MATCHER(isCXXSrc,R"(\.(?:cc|cxx|cpp)$)")
-    SOURCE_MATCHER(isOBJCSrc,R"(\.m$)")
-    SOURCE_MATCHER(isOBJCXXSrc,R"(\.mm$)")
+    SOURCE_MATCHER(isCSrc,R"(\.c)")
+    SOURCE_MATCHER(isCXXSrc,R"(\.(?:cc|cxx|cpp))")
+    SOURCE_MATCHER(isOBJCSrc,R"(\.m)")
+    SOURCE_MATCHER(isOBJCXXSrc,R"(\.mm)")
 
     struct Toolchain {
         int toolchainType = 0;

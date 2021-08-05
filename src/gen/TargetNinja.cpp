@@ -26,8 +26,8 @@ namespace autom {
         outputOpts(outputOpts){
 //            if(!mainNinja.is_open())
 //                // FAILED TO OUTPUT TO DIR!!
-            mainNinja << "#" << GEN_FILE_HEADER << std::endl;
-            mainNinja << "ninja_required_version " << NINJA_MINIMUM_VERSION_REQUIRED << std::endl;
+            mainNinja << "# " << GEN_FILE_HEADER << std::endl;
+            mainNinja << "ninja_required_version =" << NINJA_MINIMUM_VERSION_REQUIRED << std::endl;
         };
         void consumeTarget(Target *target) override{
 
@@ -37,8 +37,7 @@ namespace autom {
                     for(auto & s_obj_pair : t->source_object_map){
                         auto & s = s_obj_pair.first;
                         mainNinja << "build " << s_obj_pair.second << ":";
-                        // TODO: Write Deps Here!
-                        mainNinja << std::endl << INDENT;
+                        mainNinja << INDENT;
                         if(isCSrc(s))
                             mainNinja << "cc";
                         else if(isCXXSrc(s))
@@ -65,7 +64,7 @@ namespace autom {
                         // Write INCLUDE_DIRS
                         mainNinja << INDENT"INCLUDE_DIRS =";
                         if(t->include_dirs.empty()){
-                            mainNinja << "\"\"";
+                            mainNinja << "";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
@@ -127,7 +126,7 @@ namespace autom {
                         mainNinja << std::endl;
                         mainNinja << INDENT"LDFLAGS =";
                         if(t->ldflags.empty()){
-                            mainNinja << "\"\"";
+                            mainNinja << "";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
@@ -141,7 +140,7 @@ namespace autom {
                         mainNinja << std::endl;
                         mainNinja << INDENT"LIBS =";
                         if(t->libs.empty()){
-                            mainNinja << "\"\"";
+                            mainNinja << "";
                         }
                         else {
                             toolchain->formatter.startCommandFormat(Toolchain::Formatter::unknown);
@@ -151,7 +150,7 @@ namespace autom {
                     }
                     mainNinja << std::endl;
 
-                    mainNinja << "build " << t->name << "phony " << phony_name << std::endl;
+                    mainNinja << "build " << t->name << ": phony " << phony_name << std::endl;
             }
              else if(target->type == FS_ACTION) {
 
@@ -164,60 +163,61 @@ namespace autom {
 
             toolchain = _toolchain;
 
-        #define CFAMILY_C_INPUT_TEMPLATE " ${CFLAGS} ${INCLUDE_DIRS} "
-        #define CFAMILY_LD_INPUT_TEMPLATE " ${LDFLAGS} ${LIBS} "
-        #define CFAMILY_AR_INPUT_TEMPLATE " ${ARFLAGS} ${LIBS} "
+        #define CFAMILY_C_INPUT_TEMPLATE " $CFLAGS $INCLUDE_DIRS "
+        #define CFAMILY_LD_INPUT_TEMPLATE " $LDFLAGS $LIBS "
+        #define CFAMILY_AR_INPUT_TEMPLATE " $ARFLAGS $LIBS "
 
             std::ofstream toolchain_file(std::filesystem::path(opts.outputDir.data()).append("toolchain.ninja"));
-            toolchain_file << "//" << GEN_FILE_HEADER << std::endl;
+            toolchain_file << "#" << GEN_FILE_HEADER << std::endl;
             if(toolchain->toolchainType & TOOLCHAIN_CFAMILY_ASM){
-                toolchain_file << std::endl << "rule cc:" << std::endl << " command = ";
+                toolchain_file << std::endl << "rule cc" << std::endl << " command = ";
 
                 toolchain->formatter.startCommandFormat(Toolchain::Formatter::cc);
                 toolchain->formatter.writeCommandPrefix();
                 toolchain->formatter.writeString(CFAMILY_C_INPUT_TEMPLATE);
-                toolchain->formatter.writeOutput(" ${out} ");
-                toolchain->formatter.writeSource(" ${in} ");
+                toolchain->formatter.writeOutput(" $out ");
+                toolchain->formatter.writeSource(" $in ");
                 toolchain->formatter.endCommandFormat(toolchain_file);
 
-                toolchain_file << std::endl << "rule cxx:" << std::endl << " command = ";
+                toolchain_file << std::endl << "rule cxx" << std::endl << " command = ";
 
                 toolchain->formatter.startCommandFormat(Toolchain::Formatter::cxx);
                 toolchain->formatter.writeCommandPrefix();
                 toolchain->formatter.writeString(CFAMILY_C_INPUT_TEMPLATE);
-                toolchain->formatter.writeOutput(" ${out} ");
-                toolchain->formatter.writeSource(" ${in} ");
+                toolchain->formatter.writeOutput(" $out ");
+                toolchain->formatter.writeSource(" $in ");
                 toolchain->formatter.endCommandFormat(toolchain_file);
 
-                toolchain_file << std::endl << "rule exe:" << std::endl << " command = ";
+                toolchain_file << std::endl << "rule exe" << std::endl << " command = ";
 
                 toolchain->formatter.startCommandFormat(Toolchain::Formatter::exe);
                 toolchain->formatter.writeCommandPrefix();
                 toolchain->formatter.writeString(CFAMILY_LD_INPUT_TEMPLATE);
-                toolchain->formatter.writeOutput(" ${out} ");
-                toolchain->formatter.writeSource(" ${in} ");
+                toolchain->formatter.writeOutput(" $out ");
+                toolchain->formatter.writeSource(" $in ");
                 toolchain->formatter.endCommandFormat(toolchain_file);
 
-                toolchain_file << std::endl << "rule so:" << std::endl << " command = ";
+                toolchain_file << std::endl << "rule so" << std::endl << " command = ";
 
                 toolchain->formatter.startCommandFormat(Toolchain::Formatter::so);
                 toolchain->formatter.writeCommandPrefix();
                 toolchain->formatter.writeString(CFAMILY_LD_INPUT_TEMPLATE);
-                toolchain->formatter.writeOutput(" ${out} ");
-                toolchain->formatter.writeSource(" ${in} ");
+                toolchain->formatter.writeOutput(" $out ");
+                toolchain->formatter.writeSource(" $in ");
                 toolchain->formatter.endCommandFormat(toolchain_file);
 
-                toolchain_file << std::endl << "rule ar:" << std::endl << " command = ";
+                toolchain_file << std::endl << "rule ar" << std::endl << " command = ";
 
                 toolchain->formatter.startCommandFormat(Toolchain::Formatter::ar);
                 toolchain->formatter.writeCommandPrefix();
                 toolchain->formatter.writeString(CFAMILY_AR_INPUT_TEMPLATE);
-                toolchain->formatter.writeOutput(" ${out} ");
-                toolchain->formatter.writeSource(" ${in} ");
+                toolchain->formatter.writeOutput(" $out ");
+                toolchain->formatter.writeSource(" $in ");
                 toolchain->formatter.endCommandFormat(toolchain_file);
             }
+            toolchain_file << std::endl;
             toolchain_file.close();
-            mainNinja << "subninja toolchain.ninja" << std::endl;
+            mainNinja << "include toolchain.ninja" << std::endl;
         };
         void finish() override {
             mainNinja.close();

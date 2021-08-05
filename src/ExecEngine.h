@@ -32,6 +32,7 @@ namespace autom {
         std::unique_ptr<eval::Eval> exec;
 
     public:
+        void printError(const std::string& msg);
         ExecEngineOpts & opts;
         OutputTargetOpts & outputTargetOpts;
 

@@ -130,7 +130,7 @@ namespace autom::eval {
                 t->output_ext = "exe";
             }
 
-            targets.push(t);
+            targets.push_back(t);
             return new Object{Object::Target,t};
 
         BUILTIN_FUNC_END(BUILTIN_EXECUTABLE)

@@ -4,7 +4,7 @@
 #include "Autom.h"
 
 #include <filesystem>
-#include <queue>
+#include <deque>
 
 
 #ifndef AUTOM_ENGINE_EXECUTION_H
@@ -45,7 +45,7 @@ namespace autom {
 
         class Eval {
             friend class ::autom::ExecEngine;
-            std::queue<Target *> targets;
+            std::deque<Target *> targets;
 
             std::vector<Extension *> loadedExts;
 

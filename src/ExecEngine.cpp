@@ -1,6 +1,8 @@
 #include <iostream>
+#include <map>
 #include "ExecEngine.h"
 #include "Toolchains.def"
+#include "Diagnostic.h"
 
 namespace autom {
     ExecEngine::ExecEngine(ExecEngineOpts &opts,OutputTargetOpts & outputTargetOpts) :
@@ -35,6 +37,36 @@ namespace autom {
     };
 
     bool ExecEngine::checkDependencyTree(){
+
+        std::vector<std::pair<autom::StrRef,Target *>> graph;
+        for(auto & t : exec->targets){
+
+            if(t->type & COMPILED_OUTPUT_TARGET){
+                auto *compiledTarget = (CompiledTarget *)t;
+                /// 1.  Check sources count!
+                if(compiledTarget->source_object_map.empty()){
+                    printError(formatmsg("Target `@0` must has no sources!",compiledTarget->name));
+                    return false;
+                }
+                /// 2.Resolve Object Files
+                for(auto & src_obj_map : compiledTarget->source_object_map){
+                    auto src_name = std::filesystem::path(src_obj_map.first).filename();
+                    if(outputTargetOpts.os == TargetOS::Windows)
+                        src_name.replace_extension("obj");
+                    else
+                        src_name.replace_extension("o");
+                    src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name).append(src_name.c_str()).string();
+                }
+            }
+
+            if(!graph.empty()){
+
+            }
+
+            graph.emplace_back(std::make_pair(t->name,t));
+
+        }
+
         return true;
     };
 
@@ -44,15 +76,8 @@ namespace autom {
         };
         while(!exec->targets.empty()){
             auto t = exec->targets.front();
-            if(t->type & COMPILED_OUTPUT_TARGET){
-                auto * ct  = (CompiledTarget *)t;
-                if(ct->source_object_map.empty()) {
-                    std::cout << "ERROR: Compiled Target `" << ct->name << "` has no sources!" << std::endl;
-                    break;
-                }
-            }
             opts.gen.consumeTarget(t);
-            exec->targets.pop();
+            exec->targets.pop_front();
             delete t;
         };
         opts.gen.finish();
@@ -74,5 +99,9 @@ namespace autom {
         return old_val;
     }
 
-    
+    void ExecEngine::printError(const std::string& msg) {
+        std::cout << "\x1b[31mERROR:\x1b[0m" << msg << std::endl;
+    }
+
+
 };
