@@ -1,10 +1,30 @@
 #include "Toolchain.h"
 #include "Toolchains.def"
 
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
+
+#include <fstream>
+
 namespace autom {
+
 
     Toolchain::Toolchain():formatter(*this){
 
+    }
+
+    Toolchain Toolchain::fromToolchainFile(StrRef file,ToolchainSearchOpts opts) {
+
+        rapidjson::Document document;
+        std::ifstream in(file);
+        rapidjson::IStreamWrapper input(in);
+        document.ParseStream(input);
+
+        if(document.IsObject()){
+            auto obj = document.GetObject();
+
+
+        }
     };
 
     Toolchain::Formatter::Formatter(Toolchain &_toolchain):toolchain(_toolchain) {

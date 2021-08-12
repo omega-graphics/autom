@@ -191,6 +191,10 @@ namespace autom {
 
     };
 
+
+    std::ostream & operator<<(std::ostream & os,const StrRef & strRef);
+    std::ostream & operator<<(std::ostream & os,StrRef & strRef);
+
     /// @brief A constant reference to an Array (std::vector or std::array)
     template<class T>
     class ArrayRef {

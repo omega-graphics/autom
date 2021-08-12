@@ -19,10 +19,22 @@ inline bool name(StrRef subject){ \
     SOURCE_MATCHER(isOBJCSrc,R"(\.m)")
     SOURCE_MATCHER(isOBJCXXSrc,R"(\.mm)")
 
+    struct ToolchainSearchOpts {
+        StrRef preferedToolchain;
+        bool stubborn;
+        typedef enum : int {
+            ccAsmFamily,
+            jdk,
+            swiftFamily
+        } ToolchainTy;
+        ToolchainTy type;
+    };
+
     struct Toolchain {
         int toolchainType = 0;
     public:
         Toolchain();
+        static Toolchain fromToolchainFile(StrRef file,ToolchainSearchOpts opts);
         struct Tool {
             std::string command;
         } 

@@ -30,7 +30,12 @@ namespace autom {
 
     Gen *TargetCMake();
 
-    Gen *TargetVisualStudio();
+    struct GenVisualStudioOpts {
+        autom::StrRef projectName;
+        autom::StrRef outputDir;
+    };
+
+    Gen *TargetVisualStudio(OutputTargetOpts & outputOpts,GenVisualStudioOpts & opts);
 
     Gen *TargetXcode();
 

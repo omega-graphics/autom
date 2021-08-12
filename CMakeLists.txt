@@ -16,6 +16,7 @@ else()
     set_target_properties("autom-lib" PROPERTIES ARCHIVE_OUTPUT_NAME "autom")
 endif()
 
+
 # If using LLVM on Linux, prefer linking to libc++
 #if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 #    if(NOT APPLE AND UNIX)
@@ -38,7 +39,7 @@ macro(add_autom_test _NAME)
 endmacro()
 
 add_autom_test("lex-test" "src/tests/lex-test.cpp")
-add_autom_test("run-test" "src/tests/run-test.cpp")
+#add_autom_test("run-test" "src/tests/run-test.cpp")
 
 include_directories("deps/rapidjson/include" "src")
 

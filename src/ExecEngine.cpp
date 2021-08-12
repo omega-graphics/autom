@@ -47,25 +47,28 @@ namespace autom {
         for(auto & t : exec->targets){
 
             if(t->type & COMPILED_OUTPUT_TARGET){
-             
 
                 auto *compiledTarget = (CompiledTarget *)t;
-                /// Put Sources into map
+                /// 1 Put Sources into map
                 for(auto s_it =  compiledTarget->srcs->getBeginIterator();s_it != compiledTarget->srcs->getEndIterator();s_it++){
                     compiledTarget->source_object_map.insert(std::make_pair(eval::castToString(*s_it)->value(),""));
                 }
-                /// 1.  Check sources count!
+                /// 2.  Check sources count!
                 if(compiledTarget->source_object_map.empty()){
-                    printError(formatmsg("Target `@0` must has no sources!",compiledTarget->name->value()));
+                    printError(formatmsg("Target `@0` has no sources!",compiledTarget->name->value()));
                     return false;
                 }
-                /// 2.Resolve Object Files
+                /// 3.Resolve Object Files
                 for(auto & src_obj_map : compiledTarget->source_object_map){
-                    auto src_name = std::filesystem::path(src_obj_map.first).filename();
+                    auto src_path =  std::filesystem::path(src_obj_map.first);
+
+                    auto src_name = src_path.filename();
+
                     if(outputTargetOpts.os == TargetOS::Windows)
                         src_name.replace_extension("obj");
                     else
                         src_name.replace_extension("o");
+
                     src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name->value().data()).append(src_name.c_str()).string();
                 }
             }

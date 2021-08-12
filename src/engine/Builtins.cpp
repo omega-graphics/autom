@@ -108,6 +108,9 @@ namespace autom::eval {
         auto *srcs = castToArray(args["sources"]);
 
         auto t = CompiledTarget::Executable(name,srcs);
+        if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
+            t->output_ext->assign("exe");
+        }
 
          ctxt.eval->addTarget(t);
 

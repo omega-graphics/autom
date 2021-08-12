@@ -34,6 +34,18 @@ namespace autom {
 
         }
 
+        String::String():Object(Object::String),data(){
+
+        }
+
+        void String::assign(String *other) {
+            data = other->data;
+        }
+
+        void String::assign(const std::string& string) {
+            data = string;
+        }
+
         size_t String::length(){
             return data.length();
         }
@@ -48,7 +60,9 @@ namespace autom {
 
         String::~String(){
 
-        };
+        }
+
+
 
         Array::Array(std::vector<Object *> & val):Object(Object::Array),data(val){
 
@@ -83,9 +97,15 @@ namespace autom {
             return vec;
         };
 
+        Array::Array():Object(Object::Array),data(){
+
+        }
+
         Array::~Array(){
 
         }
+
+
 
         TargetWrapper::~TargetWrapper(){
 

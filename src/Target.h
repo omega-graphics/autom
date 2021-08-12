@@ -96,8 +96,18 @@ namespace autom {
         /// type = string[]
         eval::Array * include_dirs;
 
+        void init(){
+            cflags = new eval::Array();
+            libs = new eval::Array();
+            defines = new eval::Array();
+            include_dirs = new eval::Array();
+            ldflags = new eval::Array();
+            output_ext = new eval::String();
+        }
+
         static CompiledTarget * Executable(eval::String * name,eval::Array * sources){
             auto * t = new CompiledTarget;
+            t->init();
             t->name = name;
             t->srcs = sources;
             t->type = EXECUTABLE;
@@ -106,6 +116,7 @@ namespace autom {
 
         static CompiledTarget * Archive(eval::String * name,eval::Array * sources){
             auto * t = new CompiledTarget;
+            t->init();
             t->name = name;
             t->srcs = sources;
             t->type = STATIC_LIBRARY;
@@ -114,6 +125,7 @@ namespace autom {
 
         static CompiledTarget * Shared(eval::String * name,eval::Array * sources){
             auto * t = new CompiledTarget;
+            t->init();
             t->name = name;
             t->srcs = sources;
             t->type = SHARED_LIBRARY;

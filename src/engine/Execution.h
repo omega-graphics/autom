@@ -42,6 +42,7 @@ namespace autom {
             bool data;
         public:
             bool value();
+            void assign(Boolean *other);
             Boolean(bool & val);
             ~Boolean();
         };
@@ -52,6 +53,9 @@ namespace autom {
             size_t length();
             bool empty();
             StrRef value() const;
+            void assign(String *other);
+            void assign(const std::string& string);
+            String();
             String(std::string & val);
             ~String();
         };
@@ -64,6 +68,8 @@ namespace autom {
             Iterator getEndIterator(); 
             size_t length();
             bool empty();
+
+            void assign(Array *other);
             
             ArrayRef<Object *> value()const;
             std::vector<std::string> toStringVector();
@@ -77,7 +83,7 @@ namespace autom {
                 };
                 return true;
             };
-
+            explicit Array();
             Array(std::vector<Object *> & val);
             ~Array();
         };
