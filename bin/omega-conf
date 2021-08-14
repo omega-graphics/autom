@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+cmake_module_path="$(dirname $0)/cmake"
+echo $cmake_module_path
+
+cmake -DCMAKE_MODULE_PATH="$cmake_module_path" "$@"

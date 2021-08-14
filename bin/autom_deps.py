@@ -199,7 +199,8 @@ def processCommand(c:Command):
             url = processStringWithVariables(url)
             dest = c.get("dest")
             dest = processStringWithVariables(dest)
-            os.makedirs(os.path.dirname(dest))
+            if not os.path.exists(os.path.dirname(dest)):
+                os.makedirs(os.path.dirname(dest))
             print(f"Download {url}")
             res = urlretrieve(url,dest)
             print(res)
@@ -231,9 +232,11 @@ def processCommand(c:Command):
             shutil.rmtree(os.path.dirname(z_file))
     return
 
-postCommands:"Queue[list[Command]]" = Queue()
-postRootCommands:"list[list[Command]]" = []
-priorPostCommandsLen:int
+
+postCommands: "Queue[list[Command]]" = Queue()
+postRootCommands: "list[list[Command]]" = []
+priorPostCommandsLen: int
+
 
 def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
     global updateOnly
@@ -249,7 +252,7 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
         _counter = Counter(count)
 
     assert(j.get("commands"))
-    commands:"list[dict]" = j.get("commands")
+    commands: "list[dict]" = j.get("commands")
     _local_vars = j.get("variables")
     if _local_vars is not None:
         variables.update(_local_vars)
