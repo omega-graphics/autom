@@ -9,13 +9,9 @@ namespace autom {
     opts(opts),
     lexer(std::make_unique<Lexer>()),
     astFactory(std::make_unique<ASTFactory>(*lexer)),
-    exec(std::make_unique<eval::Eval>(opts.gen,this)),outputTargetOpts(outputTargetOpts),toolchain(std::make_shared<Toolchain>()){
-        toolchain->toolchainType = TOOLCHAIN_LLVM;
-        toolchain->CC.command = LLVM_CLANGMSVC;
-        toolchain->CXX.command = LLVM_CLANGMSVC;
-        toolchain->EXE_LD.command = LLVM_LLDLINK;
-        toolchain->SO_LD.command = LLVM_LLDLINK;
-        toolchain->AR.command = MSVC_LIB;
+    exec(std::make_unique<eval::Eval>(opts.gen,this)),outputTargetOpts(outputTargetOpts){
+        auto p = std::filesystem::path(opts.distPath.data()).append("default-toolchains.json");
+        
     };
 
     void ExecEngine::parseAndEvaluate(std::istream * in){

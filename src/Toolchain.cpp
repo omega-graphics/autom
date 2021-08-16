@@ -1,8 +1,6 @@
 #include "Toolchain.h"
 #include "Toolchains.def"
 
-#include <rapidjson/document.h>
-#include <rapidjson/istreamwrapper.h>
 
 #include <fstream>
 
@@ -135,6 +133,21 @@ namespace autom {
     void Toolchain::Formatter::writeString(const std::string &str) {
         this->str << str;
     }
+
+
+ToolchainLoader::ToolchainLoader(const StrRef & path){
+    std::ifstream in(path,std::ios::in);
+    auto inW = rapidjson::IStreamWrapper(in);
+    toolchainFile.ParseStream(inW);
+}
+
+std::shared_ptr<Toolchain> ToolchainLoader::getToolchainByName(const StrRef & name){
+    auto toolchainObject = toolchainFile[name.data()].GetObject();
+};
+
+std::shared_ptr<Toolchain> ToolchainLoader::getToolchainBySystemPreference(OutputTargetOpts & outputTargetOpts){
+    
+}
 
 
 }

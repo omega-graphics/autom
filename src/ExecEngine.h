@@ -18,6 +18,7 @@ namespace autom {
 
     struct ExecEngineOpts {
         Gen &gen;
+        autom::StrRef distPath;
         std::vector<StrRef> interfaceSearchPaths;
     };
 

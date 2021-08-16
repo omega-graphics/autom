@@ -298,6 +298,9 @@ namespace autom {
 
         };
     };
+
+
+    bool locateProgram(std::string prog,std::string path,char * out);
     
     
     class SHA256Hash {

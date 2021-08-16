@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include <filesystem>
+
 #ifdef __APPLE__
 #include <CommonCrypto/CommonDigest.h>
 #endif
@@ -56,5 +58,31 @@ namespace autom {
     std::ostream & operator<<(std::ostream & os,const StrRef & strRef){
         return os.write(strRef.data(),strRef.size());
     };
+
+bool locateProgram(std::string prog,std::string path,char * out){
+    
+    std::istringstream in(path);
+    std::string parentPath;
+
+#ifdef _WIN32
+    while(!in.eof()){
+        std::getline(in,parentPath,':');
+#else
+
+    while(!in.eof()){
+        std::getline(in,parentPath,':');
+
+#endif
+        
+        auto p = std::filesystem::path(parentPath).append(prog);
+        if(std::filesystem::is_symlink(p)){
+            
+            
+        }
+    }
+    
+};
+
+
 
 }

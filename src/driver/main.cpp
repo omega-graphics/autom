@@ -54,6 +54,9 @@ Options:
 
 
 int main(int argc,char * argv[]){
+    
+    
+    auto exec_path = std::filesystem::path(argv[0]).parent_path().parent_path();
 
     autom::StrRef outputDir = argv[argc-1];
 
@@ -132,7 +135,7 @@ int main(int argc,char * argv[]){
         gen = autom::TargetNinja(outputTargetOpts,ninjaOpts);
     }
 
-    autom::ExecEngineOpts opts {*gen};
+    autom::ExecEngineOpts opts {*gen,exec_path};
     autom::ExecEngine eng(opts,outputTargetOpts);
 
     auto entry_exists = std::filesystem::exists("./AUTOM.build");

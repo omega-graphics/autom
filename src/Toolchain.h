@@ -3,6 +3,11 @@
 #include <sstream>
 #include <regex>
 
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
+
+#include "Target.h"
+
 #ifndef AUTOM_TOOLCHAIN_H
 #define AUTOM_TOOLCHAIN_H
 
@@ -88,6 +93,18 @@ inline bool name(StrRef subject){ \
         };
         friend class Formatter;
         Formatter formatter;
+    };
+
+
+    class ToolchainLoader {
+        rapidjson::Document toolchainFile;
+    public:
+        ToolchainLoader(const StrRef & path);
+        
+        std::shared_ptr<Toolchain> getToolchainByName(const StrRef & name);
+        
+        std::shared_ptr<Toolchain> getToolchainBySystemPreference(OutputTargetOpts & outputTargetOpts);
+        
     };
 
 }
