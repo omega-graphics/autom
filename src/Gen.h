@@ -36,8 +36,13 @@ namespace autom {
     };
 
     Gen *TargetVisualStudio(OutputTargetOpts & outputOpts,GenVisualStudioOpts & opts);
+    
+    struct GenXcodeOpts {
+        autom::StrRef projectName;
+        autom::StrRef outputDir;
+    };
 
-    Gen *TargetXcode();
+    Gen *TargetXcode(OutputTargetOpts & outputOpts,GenXcodeOpts & opts);
 
 };
 

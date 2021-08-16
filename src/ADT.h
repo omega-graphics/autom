@@ -298,6 +298,24 @@ namespace autom {
 
         };
     };
+    
+    
+    class SHA256Hash {
+        
+        void *data;
+        
+        unsigned char * getResult();
+        
+    public:
+        
+        SHA256Hash();
+        
+        void addData(void *data,size_t dataSize);
+        
+        void getResultAsHex(std::string & out);
+        
+        ~SHA256Hash();
+    };
 
 };
 
