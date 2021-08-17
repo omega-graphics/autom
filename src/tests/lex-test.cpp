@@ -7,22 +7,23 @@
 
 #include "ADT.h"
 
-#include <CommonCrypto/CommonDigest.h>
+#include <Windows.h>
 
-inline std::string generateObjectID(autom::StrRef name,autom::StrRef otherData){
-   
-    return out.str();
-};
 
 int main(int argc,char *argv[]){
 
-
-    
-    std::string src = "Autom";
-    std::string type = "PBXNativeTarget";
-    
-    std::cout << "Source:" << src << type  << std::endl;
-    std::cout << "ID:" << generateObjectID(src,type) << std::endl;
+//    std::string path;
+//    path.resize(32767);
+//    size_t newSize = GetEnvironmentVariableA("Path",path.data(),path.size());
+//    path.resize(newSize);
+//    std::string progPath;
+//    auto progFound = autom::locateProgram("cl",path,progPath);
+//    if(progFound){
+//        std::cout << "Program Found:" << progPath << std::endl;
+//    }
+//    else {
+//        std::cout << "Program not found" << std::endl;
+//    }
     
     autom::StrRef file(argv[1]);
 

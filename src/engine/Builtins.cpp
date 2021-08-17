@@ -7,6 +7,10 @@
 #include <initializer_list>
 #include <iostream>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 namespace autom {
 
     template<>
@@ -127,6 +131,7 @@ namespace autom::eval {
         return new TargetWrapper(t);
     };
 
+
     Object *bf_Shared(MapRef<std::string,Object *> args,EvalContext & ctxt){
         auto *name = castToString(args["name"]);
         auto *srcs = castToArray(args["sources"]);
@@ -137,6 +142,46 @@ namespace autom::eval {
         return new TargetWrapper(t);
     };
 
+
+
+    Object *bf_find_program(MapRef<std::string,Object *> args,EvalContext & ctxt){
+#ifdef _WIN32
+        std::string path;
+        path.resize(32767);
+        size_t newSize = GetEnvironmentVariableA("Path",path.data(),path.size());
+        path.resize(newSize);
+#endif
+        std::string progPath;
+        auto *progCmd = castToString(args["cmd"]);
+        auto progFound = autom::locateProgram(progCmd->value(),path,progPath);
+        if(progFound)
+            return new eval::String(progPath);
+        else
+            return nullptr;
+    }
+
+
+    class SourceFileConfigDriver {
+        std::istream & in;
+        std::ostream & out;
+    public:
+        explicit SourceFileConfigDriver(std::istream &in,std::ostream &out) :out(out),in(in) {
+
+        };
+        void performConfiguration(EvalContext & ctxt){
+            
+        }
+    };
+
+    Object *bf_config_file(MapRef<std::string,Object *> args,EvalContext & ctxt){
+
+        auto *inFile = castToString(args["input"]);
+        auto *outFile = castToString(args["output"]);
+
+
+
+        return nullptr;
+    }
 
 
     Object * Eval::tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code){
@@ -192,6 +237,9 @@ namespace autom::eval {
 
         BUILTIN_FUNC(BUILTIN_SHARED,bf_Shared,{"name",Object::String},{"sources",Object::Array});
 
+        BUILTIN_FUNC(BUILTIN_FIND_PROGRAM,bf_find_program,{"cmd",Object::String});
+
+        BUILTIN_FUNC(BUILTIN_CONFIG_FILE,bf_config_file,{"in:",Object::String},{"out:",Object::String});
         
         *code = INVOKE_NOTBUILTIN;
         return nullptr;

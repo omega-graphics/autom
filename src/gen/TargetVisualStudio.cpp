@@ -20,6 +20,7 @@ namespace autom {
                 GenVisualStudioOpts & opts):
                 outputOpts(outputOpts),opts(opts),outputPath(opts.outputDir.data()){
             solutionOut.open(std::filesystem::path(outputPath).append(std::string(opts.projectName) + ".sln"),std::ios::out);
+
         };
         bool supportsCustomToolchainRules() override {
             return true;

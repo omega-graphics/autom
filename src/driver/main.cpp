@@ -135,7 +135,7 @@ int main(int argc,char * argv[]){
         gen = autom::TargetNinja(outputTargetOpts,ninjaOpts);
     }
 
-    autom::ExecEngineOpts opts {*gen,exec_path};
+    autom::ExecEngineOpts opts {*gen,exec_path.string()};
     autom::ExecEngine eng(opts,outputTargetOpts);
 
     auto entry_exists = std::filesystem::exists("./AUTOM.build");

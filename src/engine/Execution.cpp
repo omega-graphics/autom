@@ -42,15 +42,22 @@ namespace autom {
                 
             for(auto & scope_var_store_p : vars){
                 if(scope->isChildScopeOfParent(scope_var_store_p.first)){
-                    auto __found_it = scope_var_store_p.second.body.find(name);
-                    if(__found_it != scope_var_store_p.second.body.end()){
-                        return __found_it->second;
+                    auto _found_it = scope_var_store_p.second.body.find(name);
+                    if(_found_it != scope_var_store_p.second.body.end()){
+                        return _found_it->second;
                     }
                 }
             }
 
             return nullptr;
         };
+
+        void eval::Eval::clearVarStoreWithScope(ASTScope *scope) {
+            auto found_store = vars.find(scope);
+            if(found_store != vars.end()){
+                vars.erase(found_store);
+            }
+        }
 
         Object * Eval::evalExpr(ASTExpr *node,bool *failed){
             //  std::cout << "Eval Expr:" << "0x" << std::hex << node->type << std::dec << std::endl;

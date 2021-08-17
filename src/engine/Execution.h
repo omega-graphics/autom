@@ -124,14 +124,20 @@ namespace autom {
             struct VarStore {
                 std::unordered_map<std::string,Object *> body;
             };
+            std::unordered_map<ASTScope *,VarStore> vars;
+            
+            Object *referVarWithScope(ASTScope *scope,StrRef name);
+
+            void clearVarStoreWithScope(ASTScope *scope);
+
             void addTarget(Target *target);
+
         private:
             bool processString(std::string * str,ASTScope *scope);
 
-            std::unordered_map<ASTScope *,VarStore> vars;
 
-            Object *referVarWithScope(ASTScope *scope,StrRef name);
-            void clearVarStoreWithScope(ASTScope *scope);
+
+
 
             Object *invokeFunc(StrRef name);
             Object *evalBlock(ASTBlock *block);

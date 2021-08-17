@@ -300,7 +300,7 @@ namespace autom {
     };
 
 
-    bool locateProgram(std::string prog,std::string path,char * out);
+    bool locateProgram(autom::StrRef prog,std::string path,std::string & out);
     
     
     class SHA256Hash {
