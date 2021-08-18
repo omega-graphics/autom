@@ -9,6 +9,8 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#include <fstream>
+
 #endif
 
 namespace autom {
@@ -80,6 +82,7 @@ namespace autom::eval {
     struct EvalContext {
         Eval *eval;
         ExecEngine *execEngine;
+        ASTScope *currentScope;
         int code;
         inline void logError(const std::string & msg){
             execEngine->printError(msg);
@@ -169,7 +172,56 @@ namespace autom::eval {
 
         };
         void performConfiguration(EvalContext & ctxt){
-            
+
+            auto getChar = [&](){
+                return char(in.get());
+            };
+
+            auto aheadChar = [&](){
+                auto c = (char)in.get();
+                in.seekg(-1,std::ios::cur);
+                return c;
+            };
+
+            auto isIdentifierChar = [=](char & c){
+                return (bool)std::isalnum(c) || c == '_';
+            };
+
+            char c;
+            while((c = getChar()) != -1){
+                switch (c) {
+                    case '@': {
+                        char at = c;
+                        std::string variable;
+
+                        while((c = getChar()) != '@'){
+                            if(!isIdentifierChar(c)){
+                                out << formatmsg("@0@1",at,variable).res;
+                                continue;
+                            }
+                            variable.push_back(c);
+                        }
+
+                        auto object = ctxt.eval->referVarWithScope(ctxt.currentScope,variable);
+                        if(object != nullptr) {
+                            if(objectIsString(object)){
+                                out << castToString(object)->value();
+                            }
+                            else {
+                                ctxt.logError("Unsupported variable type");
+                                return;
+                            }
+                        }
+
+
+                        break;
+                    }
+                    default: {
+                        out << c;
+                        break;
+                    }
+                }
+            }
         }
     };
 
@@ -178,6 +230,19 @@ namespace autom::eval {
         auto *inFile = castToString(args["input"]);
         auto *outFile = castToString(args["output"]);
 
+        if(!std::filesystem::exists(inFile->value().data())){
+            ctxt.logError("Input file in config_file function does not exist");
+        }
+        auto inFileDir = std::filesystem::path(outFile->value().data()).parent_path();
+        if(!std::filesystem::exists(inFileDir)){
+            std::filesystem::create_directories(inFileDir);
+        }
+
+        std::ifstream in(inFile->value().data(),std::ios::in);
+        std::ofstream out(outFile->value().data(),std::ios::out);
+
+        SourceFileConfigDriver configDriver {in,out};
+        configDriver.performConfiguration(ctxt);
 
 
         return nullptr;

@@ -115,7 +115,7 @@ bool locateProgram(autom::StrRef prog,std::string path,std::string & out){
 
 #endif
         
-        auto p = std::filesystem::path(parentPath).append(prog);
+        auto p = std::filesystem::path(parentPath).append(prog.data());
         if(std::filesystem::is_symlink(p)){
             out = std::filesystem::read_symlink(p).string();
             return true;
