@@ -9,10 +9,9 @@ build
 *.sh
 .cache
 deps
-!bin/autom-clone.bat
+!bin/*.bat
 *.zip
 *.tar 
-cmake 
 ninja*
 gn-src
 *.ninja
