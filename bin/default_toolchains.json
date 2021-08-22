@@ -118,5 +118,22 @@
       "output": "/Fo",
       "compile": "/c"
     }
+  },
+  {
+    "name": "OpenJDK",
+    "type": "jdk",
+    "progs": {
+      "javac":"javac",
+      "jar":"jar",
+      "jlink":"jlink"
+    },
+    "flags": {
+      "define": "/D",
+      "include_dir": "/I",
+      "lib": "",
+      "lib_dir": "/LIBPATH:",
+      "output": "/Fo",
+      "compile": "/c"
+    }
   }
 ]

@@ -37,12 +37,14 @@ inline bool name(StrRef subject){ \
 
     struct Toolchain {
         int toolchainType = 0;
+        std::string name;
     public:
         Toolchain();
-        static Toolchain fromToolchainFile(StrRef file,ToolchainSearchOpts opts);
         struct Tool {
             std::string command;
         } 
+        /// @name Tools
+        /// @{
         CC,
         CXX,
         AR,
@@ -50,6 +52,22 @@ inline bool name(StrRef subject){ \
         EXE_LD,
         JAVAC,
         SWIFTC;
+        /// @}
+
+        typedef std::string Flag;
+
+        /// @name Flags
+        /// @{
+        Flag define;
+        Flag include_dir;
+        Flag lib;
+        Flag lib_dir;
+        Flag compile;
+        Flag output;
+        /// @}
+
+        bool verifyTools() const;
+
 
         class Formatter {
             std::ostringstream str;
@@ -98,12 +116,11 @@ inline bool name(StrRef subject){ \
 
     class ToolchainLoader {
         rapidjson::Document toolchainFile;
+        StrRef filename;
     public:
         ToolchainLoader(const StrRef & path);
         
-        std::shared_ptr<Toolchain> getToolchainByName(const StrRef & name);
-        
-        std::shared_ptr<Toolchain> getToolchainBySystemPreference(OutputTargetOpts & outputTargetOpts);
+        std::shared_ptr<Toolchain> getToolchain(ToolchainSearchOpts & opts);
         
     };
 

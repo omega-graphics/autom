@@ -6,12 +6,23 @@
 
 namespace autom {
     ExecEngine::ExecEngine(ExecEngineOpts &opts,OutputTargetOpts & outputTargetOpts) :
-    opts(opts),
     lexer(std::make_unique<Lexer>()),
     astFactory(std::make_unique<ASTFactory>(*lexer)),
-    exec(std::make_unique<eval::Eval>(opts.gen,this)),outputTargetOpts(outputTargetOpts){
+    exec(std::make_unique<eval::Eval>(opts.gen,this)),
+    opts(opts),
+    outputTargetOpts(outputTargetOpts){
         auto p = std::filesystem::path(opts.distPath.data()).append("default-toolchains.json");
+        ToolchainLoader loader{p.string()};
+
+        std::string preferedToolchain;
+
+        ToolchainSearchOpts searchOpts {preferedToolchain,ToolchainSearchOpts::ccAsmFamily};
+
         
+        
+        if(outputTargetOpts.platform == TargetPlatform::Windows){
+            
+        }
     };
 
     void ExecEngine::parseAndEvaluate(std::istream * in){

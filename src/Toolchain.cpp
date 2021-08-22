@@ -1,27 +1,58 @@
 #include "Toolchain.h"
 #include "Toolchains.def"
 
+#include "Diagnostic.h"
+
 
 #include <fstream>
+#include <iostream>
+
+#ifdef _WIN32
+#define PATH_ENV_VAR "Path"
+#else 
+#define PATH_ENV_VAR "PATH"
+#endif
 
 namespace autom {
+
+   
 
 
     Toolchain::Toolchain():formatter(*this){
 
     }
 
-    Toolchain Toolchain::fromToolchainFile(StrRef file,ToolchainSearchOpts opts) {
+    bool Toolchain::verifyTools() const {
+        
+        std::string path = std::getenv(PATH_ENV_VAR); 
+        std::string loc;
+        bool res = false;
 
-        rapidjson::Document document;
-        std::ifstream in(file);
-        rapidjson::IStreamWrapper input(in);
-        document.ParseStream(input);
+        #define FIND_TOOL(tool_str) \
+            std::cout << "-- " << tool_str << std::endl;\
+            if((res = locateProgram(tool_str,path,loc))){\
+                std::cout << "-- " << tool_str << "-- found" << " (\"" << loc << "\")";\
+            }\
+            else {\
+                std::cout << "-- " << tool_str << "-- not found";\
+            }
 
-        if(document.IsObject()){
-            auto obj = document.GetObject();
+        switch (toolchainType) {
+            case TOOLCHAIN_CFAMILY_ASM : {
 
+                std::cout << "Toolchain: " << name << std::endl;
 
+                
+                FIND_TOOL(CC.command);
+                FIND_TOOL(CXX.command);
+                FIND_TOOL(AR.command);
+                FIND_TOOL(SO_LD.command);
+                FIND_TOOL(EXE_LD.command);
+
+                return res;
+
+                break;
+            }
         }
     };
 
@@ -57,14 +88,7 @@ namespace autom {
     }
 
     void Toolchain::Formatter::writeSource(const StrRef &src) {
-        switch(toolchain.toolchainType){
-            case TOOLCHAIN_MSVC : {
-                str << "/C" << src.data();
-            }
-            default : {
-                str << "-c" << " " << src.data();
-            }
-        }
+        str << toolchain.compile << " " << src.data();   
     }
 
     void Toolchain::Formatter::writeFlags(ArrayRef<std::string> flags) {
@@ -74,59 +98,24 @@ namespace autom {
     }
 
     void Toolchain::Formatter::writeIncludes(ArrayRef<std::string> inc) {
-        std::string prefix;
-        if(toolchain.toolchainType == TOOLCHAIN_MSVC || toolchain.CC.command == LLVM_CLANGMSVC){
-            prefix = "/I";
-        }
-        else {
-            prefix = "-I";
-        }
-
         for(auto & i : inc){
-            str << prefix << i << " ";
+            str << toolchain.include_dir << i << " ";
         }
     }
 
     void Toolchain::Formatter::writeOutput(const StrRef &output) {
-
-        switch(toolchain.toolchainType){
-            case TOOLCHAIN_MSVC : {
-                str << "/Fo" << output.data();
-            }
-            default : {
-                str << "-o" << " " << output.data();
-            }
-        }
-
+        str << toolchain.output << " " << output.data();
     }
 
     void Toolchain::Formatter::writeDefines(ArrayRef<std::string> defines) {
-        std::string prefix;
-        switch(toolchain.toolchainType){
-            case TOOLCHAIN_MSVC : {
-                prefix = "/D";
-            }
-            case TOOLCHAIN_LLVM | TOOLCHAIN_GCC : {
-                prefix = "-D";
-            }
-        }
         for(auto & d : defines){
-            str << prefix << d << " ";
+            str << toolchain.define << d << " ";
         }
     }
 
     void Toolchain::Formatter::writeLibs(ArrayRef<std::string> libs) {
-        std::string prefix;
-        switch(toolchain.toolchainType){
-            case TOOLCHAIN_MSVC : {
-                prefix = "";
-            }
-            case TOOLCHAIN_LLVM | TOOLCHAIN_GCC : {
-                prefix = "-l";
-            }
-        }
         for(auto & l : libs){
-            str << prefix << l << " ";
+            str << toolchain.lib << l << " ";
         }
     }
 
@@ -135,19 +124,82 @@ namespace autom {
     }
 
 
-ToolchainLoader::ToolchainLoader(const StrRef & path){
+ToolchainLoader::ToolchainLoader(const StrRef & path):filename(path){
     std::ifstream in(path,std::ios::in);
     auto inW = rapidjson::IStreamWrapper(in);
     toolchainFile.ParseStream(inW);
 }
 
-std::shared_ptr<Toolchain> ToolchainLoader::getToolchainByName(const StrRef & name){
-    auto toolchainObject = toolchainFile[name.data()].GetObject();
-};
-
-std::shared_ptr<Toolchain> ToolchainLoader::getToolchainBySystemPreference(OutputTargetOpts & outputTargetOpts){
+std::shared_ptr<Toolchain> ToolchainLoader::getToolchain(ToolchainSearchOpts & opts){
     
-}
+    auto & document = toolchainFile;
+
+    auto t = new Toolchain;
+
+    if(document.IsArray()){
+        auto array = document.GetArray();
+        for(auto array_it = array.Begin();array_it != array.End();array_it++){
+            auto entry = array_it->GetObject();
+
+            auto toolchain_entry_type = entry.FindMember("type");
+            if(toolchain_entry_type == entry.MemberEnd()){
+                std::cout << formatmsg("No member found for toolchain entry by the name: `@0`, in file @1","type",filename).res;
+                delete t;
+                exit(1);
+            }
+
+            autom::StrRef type = toolchain_entry_type->value.GetString();
+
+            auto progs = entry["progs"].GetObject();
+            auto flags = entry["flags"].GetObject();
+
+
+            {
+                t->compile = flags["compile"].GetString();
+                t->compile = flags["output"].GetString();
+            }
+
+            if(type == "cfamily" && opts.type == ToolchainSearchOpts::ccAsmFamily){
+                t->toolchainType = TOOLCHAIN_CFAMILY_ASM;
+                t->define = flags["define"].GetString();
+                t->include_dir = flags["include_dir"].GetString();
+                t->lib = flags["lib"].GetString();
+                t->lib_dir = flags["lib_dir"].GetString();
+
+                t->CC.command = progs["cc"].GetString();
+                t->CXX.command = progs["cxx"].GetString();
+                t->AR.command = progs["ar"].GetString();
+                t->EXE_LD.command = progs["ld_exe"].GetString();
+                t->SO_LD.command = progs["ld_so"].GetString();
+
+
+            }
+            else if(type == "jdk" && opts.type == ToolchainSearchOpts::jdk){
+                t->toolchainType = TOOLCHAIN_JDK;
+            }
+
+            t->name = entry["name"].GetString();
+
+            if(opts.preferedToolchain.size() != 0){
+                
+                if(opts.preferedToolchain == t->name){
+                    return std::shared_ptr<Toolchain>(t);
+                    break;
+                }
+                else {
+                    continue;
+                }
+            }
+
+            return std::shared_ptr<Toolchain>(t);
+            break;
+            
+        }
+    }
+    delete t;
+
+    return nullptr;
+};
 
 
 }

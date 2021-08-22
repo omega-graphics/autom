@@ -12,7 +12,8 @@
 
 namespace autom {
 
-    class Target;
+    struct Target;
+    
     class ExecEngine;
     class Gen;
 

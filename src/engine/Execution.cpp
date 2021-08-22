@@ -149,8 +149,17 @@ namespace autom {
 
                         auto tw = (TargetWrapper *)obj;
 
-                        if(propName == "sources"){
-                            
+                        if(tw->value()->type & COMPILED_OUTPUT_TARGET){
+                            auto _target =  (CompiledTarget *)tw->value();
+                            if(propName == "sources"){
+                                return _target->srcs;
+                            }
+                            else if(propName == "cflags"){
+                                return _target->cflags;
+                            }
+                            else if(propName == "include_dirs"){
+                                return _target->include_dirs;
+                            }
                         }
                     }
                     else {
@@ -165,7 +174,7 @@ namespace autom {
         }
 
         Object * Eval::evalBlock(ASTBlock *block) {
-            
+            return nullptr;
         }
 
         bool Eval::processString(std::string * str,ASTScope *scope){

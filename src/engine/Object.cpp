@@ -105,7 +105,9 @@ namespace autom {
 
         }
 
-
+        Target * TargetWrapper::value() const {
+            return t;
+        };
 
         TargetWrapper::~TargetWrapper(){
 

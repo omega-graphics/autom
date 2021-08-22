@@ -119,7 +119,7 @@ namespace autom {
     class StrRef {
         const char *_data;
     public:
-        typedef unsigned size_type;
+        typedef size_t size_type;
     private:
         const size_type _size;
     public:
@@ -161,6 +161,10 @@ namespace autom {
             return compare(data,std::strlen(data));
         };
 
+        CONSTEXPR_CXX17 bool operator==(std::string & other) const{
+            return compare(other.c_str(),other.length());
+        };
+
         CONSTEXPR_CXX17 bool operator!=(StrRef & other) const{
             return compare(other.data(),other.size());
         };
@@ -200,7 +204,7 @@ namespace autom {
     class ArrayRef {
         const T *_data;
     public:
-        typedef unsigned size_type;
+        typedef size_t size_type;
     private:
         const size_type _size;
     public:
