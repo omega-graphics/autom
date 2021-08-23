@@ -33,6 +33,7 @@ inline bool name(StrRef subject){ \
             swiftFamily
         } ToolchainTy;
         ToolchainTy type;
+        TargetPlatform platform;
     };
 
     struct Toolchain {

@@ -148,6 +148,20 @@ std::shared_ptr<Toolchain> ToolchainLoader::getToolchain(ToolchainSearchOpts & o
                 exit(1);
             }
 
+            auto toolchain_entry_platforms = entry.FindMember("platforms");
+            if(toolchain_entry_platforms != entry.MemberEnd()){
+                auto platforms = toolchain_entry_platforms->value.GetArray();
+                for(auto p_it = platforms.Begin();p_it != platforms.End();p_it++){
+                    if((std::strcmp(p_it->GetString(),"windows") == 0) && opts.platform == TargetPlatform::Windows){
+
+                    }
+                    else if((std::strcmp(p_it->GetString(),"mac") == 0)){
+
+                    }
+                }
+            }
+
+
             autom::StrRef type = toolchain_entry_type->value.GetString();
 
             auto progs = entry["progs"].GetObject();
