@@ -31,7 +31,20 @@ typedef int TokType;
 #define TOK_DOT 0x0B
 #define TOK_STRLITERAL 0x0C
 #define TOK_REGEXLITERAL 0x0D
+#define TOK_EQUALS_COND 0x0E
+#define TOK_EQUALS_NOT_COND 0x0F
+#define TOK_PLUS 0x10
+#define TOK_PLUSEQUALS 0x11
+#define TOK_LINECOMMENT 0x12
+
 #define TOK_EOF 0xFF
+
+/// Operators
+
+#define OP_PLUS OP("+")
+#define OP_PLUSEQUAL OP("+=")
+#define OP_EQUALEQUAL OP("==")
+#define OP_EQUALEQUAL_NOT OP("!=")
 
 /// Keywords
 #define KW_IMPORT KW("import")
@@ -41,6 +54,7 @@ typedef int TokType;
 #define KW_ELSE KW("else")
 #define KW_FUNC KW("func")
 #define KW_VAR KW("var")
+#define KW_FOREACH KW("foreach")
 
 
 #endif

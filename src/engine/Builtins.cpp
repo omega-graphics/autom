@@ -6,11 +6,10 @@
 #include "Diagnostic.h"
 #include <initializer_list>
 #include <iostream>
+#include <fstream>
 
 #ifdef _WIN32
 #include <Windows.h>
-#include <fstream>
-
 #endif
 
 namespace autom {
@@ -62,7 +61,7 @@ namespace autom::eval {
     inline void _print_to_stream(std::ostream & out,Object *obj){
         switch (obj->type) {
             case Object::String : {
-                out << "\x1b[33m" << std::quoted(castToString(obj)->value().data()) << "\x1b[0m" << std::endl;
+                out << "\x1b[33m" << std::quoted(castToString(obj)->value().data()) << "\x1b[0m";
                 break;
             }
             case Object::Array : {
@@ -75,6 +74,22 @@ namespace autom::eval {
                     _print_to_stream(out,array->getBeginIterator()[i]);
                 };
                 out << "]";
+                break;
+            }
+            case Object::Boolean : {
+                auto *boolean = castToBool(obj);
+                out << "\x1b[35m" << std::boolalpha << boolean->value() << std::noboolalpha << "\x1b[0m";
+                break;
+            }
+            case Object::Target : {
+                auto *target_wrapper = (TargetWrapper *)obj;
+                auto *t = target_wrapper->value();
+                out << "\x1b[38mTarget\x1b[0m {" << std::endl;
+                out << "    name:";
+                _print_to_stream(out,t->name);
+                out << std::endl << "   type:" << std::hex << t->type << std::dec;
+                out << std::endl << "}" << std::endl;
+                break;
             }
         }
     };
@@ -95,6 +110,7 @@ namespace autom::eval {
 
     Object *bf_print(MapRef<std::string,Object *> args,EvalContext & ctxt){
         _print_to_stream(std::cout,args["msg"]);
+        std::cout << std::endl;
         return nullptr;
     };
 
@@ -128,6 +144,13 @@ namespace autom::eval {
         auto *name = castToString(args["name"]);
         auto *srcs = castToArray(args["sources"]);
         auto t = CompiledTarget::Archive(name,srcs);
+        
+        if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
+            t->output_ext->assign("lib");
+        }
+        else {
+            t->output_ext->assign("a");
+        }
 
         ctxt.eval->addTarget(t);
 
@@ -139,6 +162,16 @@ namespace autom::eval {
         auto *name = castToString(args["name"]);
         auto *srcs = castToArray(args["sources"]);
         auto t = CompiledTarget::Shared(name,srcs);
+        
+        if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
+            t->output_ext->assign("dll");
+        }
+        else if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Darwin){
+            t->output_ext->assign("dylib");
+        }
+        else {
+            t->output_ext->assign("so");
+        }
 
         ctxt.eval->addTarget(t);
 
@@ -153,6 +186,8 @@ namespace autom::eval {
         path.resize(32767);
         size_t newSize = GetEnvironmentVariableA("Path",path.data(),path.size());
         path.resize(newSize);
+#else
+        std::string path = std::getenv("PATH");
 #endif
         std::string progPath;
         auto *progCmd = castToString(args["cmd"]);
@@ -304,7 +339,7 @@ namespace autom::eval {
 
         BUILTIN_FUNC(BUILTIN_FIND_PROGRAM,bf_find_program,{"cmd",Object::String});
 
-        BUILTIN_FUNC(BUILTIN_CONFIG_FILE,bf_config_file,{"in:",Object::String},{"out:",Object::String});
+        BUILTIN_FUNC(BUILTIN_CONFIG_FILE,bf_config_file,{"in",Object::String},{"out",Object::String});
         
         *code = INVOKE_NOTBUILTIN;
         return nullptr;

@@ -14,6 +14,8 @@
 #include <iterator>
 #include <sstream>
 
+
+
 #if __has_include(<dlfcn.h>)
 #include <dlfcn.h>
 #elif defined(_WIN32)
@@ -30,6 +32,7 @@ namespace autom {
         };
 
         void Eval::addTarget(Target *target){
+            targetCount += 1;
             targets.push_back(target);
         };
 
@@ -71,15 +74,25 @@ namespace autom {
                         auto * returnT = tryInvokeBuiltinFunc(v,node->func_args,&code);
                         if(code == INVOKE_NOTBUILTIN){
                             
+                            std::vector<std::pair<std::string,Object *>> evalParams;
+                            
                             auto evalArgs = [&](std::vector<std::pair<std::string,Object *>> & args){
                                 
+                                for(auto & a : node->func_args){
+                                    bool f;
+                                    args.emplace_back(std::make_pair(a.first,evalExpr(a.second,&f)));
+                                    if(f){
+                                        *failed = true;
+                                        return nullptr;
+                                    };
+                                };
                             };
 
-                            /// 1. Check Functions Defined!
-
+//                            /// 1. Check Functions Defined!
+//
                             for(auto & func : funcs){
                                 if(func->id == v){
-
+                                    evalArgs(evalParams);
                                 };
                             };
 
@@ -88,7 +101,8 @@ namespace autom {
                             for(auto & extension : loadedExts){
                                 for(auto & f : extension->funcs){
                                     if(f.name == v){
-                                        return f.func(0,nullptr);
+                                        evalArgs(evalParams);
+                                        return f.func(evalParams.size(),evalParams.data());
                                     };
                                 }
                             };
@@ -133,6 +147,45 @@ namespace autom {
                         };
                     };
                     return new eval::Array(objData);
+                    break;
+                }
+                case EXPR_BINARY : {
+                    
+                    bool _failed;
+                    auto lhs_obj = evalExpr(node->lhs,&_failed);
+                    if(_failed){
+//                        engine->printError("Failed to evaluate lhs");
+                        *failed = true;
+                        return nullptr;
+                    }
+                    
+                    auto rhs_obj = evalExpr(node->rhs,&_failed);
+                    
+                    if(_failed){
+//                        engine->printError("Failed to evaluate rhs");
+                        *failed = true;
+                        return nullptr;
+                    }
+                    
+                    /// Neither side of an operator expression (Binary/Unary) can be a TargetWrapper object!
+                    if(lhs_obj->type == Object::Target || rhs_obj->type == Object::Target){
+                        engine->printError("Cannot perform any operators on Targets");
+                        return nullptr;
+                    }
+                    
+                    if(node->operand == OP_PLUS){
+                        
+                        if(lhs_obj->type == Object::Boolean || rhs_obj->type == Object::Boolean){
+                            engine->printError("Cannot perform operator `+` on Booleans");
+                            return nullptr;
+                        }
+                        
+                        
+                    }
+                    
+                    /// Success for all the above checks!
+                    
+                    return lhs_obj->performOperand(rhs_obj,node->operand);
                     break;
                 }
                 case EXPR_MEMBER : {
@@ -327,11 +380,25 @@ namespace autom {
 
     Extension * eval::Eval::loadExtension(const std::filesystem::path& path){
 
-        if(path.has_extension() && path.extension() == "aext"){
+        if(path.has_extension() && path.extension() == ".aext"){
 
             #if !defined(DLL)
-                auto data = dlopen(path.c_str(),RTLD_NOW);
-                auto cb =  (AutomExtEntryFunc)dlsym(data,STR_WRAP(nativeExtMain));
+                auto data = dlopen(path.string().c_str(),RTLD_NOW);
+                if(data == NULL){
+                    std::cout << "Failed to load shared lib:" << path << std::endl;
+                    return nullptr;
+                }
+            
+//            #ifdef __ELF__
+                AutomExtEntryFunc cb =  (AutomExtEntryFunc)dlsym(data,"nativeExtMain");
+//            #else
+//                AutomExtEntryFunc cb =  (AutomExtEntryFunc)dlsym(data,"_nativeExtMain");
+//            #endif
+            
+                if(cb == NULL){
+                    std::cout << "ERROR:" << dlerror() << std::endl;
+                    return nullptr;
+                };
                 auto ext = cb();
                 ext->libData = data;
             #else

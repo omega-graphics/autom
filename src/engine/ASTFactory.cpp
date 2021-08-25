@@ -18,7 +18,11 @@ namespace autom {
     };
 
     Tok & ASTFactory::nextToken(){
-        return tokStream->at(++privTokIndex);
+        Tok & first = tokStream->at(++privTokIndex);
+//        while(first.type == TOK_LINECOMMENT){
+//            first = tokStream->at(++privTokIndex);
+//        }
+        return first;
     };
 
     Tok & ASTFactory::aheadToken(){
@@ -96,6 +100,8 @@ namespace autom {
     ASTExpr *ASTFactory::evalObjExpr(Tok & first_tok,ASTScope *scope){
         ASTExpr *expr;
         switch (first_tok.type) {
+                
+            // Identifier
             case TOK_ID : {
                 auto _expr = new ASTExpr();
                 _expr->type = EXPR_ID;
@@ -103,6 +109,8 @@ namespace autom {
                 expr = _expr;
                 break;
             }
+                
+            // String Literal
             case TOK_STRLITERAL : {
                 auto _expr = new ASTLiteral();
                 _expr->type = EXPR_LITERAL;
@@ -110,7 +118,8 @@ namespace autom {
                 expr = _expr;
                 break;
             }
-            /// Array Expr
+                
+            // Array Expr
             case TOK_LBRACKET : {
                 auto _expr = new ASTExpr();
                 _expr->type = EXPR_ARRAY;
@@ -125,7 +134,10 @@ namespace autom {
                     }
                     else if(first_tok.type != TOK_COMMA){
                         std::cout << "ERROR: Comma or RBracket Expected" << std::endl;
+                        return nullptr;
                     }
+                    
+                    first_tok = nextToken();
                 }
                 expr = _expr;
                 break;
@@ -196,7 +208,7 @@ namespace autom {
                     first_tok = nextToken();
 
                     if(first_tok.type != TOK_ID){
-                           /// Expected Colon
+                        /// Expected ID
                         std::cout << "Expected ID" << std::endl;
                     }
                     _expr->id = first_tok.str;
@@ -216,10 +228,32 @@ namespace autom {
     };
     /// @note FIRST TOK IN THIS FUNCTION IS THE AHEAD TOKEN!!!!
     ASTExpr *ASTFactory::evalOpExpr(Tok & first_tok,ASTExpr *lhs,ASTScope *scope){
+        
+        
+        
         if(!lhs){
             return nullptr;
         };
         ASTExpr *expr = lhs;
+        
+        auto binary_expr = [&]{
+        
+            incToNextToken();
+            auto *_expr = new ASTExpr();
+            _expr->type = EXPR_BINARY;
+            _expr->lhs = lhs;
+            _expr->operand = first_tok.str;
+//            std::cout << "Operand: " << first_tok.str << std::endl;
+            first_tok = nextToken();
+            auto rhs = buildExpr(first_tok,scope);
+            if(!rhs){
+                return nullptr;
+            };
+            _expr->rhs = rhs;
+            expr = _expr;
+        };
+        
+        
         switch (first_tok.type) {
             case TOK_EQUALS : {
                 incToNextToken();
@@ -235,12 +269,19 @@ namespace autom {
                 expr = _expr;
                 break;
             }
+            case TOK_PLUSEQUALS :
+            case TOK_EQUALS_COND :
+            case TOK_EQUALS_NOT_COND :
+                binary_expr();
+                break;
             default : {
                 break;
             }
         }
         expr->scope = scope;
         return expr;
+        
+        
     };
 
     ASTExpr *ASTFactory::buildExpr(Tok & first_tok,ASTScope *scope){
@@ -252,6 +293,7 @@ namespace autom {
             first_tok = nextToken();
             if(first_tok.type != TOK_RPAREN){
                 /// Expected RParen!
+                std::cout << "Expected RParen" << std::endl;
                 return nullptr;
             };
             return ex;

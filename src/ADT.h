@@ -188,6 +188,10 @@ namespace autom {
         StrRef(const std::string & str):_data(str.data()),_size(str.size()){
 
         };
+        
+        StrRef(const StrRef & other):_data(other._data),_size(other._size){
+            
+        };
 
         operator std::string() const{
             return {begin(),end()};

@@ -2,6 +2,8 @@
 #include "Execution.h"
 #include <cassert>
 
+#include "Tokens.def"
+
 namespace autom {
 
     namespace eval {
@@ -17,21 +19,51 @@ namespace autom {
         void Object::decRec(){
             refCount -= 1;
         }
+    
+    
 
         Boolean::Boolean(bool & val):Object(Object::Boolean),data(val){
 
         }
+    
+        Boolean::Boolean(Boolean *other):Object(Object::Boolean){
+            assign(other);
+        }
+    
+        void Boolean::assign(Boolean * other){
+            data = other->data;
+        }
+    
+        Object *Boolean::performOperand(Object *rhs,autom::StrRef operand){
+            auto other = castToBool(rhs);
+            if(operand == OP_EQUALEQUAL){
+                bool b = data == other->data;
+                return new eval::Boolean(b);
+            }
+            else if(operand == OP_EQUALEQUAL_NOT){
+                bool b = data != other->data;
+                return new eval::Boolean(b);
+            }
+        }
 
         bool Boolean::value(){
             return data;
-        };
+        }
 
         Boolean::~Boolean(){
 
-        };
+        }
+    
+    
+    
+        
 
         String::String(std::string & val):Object(Object::String),data(val){
 
+        }
+        
+        String::String(String * other):Object(Object::String){
+            assign(other);
         }
 
         String::String():Object(Object::String),data(){
@@ -57,6 +89,27 @@ namespace autom {
         StrRef String::value() const {
             return {data};
         }
+        
+        Object *String::performOperand(Object *rhs, autom::StrRef operand){
+            auto other = castToString(rhs);
+            
+            if(operand == OP_EQUALEQUAL){
+                bool b = data == other->data;
+                return new eval::Boolean(b);
+            }
+            else if(operand == OP_EQUALEQUAL_NOT){
+                bool b = data != other->data;
+                return new eval::Boolean(b);
+            }
+            else if(operand == OP_PLUS){
+                std::string newString = data + other->data;
+                return new eval::String(newString);
+            }
+            else if(operand == OP_PLUSEQUAL){
+                data += other->data;
+                return this;
+            }
+        }
 
         String::~String(){
 
@@ -66,6 +119,41 @@ namespace autom {
 
         Array::Array(std::vector<Object *> & val):Object(Object::Array),data(val){
 
+        }
+    
+        Array::Array(Array *other):Object(Object::Array){
+            assign(other);
+        };
+    
+        void Array::assign(Array *other){
+            if(!data.empty()){
+                for(auto o : data){
+                    delete o;
+                }
+            }
+            for(auto o : other->data){
+                Object *obj;
+                switch (o->type) {
+                    case Object::String: {
+                        obj = new eval::String(castToString(o));
+                        break;
+                    }
+                    case Object::Boolean : {
+                        obj = new eval::Boolean(castToBool(o));
+                        break;
+                    }
+                    case Object::Array : {
+                        obj = new eval::Array(castToArray(o));
+                        break;
+                    }
+                    case Object::Target : {
+                        // NOTE: TargetWrapper objects cannot be duplicated therefore the reference to the object is copied.
+                        obj = o;
+                        break;
+                    }
+                }
+                data.push_back(obj);
+            };
         }
 
         size_t Array::length(){
@@ -96,13 +184,41 @@ namespace autom {
             };
             return vec;
         };
+    
+        Object * Array::performOperand(Object *rhs, autom::StrRef operand){
+            assert(objectIsArray(rhs));
+            auto other = castToArray(rhs);
+            
+            if(operand == OP_PLUS){
+                auto newArray = new Array(this);
+                newArray->data.resize(data.size() + other->data.size());
+                auto otherArray = new Array(other);
+                std::move(otherArray->data.begin(),otherArray->data.end(),newArray->getBeginIterator() + newArray->length() - 1);
+                otherArray->data.resize(0);
+                delete otherArray;
+                return newArray;
+            }
+            else if(operand == OP_PLUSEQUAL){
+                auto otherArray = new Array(other);
+                data.resize(data.size() + otherArray->data.size());
+                std::move(other->data.begin(),other->data.end(),data.begin() + data.size() - 1);
+                otherArray->data.resize(0);
+                delete otherArray;
+                return this;
+            }
+            
+            return this;
+        }
 
         Array::Array():Object(Object::Array),data(){
 
         }
 
         Array::~Array(){
-
+            if(!data.empty())
+                for(auto o : data){
+                    delete o;
+                }
         }
 
         Target * TargetWrapper::value() const {
@@ -145,25 +261,6 @@ namespace autom {
 
     bool objectIsArray(Object *object){
         return object->type == Object::Array;
-    };
-
-    // / Get begin iterator of Array
-
-    //  arrayIteratorBegin(Object *object){
-    //    return objectToVector(object).begin();
-    // };
-
-    // /// Get begin iterator of Array
-
-    //  arrayIteratorEnd(Object *object){
-    //    return objectToVector(object).end();
-    // };
-
-    /// Get length of Array
-
-    size_t arrayLength(Object *object){
-        assert(objectIsArray(object));
-        return ((eval::Array *)object)->length();
     };
 
     Object *toObject(bool & val){

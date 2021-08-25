@@ -34,6 +34,7 @@ namespace autom {
         #define PUSH_CHAR(c)\
             *bufEnd = c;\
             ++bufEnd;
+        
 
         auto getChar = [&](){
             return char(is->get()); 
@@ -44,14 +45,49 @@ namespace autom {
             is->seekg(-1,std::ios::cur);
             return c;
         };
+        
+        auto isIdentifierChar = [&](char & c){
+            return std::isalnum(c) || c == '_';
+        };
+        
+        #define SEEK_TO_NEXT_CHAR() \
+            is->seekg(1,std::ios::cur);
 
 
         char c;
         while((c = getChar()) != -1){
             switch(c){
+                case '#' : {
+                    while((c = getChar()) != '\n'){
+                        PUSH_CHAR(c)
+                    }
+                    PUSH_TOKEN(TOK_LINECOMMENT)
+                    break;
+                }
                 case '=' : {
                     PUSH_CHAR(c)
-                    PUSH_TOKEN(TOK_EQUALS)
+                    c = aheadChar();
+                    if(c == '='){
+                        PUSH_CHAR(c)
+                        PUSH_TOKEN(TOK_EQUALS_COND)
+                        SEEK_TO_NEXT_CHAR()
+                    }
+                    else {
+                        PUSH_TOKEN(TOK_EQUALS)
+                    }
+                    break;
+                }
+                case '+' : {
+                    PUSH_CHAR(c)
+                    c = aheadChar();
+                    if(c == '='){
+                        PUSH_CHAR(c)
+                        PUSH_TOKEN(TOK_PLUSEQUALS)
+                        SEEK_TO_NEXT_CHAR()
+                    }
+                    else {
+                        PUSH_TOKEN(TOK_PLUS)
+                    }
                     break;
                 }
                 case ':' : {
@@ -125,10 +161,10 @@ namespace autom {
                     break;
                 }
                 default: {
-                    if(std::isalnum(c)){
+                    if(isIdentifierChar(c)){
                         PUSH_CHAR(c)
                         c = aheadChar();
-                        if(!std::isalnum(c)){
+                        if(!isIdentifierChar(c)){
                             PUSH_TOKEN(TOK_ID)
                             break;
                         };

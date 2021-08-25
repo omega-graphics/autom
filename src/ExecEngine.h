@@ -18,8 +18,8 @@ namespace autom {
 
     struct ExecEngineOpts {
         Gen &gen;
-        autom::StrRef distPath;
-        std::vector<StrRef> interfaceSearchPaths;
+        autom::StrRef toolchainFile;
+        ArrayRef<StrRef> interfaceSearchPaths;
     };
 
     class ExecEngine final {
@@ -43,6 +43,7 @@ namespace autom {
         std::vector<Tok> * resetASTFactoryTokenVector(std::vector<Tok> *new_vec);
         bool checkDependencyTree();
         void generate();
+        void report();
         ~ExecEngine();
     };
 };

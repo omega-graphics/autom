@@ -6,6 +6,7 @@
 
 
 namespace autom {
+
     /**
       @brief Generates an Xcode Object ID.
       @param[in] type The object type string.

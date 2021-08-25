@@ -11,9 +11,9 @@
       "cxx": "clang++",
       "objc": "clang",
       "objcxx": "clang++",
-      "ld_so": "ld.lld",
-      "ld_exe": "ld.lld",
-      "ar": "llvm-ar"
+      "ld_so": "ld",
+      "ld_exe": "ld",
+      "ar": "ar"
     },
     "flags": {
       "define": "-D",

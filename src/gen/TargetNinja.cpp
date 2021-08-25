@@ -121,7 +121,7 @@ namespace autom {
                         }
                     }
 
-                    if(t->type & EXECUTABLE | SHARED_LIBRARY){
+                    if(t->type & (EXECUTABLE | SHARED_LIBRARY)){
                         writeBuildRuleParam("LDFLAGS",t->ldflags,Flags);
                     }
 

@@ -28,13 +28,13 @@ namespace autom {
         std::string loc;
         bool res = false;
 
-        #define FIND_TOOL(tool_str) \
-            std::cout << "-- " << tool_str << std::endl;\
+        #define FIND_TOOL(tool_str,tool_name) \
+            std::cout << tool_name << " --> " << tool_str << std::endl;\
             if((res = locateProgram(tool_str,path,loc))){\
-                std::cout << "-- " << tool_str << "-- found" << " (\"" << loc << "\")";\
+                std::cout << "-- " << tool_str << " -- found" << " (\"" << loc << "\")" << std::endl;\
             }\
             else {\
-                std::cout << "-- " << tool_str << "-- not found";\
+                std::cout << "-- " << tool_str << "-- not found" << std::endl;\
             }
 
         switch (toolchainType) {
@@ -43,11 +43,11 @@ namespace autom {
                 std::cout << "Toolchain: " << name << std::endl;
 
                 
-                FIND_TOOL(CC.command);
-                FIND_TOOL(CXX.command);
-                FIND_TOOL(AR.command);
-                FIND_TOOL(SO_LD.command);
-                FIND_TOOL(EXE_LD.command);
+                FIND_TOOL(CC.command,"C Compiler");
+                FIND_TOOL(CXX.command,"C++ Compiler");
+                FIND_TOOL(AR.command,"Archive Tool");
+                FIND_TOOL(SO_LD.command,"Shared Linker");
+                FIND_TOOL(EXE_LD.command,"Executable Linker");
 
                 return res;
 
@@ -147,19 +147,28 @@ std::shared_ptr<Toolchain> ToolchainLoader::getToolchain(ToolchainSearchOpts & o
                 delete t;
                 exit(1);
             }
+            
+            
 
             auto toolchain_entry_platforms = entry.FindMember("platforms");
             if(toolchain_entry_platforms != entry.MemberEnd()){
+                bool toolchainSupported = false;
                 auto platforms = toolchain_entry_platforms->value.GetArray();
                 for(auto p_it = platforms.Begin();p_it != platforms.End();p_it++){
                     if((std::strcmp(p_it->GetString(),"windows") == 0) && opts.platform == TargetPlatform::Windows){
-
+                        toolchainSupported = true;
                     }
-                    else if((std::strcmp(p_it->GetString(),"mac") == 0)){
-
+                    else if((std::strcmp(p_it->GetString(),"macos") == 0) && opts.platform == TargetPlatform::macOS){
+                        toolchainSupported = true;
                     }
                 }
+                
+                if(!toolchainSupported){
+                    continue;
+                }
             }
+            
+            
 
 
             autom::StrRef type = toolchain_entry_type->value.GetString();

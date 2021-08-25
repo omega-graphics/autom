@@ -32,15 +32,21 @@ namespace autom {
 
     typedef Object *(NativeFunc)(unsigned c,std::pair<std::string,Object *> * object);
 
-    #define AUTOM_NATIVE_FUNC(name) Object * name(unsigned c,std::pair<std::string,Object *> * object)
+    #define AUTOM_NATIVE_FUNC(name) Object * name(unsigned c,std::pair<std::string,Object *> * args)
 
     typedef NativeFunc *NativeFuncRef;
 
-
+    
+    typedef enum : int {
+        StringObject,
+        ArrayObject,
+        BooleanObject
+    } ObjectType;
 
     struct Function {
         CString name;
         NativeFuncRef func;
+        std::initializer_list<std::pair<CString,ObjectType>> params;
     };
 
     struct Extension {
@@ -53,7 +59,15 @@ namespace autom {
 #define AUTOM_EXT_ENTRY nativeExtMain
 #define STR_WRAP(d) #d
 
-#define AUTOM_EXT_INIT() Extension * AUTOM_EXT_ENTRY()
+#define EXTERN extern "C"
+
+#ifdef __APPLE__
+#define MODULE_EXPORT EXTERN __attribute__((visibility("default")))
+#else
+#define MODULE_EXPORT EXTERN
+#endif
+
+#define AUTOM_EXT_INIT() MODULE_EXPORT Extension * nativeExtMain()
 
 
 #endif

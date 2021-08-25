@@ -7,17 +7,14 @@
 
 #include "ADT.h"
 
-#include <Windows.h>
+//#include <unistd.h>
 
 
 int main(int argc,char *argv[]){
 
-//    std::string path;
-//    path.resize(32767);
-//    size_t newSize = GetEnvironmentVariableA("Path",path.data(),path.size());
-//    path.resize(newSize);
+//    std::string path = getenv("PATH");
 //    std::string progPath;
-//    auto progFound = autom::locateProgram("cl",path,progPath);
+//    auto progFound = autom::locateProgram("cmake",path,progPath);
 //    if(progFound){
 //        std::cout << "Program Found:" << progPath << std::endl;
 //    }

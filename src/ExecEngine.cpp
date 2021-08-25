@@ -11,17 +11,24 @@ namespace autom {
     exec(std::make_unique<eval::Eval>(opts.gen,this)),
     opts(opts),
     outputTargetOpts(outputTargetOpts){
-        auto p = std::filesystem::path(opts.distPath.data()).append("default-toolchains.json");
-        ToolchainLoader loader{p.string()};
+        if(!std::filesystem::exists(opts.toolchainFile.data())){
+            std::cout << "Toolchain file not found! (" << opts.toolchainFile << ")" << std::endl;
+            exit(1);
+        }
+        ToolchainLoader loader{opts.toolchainFile};
 
         std::string preferedToolchain;
 
-        ToolchainSearchOpts searchOpts {preferedToolchain,ToolchainSearchOpts::ccAsmFamily};
-
-        
-        
-        if(outputTargetOpts.platform == TargetPlatform::Windows){
+        ToolchainSearchOpts searchOpts {preferedToolchain,true,ToolchainSearchOpts::ccAsmFamily,outputTargetOpts.platform};
             
+        toolchain = loader.getToolchain(searchOpts);
+        if(!toolchain){
+            std::cout << "Failed to find working toolchain" << std::endl;
+            exit(1);
+        }
+        else if(!toolchain->verifyTools()) {
+            std::cout << "Failed to find working toolchain" << std::endl;
+            exit(1);
         }
     };
 
@@ -122,6 +129,17 @@ namespace autom {
 
     void ExecEngine::printError(const std::string& msg) {
         std::cout << "\x1b[31mERROR:\x1b[0m" << msg << std::endl;
+    }
+
+    void ExecEngine::report(){
+        std::cout << "\x1b[33mSuccess!\x1b[0m " << exec->targetCount;
+        
+        if(exec->targetCount == 1){
+            std::cout << " target has been generated!" << std::endl;
+        }
+        else {
+            std::cout << " targets have been generated!" << std::endl;
+        }
     }
 
 

@@ -47,7 +47,7 @@ set(STDLIB_MODULES)
 
 macro(add_stdlib_module _NAME DIR)
     file(GLOB _SRCS "${DIR}/*.cpp" "${DIR}/*.cc" "${DIR}/*.h")
-    add_library(${_NAME} SHARED ${_SRCS})
+    add_library(${_NAME} MODULE ${_SRCS})
     list(APPEND STDLIB_MODULES ${_NAME})
     set_target_properties(${_NAME} PROPERTIES PREFIX "" SUFFIX ".aext" RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stdlib" LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stdlib")
     target_link_libraries(${_NAME} PRIVATE "autom-lib")

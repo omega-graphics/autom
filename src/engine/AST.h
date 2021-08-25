@@ -37,13 +37,15 @@ namespace autom {
         ASTExpr *lhs,*rhs;
 
         std::string id;
+        
+        std::string operand;
 
         std::vector<ASTExpr *> children;
 
         std::unordered_map<std::string,ASTExpr *> func_args;
 
         std::unordered_map<ASTExpr *,ASTExpr *> map_children;
-
+        
 
     };
 

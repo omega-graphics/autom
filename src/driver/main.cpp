@@ -18,6 +18,11 @@ Options:
 
 
 --help, -h                --> Show this message
+    
+--interface-path, -I      --> Add a path to the interface file (*.autom) search path list.
+    
+--toolchains              --> Sets the toolchains config file.
+                              (Declares all existing toolchains and what flags to use)
 
 --platform                --> Sets the target platform (Uses host as default)
                               Choices:[windows|macos|linux|android|ios]
@@ -57,8 +62,11 @@ int main(int argc,char * argv[]){
     
     
     auto exec_path = std::filesystem::path(argv[0]).parent_path().parent_path();
+    
+    std::vector<autom::StrRef> interfaceSearchPaths;
 
     autom::StrRef outputDir = argv[argc-1];
+    std::string toolchainFile;
 
     autom::TargetOS targetOS = autom::hostOS();
     autom::TargetArch targetArch = autom::hostArch();
@@ -109,6 +117,16 @@ int main(int argc,char * argv[]){
             else if(val == "linux")
                 targetOS = autom::TargetOS::Linux;
         }
+        
+        else if(flag == "--toolchains"){
+            autom::StrRef val {argv[++i]};
+            toolchainFile = val;
+        }
+        
+        else if(flag == "--interface-path" || flag == "-I"){
+            autom::StrRef val {argv[++i]};
+            interfaceSearchPaths.push_back(val);
+        }
 
         else if(flag == "--ninja"){
             ninja = true;
@@ -134,14 +152,20 @@ int main(int argc,char * argv[]){
         autom::GenNinjaOpts ninjaOpts {outputDir,currentDir,false};
         gen = autom::TargetNinja(outputTargetOpts,ninjaOpts);
     }
-
-
-    autom::ExecEngineOpts opts {*gen,exec_path.string()};
+    
+    auto file = (!toolchainFile.empty())? toolchainFile : exec_path.append("default-toolchains.json").string();
+    
+    autom::ExecEngineOpts opts {
+        *gen,
+        file,
+        interfaceSearchPaths};
+    
     autom::ExecEngine eng(opts,outputTargetOpts);
 
     auto entry_exists = std::filesystem::exists("./AUTOM.build");
     if(!entry_exists){
         std::cout << "\x1b[31mERROR:\x1b[0m" << "AUTOM.build file not found in current directory!\nExiting..." << std::endl;
+        return -1;
     };
 
     std::ifstream in("./AUTOM.build");
@@ -149,7 +173,10 @@ int main(int argc,char * argv[]){
     eng.parseAndEvaluate(&in);
     if(eng.checkDependencyTree()){
         eng.generate();
+        eng.report();
     };
+    
+    
 
     return 0;
 };

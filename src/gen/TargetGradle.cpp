@@ -1,11 +1,18 @@
 #include "Gen.h"
 
-
+#include <fstream>
+#include <filesystem>
 
 namespace autom {
 
 
 class GradleGen : public Gen {
+    std::ofstream out;
+public:
+    
+    GradleGen(autom::StrRef targetName,autom::StrRef outputDir){
+        out.open(std::filesystem::path(outputDir).append("build.gradle"));
+    };
     
     
     bool supportsCustomToolchainRules() override {
@@ -21,7 +28,7 @@ class GradleGen : public Gen {
     }
     
     void finish() override {
-        
+        out.close();
     }
     
     

@@ -5,6 +5,12 @@
 #define AUTOM_GEN_H
 
 namespace autom {
+
+    struct ProjectDesc {
+        std::string name;
+        std::string version;
+    };
+
     
     class Gen : public TargetConsumer {
     public:

@@ -1,8 +1,13 @@
 
-
 Project(name:"AUTOM",version:"0.8")
 
-Executable(name:"test",sources:["./main.cpp"])
+var exec = Executable(name:"test",sources:["./main.cpp"])
+
+
+
+
+
+
 
 
 

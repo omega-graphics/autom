@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <deque>
+#include <iostream>
 
 
 #ifndef AUTOM_ENGINE_EXECUTION_H
@@ -29,6 +30,11 @@ namespace autom {
             } Ty;
             Ty type;
             unsigned refCount = 1;
+            virtual Object * performOperand(Object *rhs,autom::StrRef operand){
+                /// UNIMPLEMENTED!!!
+                std::cout << "Unimplemented" << std::endl;
+                return nullptr;
+            };
 
             /// @brief Increment object reference count
             void incRef();
@@ -43,20 +49,24 @@ namespace autom {
             bool data;
         public:
             bool value();
+            Object * performOperand(Object *rhs, autom::StrRef operand) override;
             void assign(Boolean *other);
             Boolean(bool & val);
+            Boolean(Boolean *other);
             ~Boolean();
         };
 
         class String : public Object {
             std::string data;
         public:
+            Object * performOperand(Object *rhs, autom::StrRef operand) override;
             size_t length();
             bool empty();
             StrRef value() const;
             void assign(String *other);
             void assign(const std::string& string);
             String();
+            String(String *other);
             String(std::string & val);
             ~String();
         };
@@ -64,6 +74,7 @@ namespace autom {
         class Array : public Object {
             std::vector<Object *> data;
         public:
+            Object * performOperand(Object *rhs, autom::StrRef operand) override;
             typedef std::vector<Object *>::iterator Iterator;
             Iterator getBeginIterator();
             Iterator getEndIterator(); 
@@ -86,6 +97,7 @@ namespace autom {
             };
             explicit Array();
             Array(std::vector<Object *> & val);
+            Array(Array *other);
             ~Array();
         };
 
@@ -109,6 +121,8 @@ namespace autom {
 
         class Eval {
             friend class ::autom::ExecEngine;
+            
+            unsigned targetCount = 0;
             std::deque<Target *> targets;
 
             std::vector<Extension *> loadedExts;
