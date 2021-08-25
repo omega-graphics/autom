@@ -11,7 +11,7 @@ class GradleGen : public Gen {
 public:
     
     GradleGen(autom::StrRef targetName,autom::StrRef outputDir){
-        out.open(std::filesystem::path(outputDir).append("build.gradle"));
+        out.open(std::filesystem::path(outputDir.data()).append("build.gradle"));
     };
     
     

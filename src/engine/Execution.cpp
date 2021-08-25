@@ -78,12 +78,13 @@ namespace autom {
                             
                             auto evalArgs = [&](std::vector<std::pair<std::string,Object *>> & args){
                                 
-                                for(auto & a : node->func_args){
+                                for(const auto & a : node->func_args){
+
                                     bool f;
                                     args.emplace_back(std::make_pair(a.first,evalExpr(a.second,&f)));
                                     if(f){
                                         *failed = true;
-                                        return nullptr;
+                                        break;
                                     };
                                 };
                             };
@@ -93,6 +94,7 @@ namespace autom {
                             for(auto & func : funcs){
                                 if(func->id == v){
                                     evalArgs(evalParams);
+                                    return invokeFunc(func->body,evalParams);
                                 };
                             };
 
@@ -226,8 +228,21 @@ namespace autom {
             return nullptr;
         }
 
-        Object * Eval::evalBlock(ASTBlock *block) {
-            return nullptr;
+        Object * Eval::evalBlock(ASTBlock & block,const ASTBlockContext & ctxt,bool *returning) {
+            for(const auto & node : block.body){
+                if(ctxt.inFunction){
+                    if(node->type == RETURN_DECL){
+                        *returning = true;
+                        auto expr = (ASTExpr *)node;
+                        bool f;
+                        auto * rc = evalExpr(expr->rhs,&f);
+                        if(f){
+                            return nullptr;
+                        }
+                    }
+                }
+
+            }
         }
 
         bool Eval::processString(std::string * str,ASTScope *scope){
@@ -375,6 +390,15 @@ namespace autom {
             };
             return true;
         };
+
+        Object *Eval::invokeFunc(ASTBlock & block,ArrayRef<std::pair<std::string,Object *>> args) {
+            bool f;
+            return evalBlock(block,ASTBlockContext {true},&f);
+        }
+
+        Object * Eval::evalGenericStmt(ASTNode *node,bool *failed) {
+            return nullptr;
+        }
         
     }
 
@@ -402,8 +426,8 @@ namespace autom {
                 auto ext = cb();
                 ext->libData = data;
             #else
-                auto data = LoadLibrary((LPCSTR)path.c_str());
-                auto cb = (AutomExtEntryFunc) GetProcAddress(data,STR_WRAP(nativeExtMain));
+                HMODULE data = LoadLibraryW(path.c_str());
+                auto cb = (AutomExtEntryFunc) GetProcAddress(data,"nativeExtMain");
                 auto ext = cb();
                 ext->libData = data;
             #endif
@@ -436,4 +460,7 @@ namespace autom {
         engine->resetASTFactoryTokenIndex(old_value);
         engine->resetASTFactoryTokenVector(old_vec);
     }
+
+
+
 };

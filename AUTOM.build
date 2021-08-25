@@ -1,7 +1,12 @@
+load "./cmake-build-debug/stdlib/fs.aext"
 
 Project(name:"AUTOM",version:"0.8")
 
 var exec = Executable(name:"test",sources:["./main.cpp"])
+
+var e = fs_exists(path:"./test.c")
+
+print(msg:e)
 
 
 

@@ -118,6 +118,9 @@ namespace autom {
 
 
 
+        struct ASTBlockContext {
+            bool inFunction;
+        };
 
         class Eval {
             friend class ::autom::ExecEngine;
@@ -151,12 +154,9 @@ namespace autom {
             bool processString(std::string * str,ASTScope *scope);
 
 
-
-
-
-            Object *invokeFunc(StrRef name);
-            Object *evalBlock(ASTBlock *block);
-
+            Object *invokeFunc(ASTBlock & block,ArrayRef<std::pair<std::string,Object *>> args);
+            Object *evalBlock(ASTBlock & block,const ASTBlockContext & ctxt,bool * failed,bool *returning = nullptr);
+            Object *evalGenericStmt(ASTNode *node,bool *failed);
             Object *evalExpr(ASTExpr *expr,bool *failed);
 
             void importFile(const autom::StrRef & path);
@@ -164,7 +164,7 @@ namespace autom {
             Extension *loadExtension(const std::filesystem::path& path);
             void closeExtensions();
         public:
-    
+
             bool evalStmt(ASTNode *node);
             Eval(Gen &gen,ExecEngine *engine);
 

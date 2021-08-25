@@ -13,6 +13,7 @@ namespace autom {
 #define VAR_DECL (0x002 | DECL) // var myVar = expr 
 #define COND_DECL (0x003 | DECL) // if(cond){...} [elif(cond1){...}]+ [else(cond2){...}]
 #define IMPORT_DECL (0x004 | DECL) // import "myModule"
+#define RETURN_DECL (0x004 | DECL) // return ["hello","world"]
 
 #define EXPR (0x200)
 
