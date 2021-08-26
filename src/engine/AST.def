@@ -1,5 +1,5 @@
 #ifndef AUTOM_ENGINE_AST_DEF
-#define  AUTOM_ENGINE_AST_DEF
+#define AUTOM_ENGINE_AST_DEF
 
 
 namespace autom {
@@ -11,9 +11,10 @@ namespace autom {
 
 #define FUNC_DECL (0x001 | DECL) // func myFunc(params...) {...}
 #define VAR_DECL (0x002 | DECL) // var myVar = expr 
-#define COND_DECL (0x003 | DECL) // if(cond){...} [elif(cond1){...}]+ [else(cond2){...}]
-#define IMPORT_DECL (0x004 | DECL) // import "myModule"
-#define RETURN_DECL (0x004 | DECL) // return ["hello","world"]
+#define COND_DECL (0x003 | DECL) // if(cond) {...} [elif(cond1) {...}]+ [else {...}]
+#define IMPORT_DECL (0x004 | DECL) // import "interface.autom"
+#define RETURN_DECL (0x005 | DECL) // return expr
+#define FOREACH_DECL (0x006 | DECL) // foreach v in list {...}
 
 #define EXPR (0x200)
 

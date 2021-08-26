@@ -92,9 +92,186 @@ namespace autom {
             };
 
             node = decl;
-        };
+        }
+        else if(first_tok.str == KW_FUNC){
+            auto *decl = new ASTFuncDecl();
+            decl->type = FUNC_DECL;
+            first_tok = nextToken();
+            
+            if(first_tok.type != TOK_ID){
+                std::cout << "Expected an ID" << std::endl;
+                return nullptr;
+            }
+            
+            decl->id = first_tok.str;
+            
+            if(nextToken().type != TOK_LPAREN){
+                std::cout << "Expected an LParen" << std::endl;
+                return nullptr;
+            }
+            
+            while((first_tok = nextToken()).type != TOK_RPAREN){
+                
+                decl->params.push_back(first_tok.str);
+
+                first_tok = nextToken();
+                
+                
+                if(first_tok.type == TOK_COMMA && aheadToken().type == TOK_RPAREN){
+                    std::cout << "No Comma allowed before closing RParen" << std::endl;
+                    return nullptr;
+                }
+                else if(first_tok.type == TOK_COMMA){
+                    continue;
+                }
+                else if(first_tok.type == TOK_RPAREN){
+                    break;
+                }
+                else {
+                    std::cout << "Comma or RParen Expected" << std::endl;
+                    return nullptr;
+                }
+            }
+            
+            first_tok = nextToken();
+            
+            decl->body.reset(buildBlock(first_tok,scope));
+            
+            node = decl;
+            
+        }
+        else if(first_tok.str == KW_FOREACH){
+            auto *decl = new ASTForeachDecl();
+            decl->type = FOREACH_DECL;
+            first_tok = nextToken();
+            if(first_tok.type != TOK_ID){
+                std::cout << "Expected an ID" << std::endl;
+                return nullptr;
+            }
+            decl->loopVar = first_tok.str;
+            first_tok = nextToken();
+            if(first_tok.type != TOK_KW && first_tok.str != KW_IN){
+                std::cout << "Expected Keyword `in` in this context" << std::endl;
+                return nullptr;
+            }
+            first_tok = nextToken();
+            auto expr = evalArgsExpr(first_tok,scope);
+            if(!expr){
+                return nullptr;
+            }
+            decl->list = expr;
+            
+            first_tok = nextToken();
+            
+            auto b = buildBlock(first_tok,scope);
+            if(!b){
+                return nullptr;
+            }
+            
+            decl->body.reset(b);
+            node = decl;
+        }
+        else if(first_tok.str == KW_IF){
+            auto * decl = new ASTConditionalDecl();
+            decl->type = COND_DECL;
+            
+            ASTConditionalDecl::CaseSpec spec;
+            
+            auto buildSpec = [&](){
+                bool wrapParen;
+                first_tok = nextToken();
+                if(first_tok.type != TOK_LPAREN){
+                    wrapParen = true;
+                    first_tok = nextToken();
+                }
+                else {
+                    wrapParen = false;
+                }
+                
+                auto testCase = buildExpr(first_tok,scope);
+                if(!testCase){
+                    return nullptr;
+                }
+                
+                if(wrapParen){
+                    if(nextToken().type != TOK_RPAREN){
+                        std::cout << "ERROR: Expected RParen in this context." << std::endl;
+                        return nullptr;
+                    }
+                }
+                first_tok = nextToken();
+                spec.testCondition = true;
+                spec.condition = testCase;
+                spec.block.reset(buildBlock(first_tok,scope));
+            };
+            
+            buildSpec();
+            decl->cases.push_back(std::move(spec));
+            first_tok = aheadToken();
+            
+            while(first_tok.type == TOK_KW){
+                spec = ASTConditionalDecl::CaseSpec {false,nullptr,nullptr};
+            
+                incToNextToken();
+                
+                if(first_tok.str == KW_ELIF){
+                    buildSpec();
+                }
+                else if(first_tok.str == KW_ELSE) {
+                    first_tok = nextToken();
+                    spec.condition = nullptr;
+                    spec.testCondition = false;
+                    spec.block.reset(buildBlock(first_tok,scope));
+                }
+                decl->cases.push_back(std::move(spec));
+                first_tok = aheadToken();
+            }
+            node = decl;
+        }
+        else if(first_tok.str == KW_ELIF || first_tok.str == KW_ELSE){
+            std::cout << "ERROR:" << "Cannot use keywords `elif` or `else` in this context." << std::endl;
+            return nullptr;
+        }
+        else {
+            return nullptr;
+        }
+        
+        ASTScopeAddReference(scope);
         node->scope = scope;
         return node;
+    };
+
+    ASTBlock * ASTFactory::buildBlock(Tok & first_tok,ASTScope *scope){
+        if(first_tok.type != TOK_LBRACE){
+            std::cout << "ERROR: Expected LBrace" << std::endl;
+            return nullptr;
+        }
+        
+        auto block = new ASTBlock();
+        
+        ASTScopeAddReference(scope);
+        auto block_scope = new ASTScope {"__BLOCK_SCOPE__",scope};
+        block->scope = block_scope;
+        
+        while((first_tok = nextToken()).type != TOK_RBRACE){
+            ASTNode *_node;
+            
+            if(first_tok.type == TOK_KW){
+                _node = buildDecl(first_tok,block_scope);
+            }
+            else {
+                _node = buildExpr(first_tok,block_scope);
+            }
+            
+            if(!_node){
+                return nullptr;
+            }
+            
+            block->body.push_back(_node);
+            
+        }
+        
+        return block;
     };
 
     ASTExpr *ASTFactory::evalObjExpr(Tok & first_tok,ASTScope *scope){
@@ -119,6 +296,15 @@ namespace autom {
                 break;
             }
                 
+            // Boolean Literal
+            case TOK_BOOLLITERAL : {
+                auto _expr = new ASTLiteral();
+                _expr->type = EXPR_LITERAL;
+                _expr->boolean = first_tok.str == BOOL_TRUE? true : first_tok.str == BOOL_FALSE? false : false;
+                expr = _expr;
+                break;
+            }
+            
             // Array Expr
             case TOK_LBRACKET : {
                 auto _expr = new ASTExpr();
@@ -147,6 +333,7 @@ namespace autom {
                 break;
             }
         }
+        ASTScopeAddReference(scope);
         expr->scope = scope;
         return expr;
     };
@@ -221,6 +408,7 @@ namespace autom {
                 }
             }
             first_tok = aheadToken();
+            ASTScopeAddReference(scope);
             expr->scope = scope;
         }
     
@@ -278,6 +466,7 @@ namespace autom {
                 break;
             }
         }
+        ASTScopeAddReference(scope);
         expr->scope = scope;
         return expr;
         

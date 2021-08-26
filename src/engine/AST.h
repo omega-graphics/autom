@@ -15,6 +15,9 @@ namespace autom {
     struct ASTScope {
         std::string name;
         ASTScope *parent;
+ 
+        
+        bool refCount = 1;
         /** 
          @brief Recursively checks scope inheritance.
          @param parent The ASTScope used to check for inheritance.
@@ -23,11 +26,17 @@ namespace autom {
         bool isChildScopeOfParent(ASTScope *parent);
     };
 
+    
+    ASTScope *ASTScopeCreate(const char *name,ASTScope *parent);
+    void ASTScopeAddReference(ASTScope *scope);
+    void ASTScopeRelease(ASTScope *scope);
+
     extern ASTScope *GLOBAL_SCOPE;
 
     struct ASTNode {
         ASTNodeType type;
         ASTScope *scope;
+        ~ASTNode();
     };
 
     
@@ -43,10 +52,7 @@ namespace autom {
         std::vector<ASTExpr *> children;
 
         std::unordered_map<std::string,ASTExpr *> func_args;
-
-        std::unordered_map<ASTExpr *,ASTExpr *> map_children;
         
-
     };
 
     struct ASTLiteral : public ASTExpr {
@@ -67,14 +73,25 @@ namespace autom {
         std::string value;
     };
 
-    struct ASTConditional : public ASTNode {
-        std::unordered_map<ASTExpr *,ASTBlock> cases;
+    struct ASTForeachDecl : public ASTNode {
+        std::string loopVar;
+        ASTExpr *list;
+        std::unique_ptr<ASTBlock> body;
+    };
+
+    struct ASTConditionalDecl : public ASTNode {
+        struct CaseSpec {
+            bool testCondition;
+            ASTExpr *condition;
+            std::unique_ptr<ASTBlock> block;
+        };
+        std::vector<CaseSpec> cases;
     };
 
     struct ASTFuncDecl : public ASTNode {
         std::string id;
         std::vector<std::string> params;
-        ASTBlock body;
+        std::unique_ptr<ASTBlock> body;
     };
 
     struct ASTVarDecl : public ASTNode {

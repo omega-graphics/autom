@@ -27,6 +27,8 @@ namespace autom {
 
         void incToNextToken();
         
+        ASTBlock *buildBlock(Tok & first_tok,ASTScope *scope);
+        
         ASTNode *buildDecl(Tok & first_tok,ASTScope *scope);
 
         ASTExpr *buildExpr(Tok & first_tok,ASTScope *scope);

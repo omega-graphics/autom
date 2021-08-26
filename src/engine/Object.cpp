@@ -215,10 +215,11 @@ namespace autom {
         }
 
         Array::~Array(){
-            if(!data.empty())
-                for(auto o : data){
-                    delete o;
-                }
+//            if(!data.empty())
+//                for(auto o : data){
+//                    if(o != NULL || o != nullptr)
+//                        delete o;
+//                }
         }
 
         Target * TargetWrapper::value() const {

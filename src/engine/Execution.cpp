@@ -26,6 +26,17 @@
 namespace autom {
 
     namespace eval {
+    
+        void Eval::VarStore::deallocAll(){
+            for(auto & ent : body){
+                delete ent.second;
+            };
+            body.clear();
+        }
+        
+        Eval::VarStore::~VarStore(){
+            deallocAll();
+        }
 
         Eval::Eval(Gen &gen,ExecEngine *engine):engine(engine),gen(gen){
 
@@ -94,7 +105,7 @@ namespace autom {
                             for(auto & func : funcs){
                                 if(func->id == v){
                                     evalArgs(evalParams);
-                                    return invokeFunc(func->body,evalParams);
+                                    return invokeFunc(func->body.get(),evalParams);
                                 };
                             };
 
@@ -228,8 +239,8 @@ namespace autom {
             return nullptr;
         }
 
-        Object * Eval::evalBlock(ASTBlock & block,const ASTBlockContext & ctxt,bool *returning) {
-            for(const auto & node : block.body){
+        Object * Eval::evalBlock(ASTBlock * block,const ASTBlockContext & ctxt,bool *failed,bool *returning) {
+            for(const auto & node : block->body){
                 if(ctxt.inFunction){
                     if(node->type == RETURN_DECL){
                         *returning = true;
@@ -239,8 +250,25 @@ namespace autom {
                         if(f){
                             return nullptr;
                         }
+                        return rc;
                     }
                 }
+                bool f;
+                auto o = evalGenericStmt(node,&f);
+                
+                if(ctxt.inFunction){
+                    *returning = true;
+                }
+                
+                if(f){
+                    *failed = true;
+                    return nullptr;
+                };
+                
+                if(ctxt.inFunction){
+                    return o;
+                }
+                
 
             }
         }
@@ -306,17 +334,34 @@ namespace autom {
 
 
         bool Eval::evalStmt(ASTNode *node){
+            bool f;
+            evalGenericStmt(node,&f);
+            return !f;
+        };
+
+        Object *Eval::invokeFunc(ASTBlock * block,ArrayRef<std::pair<std::string,Object *>> args) {
+            bool f,r;
+            return evalBlock(block,ASTBlockContext {true},&f,&r);
+        }
+
+        Object * Eval::evalGenericStmt(ASTNode *node,bool *failed,bool inFunctionCtxt,bool *returning) {
+            *failed = false;
             // std::cout << "Eval Node" << std::endl;
             if(node->type & EXPR){
                 bool f;
-                evalExpr((ASTExpr *)node,&f);
+                auto obj = evalExpr((ASTExpr *)node,&f);
                 if(f){
-                    return false;
+                    return nullptr;
                 };
+                return obj;
             }
             else {
                 switch (node->type) {
                     case IMPORT_DECL : {
+                        if(node->scope != GLOBAL_SCOPE){
+                            *failed = true;
+                            return nullptr;
+                        }
                         auto *decl = (ASTImportDecl *)node;
                         if(decl->isInterface){
                             /// Relative Interface File
@@ -342,7 +387,8 @@ namespace autom {
                                 std::cout << "Cannot import file:" << decl->value << std::endl;
 
                                 /// Throw Error!
-                                return false;
+                                *failed = true;
+                                return nullptr;
                             }
                         }
                         /// Import Interface Extension
@@ -361,7 +407,8 @@ namespace autom {
                                 std::cout << "ERROR: Cannot load extension: " << decl->value << std::endl;
 
                                 /// Throw Error!
-                                return false;
+                                *failed = true;
+                                return nullptr;
                             }
                         }
                         break;
@@ -377,7 +424,8 @@ namespace autom {
                             bool f;
                             obj = evalExpr(decl->init.value(),&f);
                             if(f){
-                                return false;
+                                *failed = true;
+                                return nullptr;
                             };
                         }
                         else {
@@ -386,20 +434,125 @@ namespace autom {
                         vars[node->scope].body.insert(std::make_pair(decl->id,obj));
                         break;
                     }
+                    case COND_DECL : {
+                        auto *decl = (ASTConditionalDecl *)node;
+                        
+                        for(auto case_it = decl->cases.begin();case_it != decl->cases.end();case_it++){
+                            auto &_case = *case_it;
+                            
+                            bool f;
+                            
+                            if(_case.testCondition){
+                                /// 1. Eval Expression
+                                eval::Boolean * obj = (eval::Boolean *)evalExpr(_case.condition,&f);
+                                if(f){
+                                    *failed = true;
+                                    return nullptr;
+                                }
+                                
+                                /// 2 . Assert that the evaluated expression returned a Boolean object.
+                                
+                                if(obj->type != Object::Boolean){
+                                    *failed = true;
+                                    engine->printError("Object evaluated in conditional test case is not a Boolean.");
+                                    return nullptr;
+                                }
+                                
+                                /// 3. Test condition
+                                
+                                if(obj->value()){
+                                    ASTBlockContext ctxt {inFunctionCtxt};
+                                    bool ret = false;
+                                    auto obj = evalBlock(_case.block.get(),ctxt,&f,&ret);
+                                    if(f){
+                                        *failed = true;
+                                        return nullptr;
+                                    }
+                                    
+                                    if(inFunctionCtxt && ret){
+                                        return obj;
+                                    }
+                                    
+                                    break;
+                                }
+                                else {
+                                    /// Goto to next case if there is another.
+                                    continue;
+                                }
+                                
+                                
+                            }
+                            
+                            ASTBlockContext ctxt {inFunctionCtxt};
+                            
+                            
+                            bool ret = false;
+                            auto obj = evalBlock(_case.block.get(),ctxt,&f,&ret);
+                            if(f){
+                                *failed = true;
+                                return nullptr;
+                            }
+                            
+                            if(inFunctionCtxt && ret){
+                                return obj;
+                            }
+                        }
+                        break;
+                    }
+                    case FOREACH_DECL : {
+                        auto *decl = (ASTForeachDecl *)node;
+                        
+                        auto & varStoreEntry = vars[decl->body->scope];
+                        
+                        varStoreEntry.body.insert(std::make_pair(decl->loopVar,nullptr));
+                        bool f;
+                        
+                        eval::Array * listObject = (eval::Array * )evalExpr(decl->list,&f);
+                        if(f){
+                            *failed = true;
+                            return nullptr;
+                        }
+                        
+                        if(listObject->type != Object::Array){
+                            *failed = true;
+                            engine->printError("Object in foreach context must be an Array!");
+                            return nullptr;
+                        }
+                        
+                        auto length = listObject->length();
+                        auto begin_it = listObject->getBeginIterator();
+                        
+                        ASTBlockContext ctxt {inFunctionCtxt};
+                        
+                        bool ret = false;
+                        
+                        while(length > 0){
+                            varStoreEntry.body[decl->loopVar] = *begin_it;
+                            auto obj = evalBlock(decl->body.get(),ctxt,&f,&ret);
+                            if(f){
+                                *failed = true;
+                                return nullptr;
+                            }
+                            /// Erase All Objects
+                            varStoreEntry.deallocAll();
+                            
+                            if(inFunctionCtxt && ret){
+                                return obj;
+                            }
+                            --length;
+                            ++begin_it;
+                        };
+                        
+                        break;
+                    }
+                    
                 }
             };
-            return true;
-        };
-
-        Object *Eval::invokeFunc(ASTBlock & block,ArrayRef<std::pair<std::string,Object *>> args) {
-            bool f;
-            return evalBlock(block,ASTBlockContext {true},&f);
-        }
-
-        Object * Eval::evalGenericStmt(ASTNode *node,bool *failed) {
+            
             return nullptr;
+
         }
-        
+
     }
 
     Extension * eval::Eval::loadExtension(const std::filesystem::path& path){

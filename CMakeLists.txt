@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 file(GLOB SRCS "./src/*.cpp" "./src/*.h" "./src/bridge/*.cpp" "./src/gen/*.cpp" "src/engine/*.cpp" "src/parser/*.h")
 
 if(NOT APPLE AND UNIX)
-    # Required, because some standard libs are not compiled with -fPIC.
+    # Required on Linux because some standard libs are not compiled with -fPIC.
     add_library("autom-lib" SHARED ${SRCS})
     set_target_properties("autom-lib" PROPERTIES LIBRARY_OUTPUT_NAME "autom")
 else()
@@ -16,13 +16,6 @@ else()
     set_target_properties("autom-lib" PROPERTIES ARCHIVE_OUTPUT_NAME "autom")
 endif()
 
-
-# If using LLVM on Linux, prefer linking to libc++
-#if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#    if(NOT APPLE AND UNIX)
-#        set(CMAKE_CXX_FLAGS "-stdlib=libc++")
-#    endif()
-#endif()
 
 if(NOT APPLE AND UNIX)
     target_link_libraries("autom-lib" PRIVATE dl)
@@ -37,6 +30,9 @@ macro(add_autom_test _NAME)
     target_link_libraries(${_NAME} PRIVATE "autom-lib")
     set_target_properties(${_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
 endmacro()
+
+add_executable("autom-install" "src/tools/install-main.cpp")
+target_link_libraries("autom-install" PRIVATE "autom-lib")
 
 add_autom_test("lex-test" "src/tests/lex-test.cpp")
 #add_autom_test("run-test" "src/tests/run-test.cpp")
@@ -60,6 +56,6 @@ file(GLOB STDLIB_MODS "${CMAKE_SOURCE_DIR}/stlib/*.autom")
 
 install(FILES ${STDLIB_MODS} DESTINATION "mods")
 
-install(TARGETS "autom" DESTINATION "bin")
+install(TARGETS autom autom-install DESTINATION "bin")
 install(TARGETS "autom-lib" ARCHIVE DESTINATION "lib")
 install(TARGETS ${STDLIB_MODULES} RUNTIME DESTINATION "stdlib" LIBRARY DESTINATION "stdlib")

@@ -141,6 +141,8 @@ namespace autom {
         public:
             struct VarStore {
                 std::unordered_map<std::string,Object *> body;
+                void deallocAll();
+                ~VarStore();
             };
             std::unordered_map<ASTScope *,VarStore> vars;
             
@@ -154,9 +156,9 @@ namespace autom {
             bool processString(std::string * str,ASTScope *scope);
 
 
-            Object *invokeFunc(ASTBlock & block,ArrayRef<std::pair<std::string,Object *>> args);
-            Object *evalBlock(ASTBlock & block,const ASTBlockContext & ctxt,bool * failed,bool *returning = nullptr);
-            Object *evalGenericStmt(ASTNode *node,bool *failed);
+            Object *invokeFunc(ASTBlock * block,ArrayRef<std::pair<std::string,Object *>> args);
+            Object *evalBlock(ASTBlock * block,const ASTBlockContext & ctxt,bool * failed,bool *returning = nullptr);
+            Object *evalGenericStmt(ASTNode *node,bool *failed,bool inFunctionCtxt = false,bool *returning = nullptr);
             Object *evalExpr(ASTExpr *expr,bool *failed);
 
             void importFile(const autom::StrRef & path);

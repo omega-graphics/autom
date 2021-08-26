@@ -2,7 +2,7 @@
 #include "../Gen.h"
 #include "Toolchain.h"
 
-#include <rapidjson/writer.h>
+#include <rapidjson/prettywriter.h>
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
 
@@ -18,9 +18,11 @@ namespace autom {
 
         std::ofstream out;
         rapidjson::OStreamWrapper wrap_out;
-        rapidjson::Writer<rapidjson::OStreamWrapper> w;
+        rapidjson::PrettyWriter<decltype(wrap_out)> w;
     private:
         inline void writeCommand(const std::string& cmd,const autom::StrRef & dir,const autom::StrRef & file){
+            
+            w.SetFormatOptions(rapidjson::kFormatDefault);
             w.StartObject();
             w.Key("command");
             w.String(cmd.c_str(),cmd.size());
@@ -80,6 +82,7 @@ namespace autom {
 
         void finish() override {
             w.EndArray();
+            w.Flush();
         };
 
         explicit GenCompileCommands(autom::StrRef output_path):out(output_path),wrap_out(out),w(wrap_out){

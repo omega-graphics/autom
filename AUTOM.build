@@ -1,12 +1,16 @@
-load "./cmake-build-debug/stdlib/fs.aext"
+load "./build/stdlib/Debug/fs.aext"
 
 Project(name:"AUTOM",version:"0.8")
 
 var exec = Executable(name:"test",sources:["./main.cpp"])
 
-var e = fs_exists(path:"./test.c")
+var testArray = ["Hello","World"]
 
-print(msg:e)
+foreach item in testArray {
+    print(msg:item)
+}
+
+testFunc()
 
 
 

@@ -36,6 +36,7 @@ typedef int TokType;
 #define TOK_PLUS 0x10
 #define TOK_PLUSEQUALS 0x11
 #define TOK_LINECOMMENT 0x12
+#define TOK_BOOLLITERAL 0x13
 
 #define TOK_EOF 0xFF
 
@@ -50,11 +51,16 @@ typedef int TokType;
 #define KW_IMPORT KW("import")
 #define KW_LOAD KW("load")
 #define KW_IF KW("if")
+#define KW_IN KW("in")
 #define KW_ELIF KW("elif")
 #define KW_ELSE KW("else")
 #define KW_FUNC KW("func")
 #define KW_VAR KW("var")
 #define KW_FOREACH KW("foreach")
+
+/// Boolean Literal
+#define BOOL_TRUE TOKEN("true")
+#define BOOL_FALSE TOKEN("false")
 
 
 #endif

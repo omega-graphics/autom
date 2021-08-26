@@ -7,9 +7,14 @@ namespace autom {
 
     inline bool isKeyword(StrRef subject){
         return (subject == KW_IF ) || (subject == KW_ELIF) ||
-        (subject == KW_FUNC) || (subject == KW_VAR) ||
-        (subject == KW_IMPORT) || (subject == KW_LOAD);
+        (subject == KW_ELSE) || (subject == KW_FUNC) ||
+        (subject == KW_VAR) || (subject == KW_IMPORT) ||
+        (subject == KW_LOAD) || (subject == KW_FOREACH);
     };
+
+    inline bool isBooleanLiteral(StrRef subject){
+        return (subject == BOOL_TRUE) || (subject == BOOL_FALSE);
+    }
 
 
     void Lexer::setInputStream(std::istream *is){
@@ -27,7 +32,10 @@ namespace autom {
             auto str = autom::StrRef(chBuf,bufLen);\
             if(isKeyword(str)){\
                  t = TOK_KW;    \
-            };\
+            }\
+            else if(isBooleanLiteral(str)){\
+                t = TOK_BOOLLITERAL;\
+            }\
             tokenVector->push_back(Tok {str,t});\
             bufEnd = bufSt;
 
