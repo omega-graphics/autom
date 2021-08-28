@@ -35,15 +35,47 @@ auto pbxHeader = R"(// !$*UTF8*$!
         objectVersion = 46;
         objects = {)";
     
+    struct PBXAggregateTargetDesc {
+        
+    };
+
     struct PBXNativeTargetDesc {
+        
+    };
+
+    struct PBXFileReferenceDesc {
         
     };
     
     struct PBXBuildFileDesc {
         
     };
+
+    struct PBXGroupDesc {
+        
+    };
+
+    struct PBXFrameworksBuildPhaseDesc {
+        
+    };
     
-    struct PBXBuildPhaseDesc {
+    struct PBXSourcesBuildPhaseDesc {
+        
+    };
+
+    struct PBXTargetDependencyDesc {
+        
+    };
+
+    struct PBXProjectDesc {
+        
+    };
+
+    struct XCBuildConfigurationDesc {
+        
+    };
+
+    struct XCConfigurationListDesc {
         
     };
     
@@ -67,8 +99,6 @@ auto pbxHeader = R"(// !$*UTF8*$!
         
         std::queue<PBXBuildFileDesc> buildFiles;
         
-        std::queue<PBXBuildPhaseDesc> buildPhases;
-        
     public:
         
         explicit XcodeGen(OutputTargetOpts & outputOpts,GenXcodeOpts & genOpts):outputOpts(outputOpts),genOpts(genOpts){
@@ -78,6 +108,10 @@ auto pbxHeader = R"(// !$*UTF8*$!
             
             pbxprojOut.open(std::filesystem::path(genOpts.outputDir.data()).append(projectDir).append("project.pbxproj"));
             pbxprojOut << pbxHeader;
+        }
+        
+        void consumeToolchainDefaults(ToolchainDefaults &conf) override {
+            
         }
         
         inline void writeXcodeObject(XcodeObjectType type){

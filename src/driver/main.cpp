@@ -156,6 +156,7 @@ int main(int argc,char * argv[]){
     auto file = (!toolchainFile.empty())? toolchainFile : exec_path.append("default-toolchains.json").string();
     
     autom::ExecEngineOpts opts {
+        outputDir,
         *gen,
         file,
         interfaceSearchPaths};
@@ -170,13 +171,16 @@ int main(int argc,char * argv[]){
 
     std::ifstream in("./AUTOM.build");
 
-    eng.parseAndEvaluate(&in);
-    if(eng.checkDependencyTree()){
-        eng.generate();
-        eng.report();
-    };
-    
-    
+    auto success = eng.parseAndEvaluate(&in);
+    if(success) {
+        if(eng.checkDependencyTree()){
+            eng.generate();
+            eng.report();
+        };
+    }
+    else {
+        std::cout << "Exiting..." << std::endl;
+    }
 
     return 0;
 };

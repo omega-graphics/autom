@@ -14,6 +14,10 @@ public:
         out.open(std::filesystem::path(outputDir.data()).append("build.gradle"));
     };
     
+    void consumeToolchainDefaults(ToolchainDefaults &conf) override {
+        
+    }
+    
     
     bool supportsCustomToolchainRules() override {
         return false;

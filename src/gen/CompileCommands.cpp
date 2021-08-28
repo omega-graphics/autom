@@ -33,6 +33,10 @@ namespace autom {
             w.EndObject();
         }
     public:
+        
+        void consumeToolchainDefaults(ToolchainDefaults &conf) override {
+            
+        }
 
         bool supportsCustomToolchainRules() override {
             return true;

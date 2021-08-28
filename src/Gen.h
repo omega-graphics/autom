@@ -11,10 +11,16 @@ namespace autom {
         std::string version;
     };
 
+    struct ToolchainDefaults {
+        eval::Array *c_flags;
+        eval::Array *cxx_flags;
+    };
+
     
     class Gen : public TargetConsumer {
     public:
         using TargetConsumer::consumeTarget;
+        virtual void consumeToolchainDefaults(ToolchainDefaults & conf) = 0;
         virtual bool supportsCustomToolchainRules() = 0;
         virtual void genToolchainRules(std::shared_ptr<Toolchain> &toolchain) = 0;
         virtual void finish() = 0;

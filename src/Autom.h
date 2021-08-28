@@ -13,11 +13,21 @@ namespace autom {
     namespace eval {
         struct Object;
     }
+    
+    #define VOID_OBJECT nullptr
+
     typedef eval::Object Object;
+
+    
 
     bool objectIsBool(Object *object);
     bool objectIsString(Object *object);
     bool objectIsArray(Object *object);
+    bool objectIsNamespace(Object *object);
+
+    Object *createBoolObject();
+    Object *createStringObject();
+    Object *createArrayObject();
 
     Object *toObject(bool & val);
     Object *toObject(std::string &val);
@@ -26,6 +36,7 @@ namespace autom {
     bool objectToBool(Object *object);
     StrRef objectToString(Object *object);
     ArrayRef<Object *> objectToVector(Object *object);
+    MapRef<std::string,Object *> objectToMap(Object *object);
     
 
     typedef const char *CString;

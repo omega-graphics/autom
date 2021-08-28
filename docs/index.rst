@@ -7,3 +7,4 @@ Autom Build System
     :maxdepth: 2
 
     Syntax
+    Interfaces

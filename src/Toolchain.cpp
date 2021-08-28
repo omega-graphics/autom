@@ -3,6 +3,8 @@
 
 #include "Diagnostic.h"
 
+#include <rapidjson/prettywriter.h>
+#include <rapidjson/ostreamwrapper.h>
 
 #include <fstream>
 #include <iostream>
@@ -73,13 +75,13 @@ namespace autom {
             str << toolchain.CXX.command;
         }
         else if(_type == so){
-            str << toolchain.SO_LD.command;
+            str << toolchain.SO_LD.command << " " << toolchain.shared;
         }
         else if(_type == ar){
             str << toolchain.AR.command;
         }
         else if(_type == exe){
-            str << toolchain.EXE_LD.command;
+            str << toolchain.EXE_LD.command << " " << toolchain.executable;
         }
     }
 
@@ -88,7 +90,12 @@ namespace autom {
     }
 
     void Toolchain::Formatter::writeSource(const StrRef &src) {
-        str << toolchain.compile << " " << src.data();   
+        if(_type == cc || _type == cxx){
+            str << toolchain.compile << " " << src.data();
+        }
+        else {
+            str << " " << src.data();
+        }
     }
 
     void Toolchain::Formatter::writeFlags(ArrayRef<std::string> flags) {
@@ -119,110 +126,195 @@ namespace autom {
         }
     }
 
+    void Toolchain::Formatter::writeLibDirs(ArrayRef<std::string> lib_dirs) {
+        for(auto & l : lib_dirs){
+            str << toolchain.lib_dir << l << " ";
+        }
+    }
+
     void Toolchain::Formatter::writeString(const std::string &str) {
         this->str << str;
     }
 
 
-ToolchainLoader::ToolchainLoader(const StrRef & path):filename(path){
-    std::ifstream in(path,std::ios::in);
-    auto inW = rapidjson::IStreamWrapper(in);
-    toolchainFile.ParseStream(inW);
-}
 
-std::shared_ptr<Toolchain> ToolchainLoader::getToolchain(ToolchainSearchOpts & opts){
-    
-    auto & document = toolchainFile;
-
-    auto t = new Toolchain;
-
-    if(document.IsArray()){
-        auto array = document.GetArray();
-        for(auto array_it = array.Begin();array_it != array.End();array_it++){
-            auto entry = array_it->GetObject();
-
-            auto toolchain_entry_type = entry.FindMember("type");
-            if(toolchain_entry_type == entry.MemberEnd()){
-                std::cout << formatmsg("No member found for toolchain entry by the name: `@0`, in file @1","type",filename).res;
-                delete t;
-                exit(1);
-            }
-            
-            
-
-            auto toolchain_entry_platforms = entry.FindMember("platforms");
-            if(toolchain_entry_platforms != entry.MemberEnd()){
-                bool toolchainSupported = false;
-                auto platforms = toolchain_entry_platforms->value.GetArray();
-                for(auto p_it = platforms.Begin();p_it != platforms.End();p_it++){
-                    if((std::strcmp(p_it->GetString(),"windows") == 0) && opts.platform == TargetPlatform::Windows){
-                        toolchainSupported = true;
-                    }
-                    else if((std::strcmp(p_it->GetString(),"macos") == 0) && opts.platform == TargetPlatform::macOS){
-                        toolchainSupported = true;
-                    }
-                }
+    void cacheToolchain(std::shared_ptr<Toolchain> & toolchain,StrRef file){
+        std::ofstream out(file,std::ios::out);
+        rapidjson::OStreamWrapper out_w(out);
+        rapidjson::PrettyWriter writer(out_w);
+        writer.StartObject();
+        writer.Key("name",4);
+        writer.String(toolchain->name.c_str(),toolchain->name.size());
+        writer.Key("type",4);
+        
+        switch (toolchain->toolchainType) {
+            case TOOLCHAIN_CFAMILY_ASM : {
+                writer.String("cfamily",7);
                 
-                if(!toolchainSupported){
-                    continue;
-                }
-            }
-            
-            
-
-
-            autom::StrRef type = toolchain_entry_type->value.GetString();
-
-            auto progs = entry["progs"].GetObject();
-            auto flags = entry["flags"].GetObject();
-
-
-            {
-                t->compile = flags["compile"].GetString();
-                t->compile = flags["output"].GetString();
-            }
-
-            if(type == "cfamily" && opts.type == ToolchainSearchOpts::ccAsmFamily){
-                t->toolchainType = TOOLCHAIN_CFAMILY_ASM;
-                t->define = flags["define"].GetString();
-                t->include_dir = flags["include_dir"].GetString();
-                t->lib = flags["lib"].GetString();
-                t->lib_dir = flags["lib_dir"].GetString();
-
-                t->CC.command = progs["cc"].GetString();
-                t->CXX.command = progs["cxx"].GetString();
-                t->AR.command = progs["ar"].GetString();
-                t->EXE_LD.command = progs["ld_exe"].GetString();
-                t->SO_LD.command = progs["ld_so"].GetString();
-
-
-            }
-            else if(type == "jdk" && opts.type == ToolchainSearchOpts::jdk){
-                t->toolchainType = TOOLCHAIN_JDK;
-            }
-
-            t->name = entry["name"].GetString();
-
-            if(opts.preferedToolchain.size() != 0){
+                writer.Key("progs",4);
                 
-                if(opts.preferedToolchain == t->name){
-                    return std::shared_ptr<Toolchain>(t);
-                    break;
-                }
-                else {
-                    continue;
-                }
+                writer.StartObject();
+                writer.Key("cc",2);
+                writer.String(toolchain->CC.command.c_str(),toolchain->CC.command.size());
+                writer.Key("cxx",3);
+                writer.String(toolchain->CXX.command.c_str(),toolchain->CXX.command.size());
+                writer.Key("ar",2);
+                writer.String(toolchain->AR.command.c_str(),toolchain->AR.command.size());
+                writer.Key("ld_exe",6);
+                writer.String(toolchain->EXE_LD.command.c_str(),toolchain->EXE_LD.command.size());
+                writer.Key("ld_so",5);
+                writer.String(toolchain->SO_LD.command.c_str(),toolchain->SO_LD.command.size());
+                writer.EndObject();
+                
+                writer.Key("flags",5);
+                writer.StartObject();
+                writer.Key("define",6);
+                writer.String(toolchain->define.c_str(),toolchain->define.size());
+                writer.Key("include_dir",11);
+                writer.String(toolchain->include_dir.c_str(),toolchain->include_dir.size());
+                writer.Key("lib",3);
+                writer.String(toolchain->lib.c_str(),toolchain->lib.size());
+                writer.Key("lib_dir",7);
+                writer.String(toolchain->lib_dir.c_str(),toolchain->lib_dir.size());
+                writer.Key("compile",7);
+                writer.String(toolchain->compile.c_str(),toolchain->compile.size());
+                writer.Key("output",6);
+                writer.String(toolchain->output.c_str(),toolchain->output.size());
+                writer.EndObject();
+                break;
             }
-
-            return std::shared_ptr<Toolchain>(t);
-            break;
-            
+            case TOOLCHAIN_JDK : {
+                writer.String("jdk",3);
+                
+                writer.Key("progs",4);
+                
+                writer.StartObject();
+                writer.EndObject();
+                break;
+            }
         }
+       
+        writer.EndObject();
     }
-    delete t;
 
-    return nullptr;
-};
+    bool toolchainHasBeenCached(StrRef file){
+        return std::filesystem::exists(file.data());
+    };
+
+    std::shared_ptr<Toolchain> fromCacheFile(StrRef file){
+        std::ifstream in(file,std::ios::in);
+        auto inW = rapidjson::IStreamWrapper(in);
+        rapidjson::Document doc;
+        doc.ParseStream(inW);
+        
+    };
+
+
+
+    ToolchainLoader::ToolchainLoader(const StrRef & path):filename(path){
+        std::ifstream in(path,std::ios::in);
+        auto inW = rapidjson::IStreamWrapper(in);
+        toolchainFile.ParseStream(inW);
+    }
+
+    std::shared_ptr<Toolchain> ToolchainLoader::getToolchain(ToolchainSearchOpts & opts){
+        
+        auto & document = toolchainFile;
+
+        auto t = new Toolchain;
+
+        if(document.IsArray()){
+            auto array = document.GetArray();
+            for(auto array_it = array.Begin();array_it != array.End();array_it++){
+                auto entry = array_it->GetObject();
+
+                auto toolchain_entry_type = entry.FindMember("type");
+                if(toolchain_entry_type == entry.MemberEnd()){
+                    std::cout << formatmsg("No member found for toolchain entry by the name: `@0`, in file @1","type",filename).res;
+                    delete t;
+                    exit(1);
+                }
+                
+                
+
+                auto toolchain_entry_platforms = entry.FindMember("platforms");
+                if(toolchain_entry_platforms != entry.MemberEnd()){
+                    bool toolchainSupported = false;
+                    auto platforms = toolchain_entry_platforms->value.GetArray();
+                    for(auto p_it = platforms.Begin();p_it != platforms.End();p_it++){
+                        if((std::strcmp(p_it->GetString(),"windows") == 0) && opts.platform == TargetPlatform::Windows){
+                            toolchainSupported = true;
+                        }
+                        else if((std::strcmp(p_it->GetString(),"macos") == 0) && opts.platform == TargetPlatform::macOS){
+                            toolchainSupported = true;
+                        }
+                    }
+                    
+                    if(!toolchainSupported){
+                        continue;
+                    }
+                }
+                
+                
+
+
+                autom::StrRef type = toolchain_entry_type->value.GetString();
+
+                auto progs = entry["progs"].GetObject();
+                auto flags = entry["flags"].GetObject();
+
+
+                {
+                    t->compile = flags["compile"].GetString();
+                    t->output = flags["output"].GetString();
+                }
+
+                if(type == "cfamily" && opts.type == ToolchainSearchOpts::ccAsmFamily){
+                    t->toolchainType = TOOLCHAIN_CFAMILY_ASM;
+                    t->define = flags["define"].GetString();
+                    t->include_dir = flags["include_dir"].GetString();
+                    t->lib = flags["lib"].GetString();
+                    t->lib_dir = flags["lib_dir"].GetString();
+                    
+                    t->stripLibPrefix = flags["strip_lib_prefix"].GetBool();
+                    
+                    t->shared = flags["shared"].GetString();
+                    t->executable = flags["executable"].GetString();
+
+                    t->CC.command = progs["cc"].GetString();
+                    t->CXX.command = progs["cxx"].GetString();
+                    t->AR.command = progs["ar"].GetString();
+                    t->EXE_LD.command = progs["ld_exe"].GetString();
+                    t->SO_LD.command = progs["ld_so"].GetString();
+
+
+                }
+                else if(type == "jdk" && opts.type == ToolchainSearchOpts::jdk){
+                    t->toolchainType = TOOLCHAIN_JDK;
+                }
+
+                t->name = entry["name"].GetString();
+
+                if(opts.preferedToolchain.size() != 0){
+                    
+                    if(opts.preferedToolchain == t->name){
+                        return std::shared_ptr<Toolchain>(t);
+                        break;
+                    }
+                    else {
+                        continue;
+                    }
+                }
+
+                return std::shared_ptr<Toolchain>(t);
+                break;
+                
+            }
+        }
+        delete t;
+
+        return nullptr;
+    };
 
 
 }

@@ -1,19 +1,25 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(AUTOM CXX)
+project(AUTOM C CXX)
+
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
+set(CMAKE_C_STANDARD 11)
 
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SRCS "./src/*.cpp" "./src/*.h" "./src/bridge/*.cpp" "./src/gen/*.cpp" "src/engine/*.cpp" "src/parser/*.h")
 
-if(NOT APPLE AND UNIX)
+if(NOT WIN32)
     # Required on Linux because some standard libs are not compiled with -fPIC.
     add_library("autom-lib" SHARED ${SRCS})
     set_target_properties("autom-lib" PROPERTIES LIBRARY_OUTPUT_NAME "autom")
 else()
     add_library("autom-lib" STATIC ${SRCS})
     set_target_properties("autom-lib" PROPERTIES ARCHIVE_OUTPUT_NAME "autom")
+	if(NOT WIN32)
+		set_target_properties("autom-lib" PROPERTIES PREFIX "lib")
+	endif()
 endif()
 
 
@@ -42,7 +48,7 @@ include_directories("deps/rapidjson/include" "src")
 set(STDLIB_MODULES)
 
 macro(add_stdlib_module _NAME DIR)
-    file(GLOB _SRCS "${DIR}/*.cpp" "${DIR}/*.cc" "${DIR}/*.h")
+    file(GLOB _SRCS "${DIR}/*.cpp" "${DIR}/*.c" "${DIR}/*.h")
     add_library(${_NAME} MODULE ${_SRCS})
     list(APPEND STDLIB_MODULES ${_NAME})
     set_target_properties(${_NAME} PROPERTIES PREFIX "" SUFFIX ".aext" RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stdlib" LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stdlib")

@@ -2,6 +2,8 @@
 #include "Lexer.h"
 #include "engine/AST.def"
 #include "engine/Tokens.def"
+#include "ExecEngine.h"
+#include "Diagnostic.h"
 
 #include "ADT.h"
 
@@ -64,7 +66,7 @@ namespace autom {
             }
             else {
                 /// Error!
-                std::cout << "Expected A STR Literal" << std::endl;
+                engine->printError("Expected A STR Literal");
                 return nullptr;
             }
             node = decl;
@@ -195,7 +197,7 @@ namespace autom {
                 
                 if(wrapParen){
                     if(nextToken().type != TOK_RPAREN){
-                        std::cout << "ERROR: Expected RParen in this context." << std::endl;
+                        engine->printError("Expected RParen in this context.");
                         return nullptr;
                     }
                 }
@@ -211,17 +213,20 @@ namespace autom {
             
             while(first_tok.type == TOK_KW){
                 spec = ASTConditionalDecl::CaseSpec {false,nullptr,nullptr};
-            
-                incToNextToken();
                 
                 if(first_tok.str == KW_ELIF){
+                    incToNextToken();
                     buildSpec();
                 }
                 else if(first_tok.str == KW_ELSE) {
+                    incToNextToken();
                     first_tok = nextToken();
                     spec.condition = nullptr;
                     spec.testCondition = false;
                     spec.block.reset(buildBlock(first_tok,scope));
+                }
+                else {
+                    break;
                 }
                 decl->cases.push_back(std::move(spec));
                 first_tok = aheadToken();
@@ -229,7 +234,7 @@ namespace autom {
             node = decl;
         }
         else if(first_tok.str == KW_ELIF || first_tok.str == KW_ELSE){
-            std::cout << "ERROR:" << "Cannot use keywords `elif` or `else` in this context." << std::endl;
+            engine->printError("Cannot use keywords `elif` or `else` in this context.");
             return nullptr;
         }
         else {
@@ -457,12 +462,14 @@ namespace autom {
                 expr = _expr;
                 break;
             }
+            case TOK_PLUS :
             case TOK_PLUSEQUALS :
             case TOK_EQUALS_COND :
             case TOK_EQUALS_NOT_COND :
                 binary_expr();
                 break;
             default : {
+//                engine->printError(formatmsg("Unknown Token @0.",first_tok.str));
                 break;
             }
         }
@@ -482,7 +489,7 @@ namespace autom {
             first_tok = nextToken();
             if(first_tok.type != TOK_RPAREN){
                 /// Expected RParen!
-                std::cout << "Expected RParen" << std::endl;
+                engine->printError("Expected RParen");
                 return nullptr;
             };
             return ex;

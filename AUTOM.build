@@ -1,17 +1,23 @@
 load "./build/stdlib/Debug/fs.aext"
 
-Project(name:"AUTOM",version:"0.8")
+project(name:"AUTOM",version:"0.8")
 
-var exec = Executable(name:"test",sources:["./main.cpp"])
-
-var testArray = ["Hello","World"]
-
-foreach item in testArray {
-    print(msg:item)
+if(autom.toolchain == "LLVM"){
+    autom.cxx_flags += ["-std=c++17"]
 }
 
-testFunc()
+var libautom_srcs = fs_glob(path:"src/*.cpp") + fs_glob(path:"src/engine/*.cpp")
+libautom_srcs += fs_glob(path:"src/gen/*.cpp")
 
+var main_lib = Shared(name:"libautom",sources:libautom_srcs)
+
+var includes = [fs_abspath(path:"deps/rapidjson/include"), fs_abspath(path:"src")]
+
+main_lib.include_dirs = includes
+
+var main_exec = Executable(name:"autom",sources:["src/driver/main.cpp"])
+main_exec.deps = ["libautom"]
+main_exec.include_dirs = includes
 
 
 

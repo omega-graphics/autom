@@ -23,7 +23,10 @@ namespace autom {
         Darwin,
         Linux,
         Windows
+        
     };
+
+    const char *TargetOSToString(TargetOS &os);
 
     enum class TargetPlatform : int {
         macOS,
@@ -33,12 +36,16 @@ namespace autom {
         Windows
     };
 
+    const char *TargetPlatformToString(TargetPlatform &platform);
+
     enum class TargetArch : int {
         ARM,
         AARCH64,
         x86,
         x86_64
     };
+
+    const char *TargetArchToString(TargetArch & arch);
 
     struct OutputTargetOpts {
         TargetOS os;
@@ -64,7 +71,22 @@ namespace autom {
         eval::String *name;
 
         /// type = string[]
-        eval::String *deps;
+        eval::Array *deps = new eval::Array();
+        
+        std::vector<Target *> resolvedDeps;
+        
+    };
+
+    struct GroupTarget : public Target {
+        GroupTarget(){
+            type = GROUP_TARGET;
+        }
+        static GroupTarget *Create(eval::String *name,eval::Array *deps){
+            auto t = new GroupTarget();
+            t->name = name;
+            t->deps = deps;
+            return t;
+        };
     };
 
     struct CompiledTarget : public Target {
@@ -89,6 +111,9 @@ namespace autom {
 
         /// type = string[]
         eval::Array * libs;
+        
+        /// type = string[]
+        eval::Array * lib_dirs;
 
         /// type = string[]
         eval::Array * defines;
@@ -96,9 +121,10 @@ namespace autom {
         /// type = string[]
         eval::Array * include_dirs;
 
-        void init(){
+        CompiledTarget(){
             cflags = new eval::Array();
             libs = new eval::Array();
+            lib_dirs = new eval::Array();
             defines = new eval::Array();
             include_dirs = new eval::Array();
             ldflags = new eval::Array();
@@ -106,8 +132,7 @@ namespace autom {
         }
 
         static CompiledTarget * Executable(eval::String * name,eval::Array * sources){
-            auto * t = new CompiledTarget;
-            t->init();
+            auto * t = new CompiledTarget();
             t->name = name;
             t->srcs = sources;
             t->type = EXECUTABLE;
@@ -115,8 +140,7 @@ namespace autom {
         };
 
         static CompiledTarget * Archive(eval::String * name,eval::Array * sources){
-            auto * t = new CompiledTarget;
-            t->init();
+            auto * t = new CompiledTarget();
             t->name = name;
             t->srcs = sources;
             t->type = STATIC_LIBRARY;
@@ -124,11 +148,18 @@ namespace autom {
         };
 
         static CompiledTarget * Shared(eval::String * name,eval::Array * sources){
-            auto * t = new CompiledTarget;
-            t->init();
+            auto * t = new CompiledTarget();
             t->name = name;
             t->srcs = sources;
             t->type = SHARED_LIBRARY;
+            return t;
+        };
+        
+        static CompiledTarget * SourceGroup(eval::String * name,eval::Array * sources){
+            auto * t = new CompiledTarget();
+            t->name = name;
+            t->srcs = sources;
+            t->type = SOURCE_GROUP;
             return t;
         };
 

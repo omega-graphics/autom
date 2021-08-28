@@ -1,6 +1,6 @@
 [
   {
-    "name": "LLVM Apple",
+    "name": "LLVM",
     "type": "cfamily",
     "platforms": [
       "macos",
@@ -11,8 +11,8 @@
       "cxx": "clang++",
       "objc": "clang",
       "objcxx": "clang++",
-      "ld_so": "ld",
-      "ld_exe": "ld",
+      "ld_so": "clang++",
+      "ld_exe": "clang++",
       "ar": "ar"
     },
     "flags": {
@@ -23,12 +23,15 @@
       "framework": "-f",
       "framework_dir": "-F",
       "output": "-o",
-      "compile": "-c"
+      "compile": "-c",
+	  "shared":"-dynamiclib -Wl,",
+	  "executable":"-Wl,",
+	  "strip_lib_prefix":true
     }
 
   },
   {
-    "name": "LLVM Unix Other",
+    "name": "LLVM",
     "type": "cfamily",
     "platforms": [
       "linux",
@@ -76,7 +79,7 @@
 
   },
   {
-    "name": "LLVM MSVC",
+    "name": "LLVM",
     "type": "cfamily",
     "platforms": [
       "windows"

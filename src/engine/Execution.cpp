@@ -38,13 +38,17 @@ namespace autom {
             deallocAll();
         }
 
-        Eval::Eval(Gen &gen,ExecEngine *engine):engine(engine),gen(gen){
-
+        Eval::Eval(Gen &gen,ExecEngine *engine):engine(engine),gen(gen),currentEvalDir("."){
+            /// Current Eval Dir should be current directory of execution
         };
 
         void Eval::addTarget(Target *target){
             targetCount += 1;
             targets.push_back(target);
+        };
+    
+        void Eval::setGlobalVar(autom::StrRef str,Object *object){
+            vars[GLOBAL_SCOPE].body.insert(std::make_pair(str,object));
         };
 
         Object *Eval::referVarWithScope(ASTScope *scope,StrRef name){
@@ -62,6 +66,8 @@ namespace autom {
                     }
                 }
             }
+            
+            engine->printError(formatmsg("Failed to reference variable `@0`",name));
 
             return nullptr;
         };
@@ -95,7 +101,7 @@ namespace autom {
                                     args.emplace_back(std::make_pair(a.first,evalExpr(a.second,&f)));
                                     if(f){
                                         *failed = true;
-                                        break;
+                                        return nullptr;
                                     };
                                 };
                             };
@@ -113,13 +119,14 @@ namespace autom {
                             
                             for(auto & extension : loadedExts){
                                 for(auto & f : extension->funcs){
-                                    if(f.name == v){
+                                    if(v == f.name){
                                         evalArgs(evalParams);
                                         return f.func(evalParams.size(),evalParams.data());
                                     };
                                 }
                             };
-
+                            
+                            *failed = true;
                             return nullptr;
                         }
                         else if(code == INVOKE_FAILED){
@@ -136,6 +143,7 @@ namespace autom {
                         auto str = literal->str.value();
                         if(!processString(&str,node->scope)){
                             engine->printError("Failed to Process String!");
+                            *failed = true;
                             return nullptr;
                         };
                         return new eval::String(str);
@@ -186,6 +194,8 @@ namespace autom {
                         return nullptr;
                     }
                     
+                    /// TODO: Implement binary operand checks!
+                    
                     if(node->operand == OP_PLUS){
                         
                         if(lhs_obj->type == Object::Boolean || rhs_obj->type == Object::Boolean){
@@ -201,6 +211,38 @@ namespace autom {
                     return lhs_obj->performOperand(rhs_obj,node->operand);
                     break;
                 }
+                case EXPR_ASSIGN : {
+                    bool f;
+                    auto lhs = evalExpr(node->lhs,&f);
+                    if(f){
+                        *failed = true;
+                        return nullptr;
+                    }
+                    
+                    auto rhs = evalExpr(node->rhs,&f);
+                    if(f){
+                        *failed = true;
+                        return nullptr;
+                    }
+                    
+                    switch (lhs->type) {
+                        case Object::String: {
+                            assert(objectIsString(rhs));
+                            castToString(lhs)->assign(castToString(rhs));
+                            break;
+                        }
+                        case Object::Array : {
+                            assert(objectIsArray(rhs));
+                            castToArray(lhs)->assign(castToArray(rhs));
+                            break;
+                        }
+                        default: {
+                            break;
+                        }
+                    }
+                    
+                    break;
+                }
                 case EXPR_MEMBER : {
                     bool f;
                     auto obj = evalExpr(node->lhs,&f);
@@ -214,6 +256,10 @@ namespace autom {
                     if(obj->type == Object::Target){
 
                         auto tw = (TargetWrapper *)obj;
+                        
+                        if(propName == "deps"){
+                            return tw->value()->deps;
+                        }
 
                         if(tw->value()->type & COMPILED_OUTPUT_TARGET){
                             auto _target =  (CompiledTarget *)tw->value();
@@ -228,8 +274,19 @@ namespace autom {
                             }
                         }
                     }
+                    else if(obj->type == Object::Namespace){
+                        auto ns = (Namespace *)obj;
+                        
+                        auto obj = ns->get(propName);
+                        if(obj == nullptr){
+                            *failed = true;
+                            engine->printError(formatmsg("Property `@0` does not exist on Scope object",propName));
+                            return nullptr;
+                        }
+                        return obj;
+                    }
                     else {
-                        std::cout << "ERROR:" << "Target and Config are the only objects that have properties!" << std::endl;
+                        engine->printError("Targets and Scopes are the only objects that have properties!");
                         *failed = true;
                         return nullptr;
                     }
@@ -369,7 +426,11 @@ namespace autom {
                                 std::filesystem::path p(decl->value);
                                 if(!p.has_extension())
                                     p.replace_extension(".autom");
+                                
+                                auto prior_eval_dir = currentEvalDir;
+                                currentEvalDir = p.parent_path();
                                 importFile(p.string().c_str());
+                                currentEvalDir = prior_eval_dir;
                                 break;
                             }
                             else {
@@ -379,7 +440,10 @@ namespace autom {
                                     if(std::filesystem::exists(p)){
                                         if(!p.has_extension())
                                             p.replace_extension(".autom");
+                                        auto prior_eval_dir = currentEvalDir;
+                                        currentEvalDir = p.parent_path();
                                         importFile(p.string().c_str());
+                                        currentEvalDir = prior_eval_dir;
                                         break;
                                     }
                                 };
@@ -482,19 +546,21 @@ namespace autom {
                                 
                                 
                             }
+                            else {
                             
-                            ASTBlockContext ctxt {inFunctionCtxt};
-                            
-                            
-                            bool ret = false;
-                            auto obj = evalBlock(_case.block.get(),ctxt,&f,&ret);
-                            if(f){
-                                *failed = true;
-                                return nullptr;
-                            }
-                            
-                            if(inFunctionCtxt && ret){
-                                return obj;
+                                ASTBlockContext ctxt {inFunctionCtxt};
+                                
+                                
+                                bool ret = false;
+                                auto obj = evalBlock(_case.block.get(),ctxt,&f,&ret);
+                                if(f){
+                                    *failed = true;
+                                    return nullptr;
+                                }
+                                
+                                if(inFunctionCtxt && ret){
+                                    return obj;
+                                }
                             }
                         }
                         break;

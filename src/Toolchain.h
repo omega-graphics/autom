@@ -13,16 +13,20 @@
 
 namespace autom {
 
-#define SOURCE_MATCHER(name,reg) \
+#define SOURCE_MATCHER(name,...) \
 inline bool name(StrRef subject){ \
-        std::regex r(reg,std::regex_constants::ECMAScript);\
-        return std::regex_search(subject.data(),r);\
+        auto args = __VA_ARGS__;\
+        auto ext = std::filesystem::path(subject).extension().string();\
+        for(auto a : args){\
+            if(ext == a) return true;\
+        }\
+        return false;\
         };
-
-    SOURCE_MATCHER(isCSrc,R"(\.c)")
-    SOURCE_MATCHER(isCXXSrc,R"(\.(?:cc|cxx|cpp))")
-    SOURCE_MATCHER(isOBJCSrc,R"(\.m)")
-    SOURCE_MATCHER(isOBJCXXSrc,R"(\.mm)")
+    
+    SOURCE_MATCHER(isCSrc,{".c"})
+    SOURCE_MATCHER(isCXXSrc,{".cc",".cxx",".cpp"})
+    SOURCE_MATCHER(isOBJCSrc,{".m"})
+    SOURCE_MATCHER(isOBJCXXSrc,{".mm"})
 
     struct ToolchainSearchOpts {
         StrRef preferedToolchain;
@@ -65,6 +69,12 @@ inline bool name(StrRef subject){ \
         Flag lib_dir;
         Flag compile;
         Flag output;
+        
+        bool stripLibPrefix;
+        
+        ///LD  Mode Flags
+        Flag shared;
+        Flag executable;
         /// @}
 
         bool verifyTools() const;
@@ -105,6 +115,8 @@ inline bool name(StrRef subject){ \
             void writeDefines(ArrayRef<std::string> defines);
 
             void writeLibs(ArrayRef<std::string> libs);
+            
+            void writeLibDirs(ArrayRef<std::string> lib_dirs);
 
             void writeIncludes(ArrayRef<std::string> inc);
 
@@ -113,6 +125,8 @@ inline bool name(StrRef subject){ \
         friend class Formatter;
         Formatter formatter;
     };
+
+    void cacheToolchain(std::shared_ptr<Toolchain> & toolchain,StrRef file);
 
 
     class ToolchainLoader {

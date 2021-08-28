@@ -164,9 +164,13 @@ namespace autom {
         CONSTEXPR_CXX17 bool operator==(std::string & other) const{
             return compare(other.c_str(),other.length());
         };
-
-        CONSTEXPR_CXX17 bool operator!=(StrRef & other) const{
+        
+        CONSTEXPR_CXX17 bool operator==(const StrRef & other) const{
             return compare(other.data(),other.size());
+        };
+
+        CONSTEXPR_CXX17 bool operator!=(const StrRef & other) const{
+            return !compare(other.data(),other.size());
         };
 
         StrRef():_data(nullptr),_size(0){
@@ -218,6 +222,11 @@ namespace autom {
         CONSTEXPR_CXX17 const size_type & size() const NOEXCEPT{
             return _size;
         };
+        
+        CONSTEXPR_CXX17 const bool empty()const NOEXCEPT {
+            return size() == 0;
+        }
+        
         CONSTEXPR_CXX17 const T *data() const NOEXCEPT{
             return _data;
         };
@@ -270,7 +279,7 @@ namespace autom {
 
     template<class K,class V>
     class MapRef {
-        std::pair<K,V> * _data;
+        const std::pair<K,V> * _data;
     public:
         typedef unsigned size_type;
     private:
@@ -301,6 +310,10 @@ namespace autom {
             };
             return begin()->second;
         };
+        
+//        MapRef(const std::pair<K,V> * _data,size_t length):_data(_data),_size(length){
+//
+//        };
         template<class InputIterator>
         MapRef(InputIterator _beg,InputIterator _end):_data(_beg),_size(_end - _beg){
 

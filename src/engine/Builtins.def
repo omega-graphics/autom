@@ -9,7 +9,7 @@ typedef int AutomBuiltinFunc;
 #define INVOKE_NOTBUILTIN 0x01
 
 #define BUILTIN_PRINT  "print"
-#define BUILTIN_PROJECT  "Project"
+#define BUILTIN_PROJECT  "project"
 #define BUILTIN_EXECUTABLE "Executable"
 #define BUILTIN_ARCHIVE "Archive"
 #define BUILTIN_SHARED "Shared"

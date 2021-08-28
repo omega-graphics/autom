@@ -6,6 +6,7 @@
 namespace autom {
 
     class Lexer;
+    class ExecEngine;
 
     struct Tok;
     /**
@@ -38,6 +39,7 @@ namespace autom {
         ASTExpr *evalArgsExpr(Tok &first_tok,ASTScope *scope);
         ASTExpr *evalOpExpr(Tok &first_tok,ASTExpr *lhs,ASTScope *scope);
         /// @}
+        ExecEngine *engine;
     public:
         void setTokenVector(std::vector<Tok> *tokStream);
         ASTNode * nextStmt();

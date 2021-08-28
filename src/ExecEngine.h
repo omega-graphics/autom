@@ -17,6 +17,7 @@ namespace autom {
     };
 
     struct ExecEngineOpts {
+        autom::StrRef outputDir;
         Gen &gen;
         autom::StrRef toolchainFile;
         ArrayRef<StrRef> interfaceSearchPaths;
@@ -38,7 +39,7 @@ namespace autom {
         OutputTargetOpts & outputTargetOpts;
 
         explicit ExecEngine(ExecEngineOpts &opts,OutputTargetOpts & outputTargetOpts);
-        void parseAndEvaluate(std::istream * in);
+        bool parseAndEvaluate(std::istream * in);
         unsigned resetASTFactoryTokenIndex(unsigned new_value);
         std::vector<Tok> * resetASTFactoryTokenVector(std::vector<Tok> *new_vec);
         bool checkDependencyTree();

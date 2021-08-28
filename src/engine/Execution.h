@@ -25,8 +25,9 @@ namespace autom {
                 Target, // data = Target *
                 String, // data = StrData *
                 Array, // data = ArrayData *
-                Boolean, // data = BoolData *,
-                Any = (Target | String | Array | Boolean)
+                Boolean, // data = BoolData *
+                Namespace, // data = NamespaceData *
+                Any = (Target | String | Array | Boolean | Namespace)
             } Ty;
             Ty type;
             unsigned refCount = 1;
@@ -51,6 +52,7 @@ namespace autom {
             bool value();
             Object * performOperand(Object *rhs, autom::StrRef operand) override;
             void assign(Boolean *other);
+            Boolean();
             Boolean(bool & val);
             Boolean(Boolean *other);
             ~Boolean();
@@ -67,7 +69,7 @@ namespace autom {
             void assign(const std::string& string);
             String();
             String(String *other);
-            String(std::string & val);
+            String(const std::string & val);
             ~String();
         };
 
@@ -100,6 +102,22 @@ namespace autom {
             Array(Array *other);
             ~Array();
         };
+        
+        class Namespace : public Object {
+            std::vector<std::pair<std::string,Object *>> data;
+        public:
+            
+            Object *get(const autom::StrRef & key);
+            
+            MapRef<std::string,Object *> value() const;
+            
+            void assign(Namespace *other);
+            
+            explicit Namespace();
+            Namespace(std::vector<std::pair<std::string,Object *>> & val);
+            Namespace(Namespace *other);
+            ~Namespace();
+        };
 
 
         class TargetWrapper : public Object {
@@ -116,7 +134,7 @@ namespace autom {
 
         Array * castToArray(Object *object);
 
-
+        Namespace * castToNamespace(Object *object);
 
         struct ASTBlockContext {
             bool inFunction;
@@ -139,12 +157,16 @@ namespace autom {
             Object * tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code);
 
         public:
+            std::filesystem::path currentEvalDir;
+            
             struct VarStore {
                 std::unordered_map<std::string,Object *> body;
                 void deallocAll();
                 ~VarStore();
             };
             std::unordered_map<ASTScope *,VarStore> vars;
+            
+            void setGlobalVar(autom::StrRef str,Object *object);
             
             Object *referVarWithScope(ASTScope *scope,StrRef name);
 

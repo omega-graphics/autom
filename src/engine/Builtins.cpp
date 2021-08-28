@@ -30,10 +30,15 @@ namespace autom {
                     out << "Array";
                     break;
                 }
+                case eval::Object::Namespace : {
+                    out << "Namespace";
+                    break;
+                }
                 case eval::Object::Target : {
                     out << "Target";
                     break;
                 }
+                
             }
         }
     };
@@ -108,6 +113,15 @@ namespace autom::eval {
     };
 
 
+    void resolveSources(eval::Array *srcs,std::filesystem::path & currentDir){
+        for(auto it = srcs->getBeginIterator();it != srcs->getEndIterator();it++){
+            eval::String * obj = (eval::String *)*it;
+            assert(obj != nullptr && objectIsString(obj) && "Object in sources is not a String.");
+            obj->assign(std::filesystem::path(currentDir).append(obj->value().data()).lexically_normal().string());
+        }
+    };
+
+
     Object *bf_print(MapRef<std::string,Object *> args,EvalContext & ctxt){
         _print_to_stream(std::cout,args["msg"]);
         std::cout << std::endl;
@@ -129,13 +143,15 @@ namespace autom::eval {
     Object *bf_Executable(MapRef<std::string,Object *> args,EvalContext & ctxt){
         auto *name = castToString(args["name"]);
         auto *srcs = castToArray(args["sources"]);
+        
+        resolveSources(srcs,ctxt.eval->currentEvalDir);
 
         auto t = CompiledTarget::Executable(name,srcs);
         if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
             t->output_ext->assign("exe");
         }
 
-         ctxt.eval->addTarget(t);
+        ctxt.eval->addTarget(t);
 
         return new TargetWrapper(t);
     };
@@ -143,6 +159,9 @@ namespace autom::eval {
     Object *bf_Archive(MapRef<std::string,Object *> args,EvalContext & ctxt){
         auto *name = castToString(args["name"]);
         auto *srcs = castToArray(args["sources"]);
+        
+        resolveSources(srcs,ctxt.eval->currentEvalDir);
+        
         auto t = CompiledTarget::Archive(name,srcs);
         
         if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
@@ -162,6 +181,8 @@ namespace autom::eval {
         auto *name = castToString(args["name"]);
         auto *srcs = castToArray(args["sources"]);
         auto t = CompiledTarget::Shared(name,srcs);
+        
+        resolveSources(srcs,ctxt.eval->currentEvalDir);
         
         if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
             t->output_ext->assign("dll");

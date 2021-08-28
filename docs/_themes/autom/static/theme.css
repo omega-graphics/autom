@@ -1,0 +1,38 @@
+@font-face {
+    font-family: "Avenir";
+    src:url("./Avenir-Medium.otf")
+}
+
+body {
+    font-family: 'Avenir';
+    background-color: white;    
+}
+
+div.highlight {
+    padding: 1%;
+    border: gray;
+    border-radius: 5px;
+}
+
+div.related {
+	padding:4%;
+}
+
+div.document {
+	padding:4%;
+}
+
+div.body { 
+	padding:8%;
+}
+
+section {
+	padding:2%;
+}
+
+h1, h2, h3, h4 {
+    margin: auto;
+}
+
+
+

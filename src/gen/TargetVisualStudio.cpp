@@ -22,6 +22,11 @@ namespace autom {
             solutionOut.open(std::filesystem::path(outputPath).append(std::string(opts.projectName) + ".sln"),std::ios::out);
 
         };
+        
+        void consumeToolchainDefaults(ToolchainDefaults &conf) override {
+            
+        }
+        
         bool supportsCustomToolchainRules() override {
             return true;
         }

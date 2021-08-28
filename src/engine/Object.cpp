@@ -7,6 +7,12 @@
 namespace autom {
 
     namespace eval {
+    
+        void garbage_collect_object(Object *obj){
+            if(obj->refCount == 0){
+                delete obj;
+            };
+        };
 
         Object::Object(Ty type):type(type){
 
@@ -20,7 +26,9 @@ namespace autom {
             refCount -= 1;
         }
     
-    
+        Boolean::Boolean():Object(Object::Boolean),data(false){
+            
+        }
 
         Boolean::Boolean(bool & val):Object(Object::Boolean),data(val){
 
@@ -58,7 +66,7 @@ namespace autom {
     
         
 
-        String::String(std::string & val):Object(Object::String),data(val){
+        String::String(const std::string & val):Object(Object::String),data(val){
 
         }
         
@@ -128,9 +136,11 @@ namespace autom {
         void Array::assign(Array *other){
             if(!data.empty()){
                 for(auto o : data){
-                    delete o;
+                    garbage_collect_object(o);
                 }
+                data.clear();
             }
+            
             for(auto o : other->data){
                 Object *obj;
                 switch (o->type) {
@@ -149,6 +159,13 @@ namespace autom {
                     case Object::Target : {
                         // NOTE: TargetWrapper objects cannot be duplicated therefore the reference to the object is copied.
                         obj = o;
+                        break;
+                    }
+                    case Object::Namespace: {
+                        obj = new eval::Namespace(castToNamespace(o));
+                        break;
+                    }
+                    default : {
                         break;
                     }
                 }
@@ -191,17 +208,19 @@ namespace autom {
             
             if(operand == OP_PLUS){
                 auto newArray = new Array(this);
-                newArray->data.resize(data.size() + other->data.size());
+                auto oldSize = data.size();
+                newArray->data.resize(oldSize + other->data.size());
                 auto otherArray = new Array(other);
-                std::move(otherArray->data.begin(),otherArray->data.end(),newArray->getBeginIterator() + newArray->length() - 1);
+                std::copy(otherArray->data.begin(),otherArray->data.end(),newArray->getBeginIterator() + oldSize);
                 otherArray->data.resize(0);
                 delete otherArray;
                 return newArray;
             }
             else if(operand == OP_PLUSEQUAL){
                 auto otherArray = new Array(other);
-                data.resize(data.size() + otherArray->data.size());
-                std::move(other->data.begin(),other->data.end(),data.begin() + data.size() - 1);
+                auto oldSize = data.size();
+                data.resize(oldSize + otherArray->length());
+                std::copy(otherArray->data.begin(),otherArray->data.end(),data.begin() + oldSize);
                 otherArray->data.resize(0);
                 delete otherArray;
                 return this;
@@ -215,16 +234,97 @@ namespace autom {
         }
 
         Array::~Array(){
-//            if(!data.empty())
-//                for(auto o : data){
-//                    if(o != NULL || o != nullptr)
-//                        delete o;
-//                }
+            if(!data.empty())
+                for(auto o : data){
+                    o->decRec();
+                    garbage_collect_object(o);
+                }
         }
+    
+    
+    
+    
+        Namespace::Namespace():Object(Object::Namespace){
+            
+        }
+    
+    
+        Namespace::Namespace(std::vector<std::pair<std::string,Object *>> & val):Object(Object::Namespace),data(val){
+            
+        }
+    
+        void Namespace::assign(Namespace *other){
+            if(!data.empty()){
+                for(auto ent : data){
+                    garbage_collect_object(ent.second);
+                }
+                data.clear();
+            }
+            for(auto & ent : other->data){
+                auto o = ent.second;
+                Object *obj;
+                switch (o->type) {
+                    case Object::String: {
+                        obj = new eval::String(castToString(o));
+                        break;
+                    }
+                    case Object::Boolean : {
+                        obj = new eval::Boolean(castToBool(o));
+                        break;
+                    }
+                    case Object::Array : {
+                        obj = new eval::Array(castToArray(o));
+                        break;
+                    }
+                    case Object::Target : {
+                        // NOTE: TargetWrapper objects cannot be duplicated therefore the reference to the object is copied.
+                        obj = o;
+                        break;
+                    }
+                    case Object::Namespace: {
+                        obj = new eval::Namespace(castToNamespace(o));
+                        break;
+                    }
+                    default : {
+                        break;
+                    }
+                }
+                data.push_back(std::make_pair(ent.first,obj));
+            }
+            
+        }
+    
+        Namespace::Namespace(Namespace *other):Object(Object::Namespace){
+            assign(other);
+        }
+    
+        MapRef<std::string,Object *> Namespace::value() const {
+            return {data.data(),data.data() + data.size()};
+        }
+    
+        Object *Namespace::get(const autom::StrRef & key){
+            for(auto & ent : data){
+                if(ent.first == key.data()){
+                    return ent.second;
+                };
+            };
+            return nullptr;
+        }
+    
+        Namespace::~Namespace(){
+            for(auto & ent : data){
+                ent.second->decRec();
+                garbage_collect_object(ent.second);
+            };
+        }
+    
+    
+    
+    
 
         Target * TargetWrapper::value() const {
             return t;
-        };
+        }
 
         TargetWrapper::~TargetWrapper(){
 
@@ -240,6 +340,10 @@ namespace autom {
 
         Array * castToArray(Object *object){
             return ((eval::Array *)object);
+        };
+    
+        Namespace * castToNamespace(Object *object){
+            return ((eval::Namespace *)object);
         };
 
     }
@@ -264,6 +368,13 @@ namespace autom {
         return object->type == Object::Array;
     };
 
+
+    /// Typecheck if Object is Namespace
+
+    bool objectIsNamespace(Object *object){
+        return object->type == Object::Namespace;
+    };
+
     Object *toObject(bool & val){
         return new eval::Boolean(val);
     };
@@ -275,6 +386,18 @@ namespace autom {
     Object *toObject(std::vector<Object *> &val){
         return new eval::Array(val);
     };
+
+    Object *createBoolObject(){
+        return new eval::Boolean();
+    };
+
+    Object *createStringObject(){
+        return new eval::String();
+    };
+
+    Object *createArrayObject(){
+        return new eval::Array();
+};
 
 
     bool objectToBool(Object *object){
@@ -289,6 +412,11 @@ namespace autom {
     ArrayRef<Object *> objectToVector(Object *object){
         assert(objectIsArray(object));
         return eval::castToArray(object)->value();
+    };
+
+    MapRef<std::string,Object *> objectToMap(Object *object){
+        assert(objectIsArray(object));
+        return eval::castToNamespace(object)->value();
     };
 
 

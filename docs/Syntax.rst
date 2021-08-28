@@ -8,6 +8,7 @@ There are 2 file types used in Autom. ( AUTOM.build and \*.autom)
 
 ==========
 
+
 --------
 Keywords
 --------
@@ -25,7 +26,7 @@ Keywords
 
         var testVar = "Hello World"
         func myFunc(param) {
-            print(param)
+            print(msg:param)
         }
 
         myFunc(param:testVar)
@@ -43,7 +44,7 @@ Keywords
     Usage::
 
         if(toolchain.name == "LLVM"){
-            print("Using LLVM Toolchain")
+            print(msg:"Using LLVM Toolchain")
         }
 
 **elif**
@@ -60,31 +61,98 @@ Builtin Variables/Objects:
     such as the cfamily toolchain or the target build system.
 
     *Properties:*
+        ```.toolchain```
+            The name of the cfamily toolchain that was selected by AUTOM.
+        
+        ```.c_flags```
+            The default C compiler flags to use 
+
+        ```.cxx_flags```
+            The default CXX compiler flags to use.
+
+------------------
+Object Properties:
+------------------
+
+**Target Properties**
+    
+    ```.name```
+        The name of the target used by AUTOM internal.
+        NOTE: Each target declared must have a unique name.
+
+**Compiled Target Properties**
+
+    ```.output_name```
+        The output filename of the compiled target.
+        (This value is by default equal to the value set in ```.name```)
+    
+    ```.output_ext```
+        The output filename extension of the compiled target.
+        (This value is by default equal to the standard output file extension of the compiled target type with the corresponding target system.
+        For example, a Shared target compiled for aarch64-darwin will have an output extension dylib)
+
+        Default Values on each Target OS :
+            
+            Windows --> .exe (Executable), .lib (Static), .dll (Shared)
+
+            Darwin  --> .a (Static), .dylib (Shared)
+
+            Linux   --> .a (Static), .so (Shared)
+
+    ```.include_dirs```   
+        The extra directories to search for include files. (Headers)
+
+    ```.libs```
+        The extra libraries to link to the compiled target.
+    
+    ```.lib_dirs```
+        The extra directories to search for linkable libraries.
+
+**Target Config Properties**
+    Every Target has there own
+
 
 
 ------------------
 Builtin Functions:
 ------------------
 
-**print**
+**print(msg:any) -> Void**
     Prints a value to the console
 
     Usage::
 
-        print("Hello World")
+        print(msg:"Hello World")
         # --> "Hello World"
 
-        print(["foo","bar"])
+        print(msg:["foo","bar"])
         # --> ["foo","bar"]
 
-        print(true)
+        print(msg:true)
         # --> true
 
 
 
-**Executable**
+**Executable(name:string,sources:string[]) -> Executable**
 
-    Creates an Executable
+    Creates an Executable target.
+
+
+**Shared(name:string,sources:string[]) -> Shared**
+
+    Creates a Shared Library target.
+
+
+**Static(name:string,sources:string[]) -> Static**
+
+    Creates an Static Library target.
+
+**SourceGroup(name:string,sources:string[]) -> SourceGroup**
+
+    Creates a Source Group target.
+
+
+
 
 
 

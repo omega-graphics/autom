@@ -10,8 +10,8 @@ namespace autom {
         std::istringstream in;
         unsigned c_count,msg_len;
     public:
-        bool finished() const{
-            return c_count == msg_len;
+        bool finished(){
+            return c_count >= msg_len;
         };
         explicit TemplateLexer(autom::StrRef & temp):in(temp),buffer(),c_count(0),msg_len(temp.size()){};
         struct Tok {
@@ -21,17 +21,21 @@ namespace autom {
         };
         Tok nextTok(){
             char *bufferSt = buffer,*bufferEnd = bufferSt;
+            
             auto getChar = [&](){
-                ++c_count;
+                c_count += 1;
                 return (char)in.get();
             };
+            
             auto aheadChar = [&](){
-                char c = in.get();
+                char _c = in.get();
                 in.seekg(-1,std::ios::cur);
-                return c;
+                return _c;
             };
+            
             char c;
-            while((c = getChar()) != -1){
+            
+            while((c = getChar()) != EOF){
                 switch (c) {
                     case '@': {
                         auto tmpc = c;
@@ -51,7 +55,7 @@ namespace autom {
                     default : {
                         *bufferEnd = c;
                         ++bufferEnd;
-                        if(aheadChar() == '@'){
+                        if(aheadChar() == '@' || aheadChar() == EOF){
                             return {false,-1,{buffer,(size_t)(bufferEnd - bufferSt)}};
                             break;
                         }

@@ -11,6 +11,10 @@
 #endif
 
 namespace autom {
+
+
+
+
     TargetArch hostArch(){
         TargetArch arch;
 #ifdef _WIN32
@@ -74,5 +78,98 @@ namespace autom {
         return TargetPlatform::macOS;
 #endif
     }
+
+/// @name Os
+/// @{
+
+static const char Windows[] = "windows";
+static const char Darwin[] = "darwin";
+static const char Linux[] = "linux";
+
+/// @}
+
+/// @name Arch
+/// @{
+
+static const char x86[] = "x86";
+static const char x86_64[] = "x86_64";
+static const char aarch64[] = "aarch64";
+static const char arm[] = "arm";
+
+/// @}
+
+/// @name Platforms
+/// @{
+
+static const char WindowsPlatform[] = "windows";
+static const char macOS[] = "macos";
+static const char LinuxPlatform[] = "linux";
+static const char iOS[] = "ios";
+static const char Android[] = "android";
+
+/// @}
+
+const char * TargetOSToString(TargetOS &os){
+    switch (os) {
+        case TargetOS::Windows: {
+            return Windows;
+            break;
+        }
+        case TargetOS::Darwin : {
+            return Darwin;
+            break;
+        }
+        case TargetOS::Linux : {
+            return Linux;
+            break;
+        }
+    }
+}
+
+const char * TargetArchToString(TargetArch & arch){
+    switch (arch) {
+        case TargetArch::x86: {
+            return x86;
+            break;
+        }
+        case TargetArch::x86_64 :{
+            return x86_64;
+            break;
+        }
+        case TargetArch::ARM : {
+            return arm;
+        }
+        case TargetArch::AARCH64 : {
+            return aarch64;
+        }
+    }
+}
+
+const char *TargetPlatformToString(TargetPlatform & platform){
+    switch (platform) {
+        case TargetPlatform::Windows : {
+            return WindowsPlatform;
+            break;
+        }
+        case TargetPlatform::macOS : {
+            return macOS;
+            break;
+        }
+        case TargetPlatform::Linux : {
+            return LinuxPlatform;
+            break;
+        }
+        case TargetPlatform::iOS : {
+            return iOS;
+            break;
+        }
+        case TargetPlatform::Android : {
+            return Android;
+            break;
+        }
+    }
+}
+
+
 }
 

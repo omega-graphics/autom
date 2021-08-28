@@ -9,8 +9,8 @@ AUTOM_EXT_INIT(){
     auto ext = new Extension;
     ext->name = "bridge";
     ext->funcs = {
-        {"gn",gn_bridge},
-        {"cmake",cmake_bridge}
+        {"bridge_gn",gn_bridge},
+        {"bridge_cmake",cmake_bridge}
     };
     return ext;
 };
