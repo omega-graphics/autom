@@ -13,8 +13,13 @@ typedef int TargetType;
 #define SOURCE_GROUP 0x04
 #define COMPILED_OUTPUT_TARGET (EXECUTABLE | STATIC_LIBRARY | SHARED_LIBRARY | SOURCE_GROUP)
 
+
 #define FS_ACTION 0x05
 #define SCRIPT_ACTION 0x06
 #define GROUP_TARGET 0x07
+
+#define JAR_LIB 0x08
+#define JAR_EXE 0x09
+#define JAVA_TARGET (JAR_LIB | JAR_EXE)
 
 #endif

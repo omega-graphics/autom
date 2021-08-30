@@ -1,1 +1,0 @@
-from .autom import *

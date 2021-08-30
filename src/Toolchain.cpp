@@ -183,15 +183,6 @@ namespace autom {
                 writer.EndObject();
                 break;
             }
-            case TOOLCHAIN_JDK : {
-                writer.String("jdk",3);
-                
-                writer.Key("progs",4);
-                
-                writer.StartObject();
-                writer.EndObject();
-                break;
-            }
         }
        
         writer.EndObject();
@@ -289,10 +280,7 @@ namespace autom {
 
 
                 }
-                else if(type == "jdk" && opts.type == ToolchainSearchOpts::jdk){
-                    t->toolchainType = TOOLCHAIN_JDK;
-                }
-
+//               
                 t->name = entry["name"].GetString();
 
                 if(opts.preferedToolchain.size() != 0){

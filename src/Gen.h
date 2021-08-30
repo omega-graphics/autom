@@ -36,11 +36,11 @@ namespace autom {
 
     Gen *TargetNinja(OutputTargetOpts &outputOpts,GenNinjaOpts & opts);
 
-//    struct GenCMake {
+////    struct GenCMake {
+////
+////    };
 //
-//    };
-
-    Gen *TargetCMake();
+//    Gen *TargetCMake();
 
     struct GenVisualStudioOpts {
         autom::StrRef projectName;
@@ -55,6 +55,8 @@ namespace autom {
     };
 
     Gen *TargetXcode(OutputTargetOpts & outputOpts,GenXcodeOpts & opts);
+
+    Gen *TargetGradle(autom::StrRef outputDir);
 
 };
 

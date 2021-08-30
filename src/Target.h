@@ -166,6 +166,40 @@ namespace autom {
     };
 
 
+    struct JavaTarget : public Target {
+        
+        /// type = string
+        eval::String * src_dir;
+        
+        /// type = string[]
+        eval::Array * maven_deps;
+        
+        /// type = string[]
+        eval::Array * maven_repos;
+        
+        JavaTarget(){
+            maven_deps = new eval::Array();
+            maven_repos = new eval::Array();
+        };
+        
+        static JavaTarget *JarLib(eval::String * name,eval::String *src_dir){
+            auto * t = new JavaTarget();
+            t->type = JAR_LIB;
+            t->name = name;
+            t->src_dir = src_dir;
+            return t;
+        }
+        
+        static JavaTarget *JarExe(eval::String * name,eval::String *src_dir){
+            auto * t = new JavaTarget();
+            t->type = JAR_EXE;
+            t->name = name;
+            t->src_dir = src_dir;
+            return t;
+        }
+    };
+
+
     
 
     

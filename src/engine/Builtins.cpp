@@ -96,6 +96,21 @@ namespace autom::eval {
                 out << std::endl << "}" << std::endl;
                 break;
             }
+            case Object::Namespace : {
+                auto *ns = (Namespace *)obj;
+                out << "{";
+                auto ns_ref = ns->value();
+                for(auto ent_it = ns_ref.begin();ent_it != ns_ref.end();ent_it++){
+                    if(ent_it != ns_ref.begin()){
+                        out << "\n,";
+                    }
+                    auto & e = *ent_it;
+                    out << "    \x1b[39m" << e.first << "\x1b[0m" << ":";
+                    _print_to_stream(out,e.second);
+                }
+                out << "}";
+                break;
+            }
         }
     };
 
@@ -198,6 +213,40 @@ namespace autom::eval {
 
         return new TargetWrapper(t);
     };
+
+    Object *bf_SourceGroup(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *srcs = castToArray(args["sources"]);
+        auto t = CompiledTarget::SourceGroup(name,srcs);
+        
+        resolveSources(srcs,ctxt.eval->currentEvalDir);
+        
+        ctxt.eval->addTarget(t);
+
+        return new TargetWrapper(t);
+    };
+
+    Object *bf_JarLib(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *srcs = castToString(args["source_dir"]);
+        
+        srcs->assign(std::filesystem::path(ctxt.eval->currentEvalDir).append(srcs->value().data()).lexically_normal());
+        
+        auto t = JavaTarget::JarLib(name,srcs);
+        
+        return new TargetWrapper(t);
+    }
+
+    Object *bf_JarExe(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *srcs = castToString(args["source_dir"]);
+        
+        srcs->assign(std::filesystem::path(ctxt.eval->currentEvalDir).append(srcs->value().data()).lexically_normal());
+        
+        auto t = JavaTarget::JarExe(name,srcs);
+        
+        return new TargetWrapper(t);
+    }
 
 
 
@@ -357,6 +406,8 @@ namespace autom::eval {
         BUILTIN_FUNC(BUILTIN_ARCHIVE,bf_Archive,{"name",Object::String},{"sources",Object::Array});
 
         BUILTIN_FUNC(BUILTIN_SHARED,bf_Shared,{"name",Object::String},{"sources",Object::Array});
+        
+        BUILTIN_FUNC(BUILTIN_SOURCE_GROUP,bf_SourceGroup,{"name",Object::String},{"sources",Object::Array});
 
         BUILTIN_FUNC(BUILTIN_FIND_PROGRAM,bf_find_program,{"cmd",Object::String});
 

@@ -114,6 +114,13 @@ namespace autom {
                     src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name->value().data()).append(src_name.c_str()).string();
                 }
             }
+            else if(t->type & JAVA_TARGET){
+                /// 1. Resolve Src Dir
+                auto _t = (JavaTarget *)t;
+                auto java_target_output_dir = std::filesystem::path(opts.outputDir.data()).append(_t->name->value().data());
+                
+                _t->src_dir->assign(std::filesystem::path(_t->src_dir->value().data()).lexically_relative(java_target_output_dir).string());
+            }
             
             auto resolveTargetForKey = [&](const StrRef & key){
                 auto graph_it = graph.begin();
@@ -130,8 +137,8 @@ namespace autom {
             std::vector<autom::StrRef> unresolvedDepNames;
             
             /// 4. Resolve Dependencies using the Target Graph
-
-            for(auto dep : t->deps->value()){
+            auto _deps = t->deps->value();
+            for(auto dep : _deps){
                 auto dep_name = eval::castToString(dep)->value();
                 auto dep_resolved_it = resolveTargetForKey(dep_name);
                 if(dep_resolved_it == graph.end()){
@@ -144,6 +151,7 @@ namespace autom {
             
             if(unresolvedDepNames.empty()) {
                 /// All Dependencies are resolved therefore this Target can be added to the Target Graph.
+//                std::cout << "Sucess check on Target `" << t->name->value() << "`" << std::endl;
                 graph.emplace_back(std::make_pair(t->name->value(),t));
             }
             else {

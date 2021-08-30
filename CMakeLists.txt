@@ -28,6 +28,7 @@ if(NOT APPLE AND UNIX)
 endif()
 
 add_executable("autom" "src/driver/main.cpp")
+set_target_properties("autom" PROPERTIES INSTALL_RPATH @loader_path/../lib)
 target_link_libraries("autom" PRIVATE "autom-lib")
 
 macro(add_autom_test _NAME)
@@ -55,13 +56,14 @@ macro(add_stdlib_module _NAME DIR)
     target_link_libraries(${_NAME} PRIVATE "autom-lib")
 endmacro()
 
-add_stdlib_module("fs" "stdlib/fs")
-add_stdlib_module("bridge" "stdlib/bridge")
+add_stdlib_module("fs" "modules/fs")
+add_stdlib_module("bridge" "modules/bridge")
 
-file(GLOB STDLIB_MODS "${CMAKE_SOURCE_DIR}/stlib/*.autom")
+file(GLOB STDLIB_MODS "${CMAKE_SOURCE_DIR}/modules/*.autom")
 
-install(FILES ${STDLIB_MODS} DESTINATION "mods")
+install(FILES ${STDLIB_MODS} DESTINATION "modules")
+install(FILES bin/default_toolchains.json DESTINATION "bin")
 
 install(TARGETS autom autom-install DESTINATION "bin")
 install(TARGETS "autom-lib" ARCHIVE DESTINATION "lib")
-install(TARGETS ${STDLIB_MODULES} RUNTIME DESTINATION "stdlib" LIBRARY DESTINATION "stdlib")
+install(TARGETS ${STDLIB_MODULES} RUNTIME DESTINATION "modules" LIBRARY DESTINATION "modules")

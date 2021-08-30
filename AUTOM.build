@@ -1,4 +1,4 @@
-load "./build/stdlib/Debug/fs.aext"
+import "fs"
 
 project(name:"AUTOM",version:"0.8")
 

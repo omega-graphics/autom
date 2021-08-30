@@ -63,7 +63,9 @@ int main(int argc,char * argv[]){
     
     auto exec_path = std::filesystem::path(argv[0]).parent_path().parent_path();
     
-    std::vector<autom::StrRef> interfaceSearchPaths;
+    auto std_modules_path = std::filesystem::path(exec_path).append("modules").string();
+    
+    std::vector<autom::StrRef> interfaceSearchPaths = {std_modules_path};
 
     autom::StrRef outputDir = argv[argc-1];
     std::string toolchainFile;
@@ -153,7 +155,7 @@ int main(int argc,char * argv[]){
         gen = autom::TargetNinja(outputTargetOpts,ninjaOpts);
     }
     
-    auto file = (!toolchainFile.empty())? toolchainFile : exec_path.append("default-toolchains.json").string();
+    auto file = (!toolchainFile.empty())? toolchainFile : exec_path.append("bin").append("default_toolchains.json").string();
     
     autom::ExecEngineOpts opts {
         outputDir,

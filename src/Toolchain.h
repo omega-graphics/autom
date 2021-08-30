@@ -33,7 +33,6 @@ inline bool name(StrRef subject){ \
         bool stubborn;
         typedef enum : int {
             ccAsmFamily,
-            jdk,
             swiftFamily
         } ToolchainTy;
         ToolchainTy type;
@@ -55,7 +54,6 @@ inline bool name(StrRef subject){ \
         AR,
         SO_LD,
         EXE_LD,
-        JAVAC,
         SWIFTC;
         /// @}
 
@@ -94,7 +92,6 @@ inline bool name(StrRef subject){ \
                 objc,
                 objcxx,
                 swift,
-                java
             } CommandFormatType;
         private:
             CommandFormatType _type;

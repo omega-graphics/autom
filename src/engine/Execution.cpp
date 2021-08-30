@@ -263,14 +263,23 @@ namespace autom {
 
                         if(tw->value()->type & COMPILED_OUTPUT_TARGET){
                             auto _target =  (CompiledTarget *)tw->value();
-                            if(propName == "sources"){
-                                return _target->srcs;
-                            }
-                            else if(propName == "cflags"){
+//                            if(propName == "sources"){
+//                                return _target->srcs;
+//                            }
+                            if(propName == "cflags"){
                                 return _target->cflags;
                             }
                             else if(propName == "include_dirs"){
                                 return _target->include_dirs;
+                            }
+                        }
+                        else if(tw->value()->type & JAVA_TARGET){
+                            auto _target = (JavaTarget *)tw->value();
+                            if(propName == "maven_repos"){
+                                return _target->maven_repos;
+                            }
+                            else if(propName == "maven_deps"){
+                                return _target->maven_deps;
                             }
                         }
                     }
@@ -422,11 +431,11 @@ namespace autom {
                         auto *decl = (ASTImportDecl *)node;
                         if(decl->isInterface){
                             /// Relative Interface File
-                            if(std::filesystem::exists(decl->value)){
-                                std::filesystem::path p(decl->value);
-                                if(!p.has_extension())
-                                    p.replace_extension(".autom");
-                                
+                            std::filesystem::path p(decl->value);
+                            if(!p.has_extension())
+                                p.replace_extension(".autom");
+                            if(std::filesystem::exists(p)){
+                               
                                 auto prior_eval_dir = currentEvalDir;
                                 currentEvalDir = p.parent_path();
                                 importFile(p.string().c_str());
@@ -434,21 +443,29 @@ namespace autom {
                                 break;
                             }
                             else {
+                                bool success = false;
                                 /// Interface File in Search Paths
                                 for(auto & dir : engine->opts.interfaceSearchPaths){
                                     auto p = std::filesystem::path(dir.data()).append(decl->value);
+                                    
+                                    if(!p.has_extension())
+                                        p.replace_extension(".autom");
+                                    
                                     if(std::filesystem::exists(p)){
-                                        if(!p.has_extension())
-                                            p.replace_extension(".autom");
                                         auto prior_eval_dir = currentEvalDir;
                                         currentEvalDir = p.parent_path();
                                         importFile(p.string().c_str());
                                         currentEvalDir = prior_eval_dir;
+                                        success = true;
                                         break;
                                     }
                                 };
+                                
+                                if(success){
+                                    break;
+                                }
 
-                                std::cout << "Cannot import file:" << decl->value << std::endl;
+                                engine->printError(formatmsg("Cannot import file: @0",decl->value));
 
                                 /// Throw Error!
                                 *failed = true;
@@ -461,14 +478,20 @@ namespace autom {
                                 loadExtension(decl->value);
                             }
                             else {
+                                bool success = false;
                                 for(auto & dir : engine->opts.interfaceSearchPaths){
                                     auto p = std::filesystem::path(dir.data()).append(decl->value);
                                     if(std::filesystem::exists(p)){
                                         loadExtension(p);
+                                        success = true;
                                     }
                                 }
+                                
+                                if(success){
+                                    break;
+                                }
 
-                                std::cout << "ERROR: Cannot load extension: " << decl->value << std::endl;
+                                engine->printError(formatmsg(" Cannot load extension: @0",decl->value));
 
                                 /// Throw Error!
                                 *failed = true;

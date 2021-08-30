@@ -13,6 +13,7 @@ typedef int AutomBuiltinFunc;
 #define BUILTIN_EXECUTABLE "Executable"
 #define BUILTIN_ARCHIVE "Archive"
 #define BUILTIN_SHARED "Shared"
+#define BUILTIN_SOURCE_GROUP "SourceGroup"
 #define BUILTIN_CONFIG_FILE "config_file"
 #define BUILTIN_FIND_PROGRAM "find_program"
 
