@@ -4,5 +4,13 @@
     <dict>
         <key>name</key>
         <string>AUTOM</string>
+        <key>description</key>
+        <string>AUTOM Build Tool Language Syntax Highlighting</string>
+        <key>ordering</key>
+        <array>
+            <string>b3c1645c-3f5f-4cba-bacb-84ec2d700d26</string>
+        </array>
+        <key>uuid</key>
+        <string>a48a7472-c9ea-43fd-9c47-2cffe51962df</string>
     </dict>
 </plist>

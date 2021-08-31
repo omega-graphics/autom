@@ -145,13 +145,14 @@ namespace autom::eval {
 
 
 
-    Object *bf_Project(MapRef<std::string,Object *> args,EvalContext & ctxt){
+    Object *bf_project(MapRef<std::string,Object *> args,EvalContext & ctxt){
         
         auto *name = castToString(args["name"]);
         auto *version = castToString(args["version"]);
 
         std::cout << "Configuring Project " << name->value().data() << " " << version->value().data() << std::endl;
 
+        ctxt.eval->hasProject = true;
         return nullptr;
     };
 
@@ -353,6 +354,12 @@ namespace autom::eval {
         return nullptr;
     }
 
+    Object *bf_subdir(MapRef<std::string,Object *> args,EvalContext & ctxt){
+         auto *dir = castToString(args["path"]);
+
+
+    }
+
 
     Object * Eval::tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code){
 
@@ -399,7 +406,7 @@ namespace autom::eval {
         
         BUILTIN_FUNC(BUILTIN_PRINT,bf_print,{"msg",Object::Any});    
 
-        BUILTIN_FUNC(BUILTIN_PROJECT,bf_Project,{"name",Object::String},{"version",Object::String});
+        BUILTIN_FUNC(BUILTIN_PROJECT,bf_project,{"name",Object::String},{"version",Object::String});
          
         BUILTIN_FUNC(BUILTIN_EXECUTABLE,bf_Executable,{"name",Object::String},{"sources",Object::Array});
 

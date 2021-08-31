@@ -77,7 +77,8 @@ def build_textmate_bundle(grammar: str, plist: str):
 
     return
 
-build_textmate_bundle("autom.yaml","Info.plist")
+if __name__ == "__main__":
+    build_textmate_bundle("autom.yaml","Info.plist")
 
 
 

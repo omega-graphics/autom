@@ -1,1 +1,0 @@
-py "%~dp0autom_deps.py" %*

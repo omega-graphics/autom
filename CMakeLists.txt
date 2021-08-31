@@ -60,9 +60,18 @@ add_stdlib_module("fs" "modules/fs")
 add_stdlib_module("bridge" "modules/bridge")
 
 file(GLOB STDLIB_MODS "${CMAKE_SOURCE_DIR}/modules/*.autom")
+if(WIN32)
+	file(GLOB PYTHON_TOOLS ${CMAKE_SOURCE_DIR}/tools/*.py ${CMAKE_SOURCE_DIR}/tools/*.bat)
+else()
+	file(GLOB PYTHON_TOOLS ${CMAKE_SOURCE_DIR}/tools/*.py ${CMAKE_SOURCE_DIR}/tools/autom-*)
+endif()
+set(DEFAULT_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/tools/default_toolchains.json")
 
 install(FILES ${STDLIB_MODS} DESTINATION "modules")
-install(FILES bin/default_toolchains.json DESTINATION "bin")
+
+install(FILES ${PYTHON_TOOLS} ${DEFAULT_TOOLCHAIN_FILE} DESTINATION "bin"  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                    GROUP_EXECUTE GROUP_READ)
+
 
 install(TARGETS autom autom-install DESTINATION "bin")
 install(TARGETS "autom-lib" ARCHIVE DESTINATION "lib")

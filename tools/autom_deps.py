@@ -7,8 +7,6 @@ from enum import Enum
 from typing import Any
 from urllib.request import *
 import tarfile,zipfile,shutil
-import src.autom.autom
-import src.gnpkg.main
 import argparse,platform
 from queue import Queue
 
@@ -101,12 +99,7 @@ def processCommand(c:Command):
             return
 
     assert(c.get("type"))
-    if c.get("type") == "gnpkg":
-        assert(c.get("command"))
-        com:str = c.get('command')
-        src.gnpkg.main.main(args=com.split(" "))
-
-    elif c.get("type") == "git_clone":
+    if c.get("type") == "git_clone":
         assert(c.get("url"))
         assert(c.get("dest"))
         assert(c.get("branch"))
@@ -159,16 +152,7 @@ def processCommand(c:Command):
         if updateOnly == True:
             print("SKIP")  
     if updateOnly == False:
-        if c.get("type") == "autom":
-            assert(c.get("dir"))
-            assert(c.get("dest"))
-            exports = runpy.run_path(f'{c.get("dir")}/AUTOM')
-            assert(exports.get("export"))
-            p = src.autom.autom.Project("","")
-            p.add_targets(exports.get("export"))
-            print(f"AUTOM {c.get('dir')}")
-            src.autom.autom.generateProjectFiles(project=p,mode=src.autom.autom.ProjectFileType.GN,output_dir=c.get("dest"))
-        elif c.get('type') == "chdir":
+        if c.get('type') == "chdir":
             assert(c.get("dir"))
             dir = processStringWithVariables(c.get('dir'))
             os.chdir(dir)
@@ -319,7 +303,7 @@ def main(args):
     parser = argparse.ArgumentParser(prog="automdeps",description=
     "AUTOM Project Dependency Manager (Automates 3rd party library installation/fetching as well project configuration)")
     parser.add_argument("--exec",action="store_const",const=True,default=True)
-    parser.add_argument("--update",dest="update",action="store_const",const=True,default=False)
+    parser.add_argument("--sync",dest="update",action="store_const",const=True,default=False)
     args = parser.parse_args(args)
 
 

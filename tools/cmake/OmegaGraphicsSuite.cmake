@@ -425,9 +425,12 @@ function(add_omega_graphics_module _NAME)
 endfunction()
 
 function(omega_graphics_project _NAME)
-	if(NOT ${${_NAME}_INCLUDE})
+	if(${_NAME}_INCLUDE)
+	else()
+		message("Project ${_NAME} ${ARGN}")
 		project(${_NAME} ${ARGN})
 	endif()
+
 endfunction()
 
 

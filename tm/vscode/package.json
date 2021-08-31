@@ -1,0 +1,43 @@
+{
+    "name": "autom-vscode",
+    "displayName": "AUTOM Build Language",
+    "version": "0.1.2",
+    "author": "Omega Graphics",
+    "repository": {
+        "url": "https://github.com/omega-graphics/autom"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "publisher": "unpublished",
+    "engines": {
+        "vscode": "^1.22.0"
+    },
+    "contributes": {
+        "languages": [
+            {
+                "aliases": [
+                    "AUTOM"
+                ],
+                "filenames": [
+                    "AUTOM.build"
+                ],
+                "extensions": [
+                    ".autom"
+                ],
+                "id": "autom",
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "autom",
+                "scopeName": "source.autom",
+                "path": "./syntaxes/Autom.tmLanguage.json"
+            }
+        ]
+    },
+    "devDependencies": {
+        "vsce": "^1.96.2"
+    }
+}

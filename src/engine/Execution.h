@@ -157,6 +157,7 @@ namespace autom {
             Object * tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code);
 
         public:
+            bool hasProject = false;
             std::filesystem::path currentEvalDir;
             
             struct VarStore {

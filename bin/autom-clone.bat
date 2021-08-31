@@ -1,1 +1,0 @@
-py "%~dp0clone.py" %*
