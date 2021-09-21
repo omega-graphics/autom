@@ -31,12 +31,12 @@ namespace autom {
         bool res = false;
 
         #define FIND_TOOL(tool_str,tool_name) \
-            std::cout << tool_name << " --> " << tool_str << std::endl;\
+            std::cout << (tool_name) << " --> " << (tool_str) << std::endl;\
             if((res = locateProgram(tool_str,path,loc))){\
-                std::cout << "-- " << tool_str << " -- found" << " (\"" << loc << "\")" << std::endl;\
+                std::cout << "-- " << (tool_str) << " -- found" << " (\"" << loc << "\")" << std::endl;\
             }\
             else {\
-                std::cout << "-- " << tool_str << "-- not found" << std::endl;\
+                std::cout << "-- " << (tool_str) << "-- not found" << std::endl;\
             }
 
         switch (toolchainType) {
@@ -197,6 +197,8 @@ namespace autom {
         auto inW = rapidjson::IStreamWrapper(in);
         rapidjson::Document doc;
         doc.ParseStream(inW);
+
+        return nullptr;
         
     };
 

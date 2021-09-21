@@ -4,7 +4,7 @@ import sys, zipfile, tarfile
 from urllib.request import urlretrieve
 import enum
 from glob import glob
-from bin.autom_toolchain import determineToolchains
+# from bin.autom_toolchain import determineToolchains
 
 is_win = sys.platform == "win32"
 is_mac = sys.platform == "darwin"

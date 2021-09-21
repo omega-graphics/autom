@@ -231,7 +231,7 @@ namespace autom::eval {
         auto *name = castToString(args["name"]);
         auto *srcs = castToString(args["source_dir"]);
         
-        srcs->assign(std::filesystem::path(ctxt.eval->currentEvalDir).append(srcs->value().data()).lexically_normal());
+        srcs->assign(std::filesystem::path(ctxt.eval->currentEvalDir).append(srcs->value().data()).lexically_normal().string());
         
         auto t = JavaTarget::JarLib(name,srcs);
         
@@ -242,7 +242,7 @@ namespace autom::eval {
         auto *name = castToString(args["name"]);
         auto *srcs = castToString(args["source_dir"]);
         
-        srcs->assign(std::filesystem::path(ctxt.eval->currentEvalDir).append(srcs->value().data()).lexically_normal());
+        srcs->assign(std::filesystem::path(ctxt.eval->currentEvalDir).append(srcs->value().data()).lexically_normal().string());
         
         auto t = JavaTarget::JarExe(name,srcs);
         
@@ -357,7 +357,7 @@ namespace autom::eval {
     Object *bf_subdir(MapRef<std::string,Object *> args,EvalContext & ctxt){
          auto *dir = castToString(args["path"]);
 
-
+        return nullptr;
     }
 
 

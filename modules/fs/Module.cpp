@@ -5,7 +5,7 @@
 #include <iostream>
 
 #ifdef _WIN32
-#include <ShlObj_idl.h>
+#include <ShlObj.h>
 #else
 #include <glob.h>
 #include <unistd.h>
@@ -33,10 +33,25 @@ AUTOM_NATIVE_FUNC(fs_glob){
     auto path = objectToString(args[0].second);
     
     std::vector<Object *> res;
+
+    std::string str;
     
 #ifdef _WIN32
-    
-    
+    WIN32_FIND_DATA findData;
+    HANDLE h = FindFirstFileA(path.data(),&findData);
+
+    str = std::filesystem::path(path.data()).parent_path().append(findData.cFileName).string();
+
+    res.push_back(toObject(str));
+
+    while(FindNextFileA(h,&findData) != TRUE){
+        str = std::filesystem::path(path.data()).parent_path().append(findData.cFileName).string();
+
+        res.push_back(toObject(str));
+    };
+
+    FindClose(h);
+
 #else
     
     glob_t g;

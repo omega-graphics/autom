@@ -16,7 +16,7 @@ namespace autom {
 #define SOURCE_MATCHER(name,...) \
 inline bool name(StrRef subject){ \
         auto args = __VA_ARGS__;\
-        auto ext = std::filesystem::path(subject).extension().string();\
+        auto ext = std::filesystem::path(subject.data()).extension().string();\
         for(auto a : args){\
             if(ext == a) return true;\
         }\
