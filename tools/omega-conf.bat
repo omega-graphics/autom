@@ -1,0 +1,2 @@
+set OMEGA_MODULE_PATH="%~dp0cmake"
+cmake -DCMAKE_MODULE_PATH=%OMEGA_MODULE_PATH% %*

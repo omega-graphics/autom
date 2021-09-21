@@ -9,7 +9,7 @@ build
 *.sh
 .cache
 deps
-!bin/*.bat
+!tools/*.bat
 *.zip
 *.tar 
 ninja*
