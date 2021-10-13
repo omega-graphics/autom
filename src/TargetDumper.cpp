@@ -6,7 +6,11 @@ namespace autom {
 
     };
 
-    void TargetDumper::consumeTarget(Target *target){
+    void TargetDumper::configGenContext(){
+    
+    }
+
+    void TargetDumper::consumeTarget(std::shared_ptr<Target> & target){
         std::cout << "Target " << t_count << std::hex << target->type << std::dec << std::endl;
     };
 

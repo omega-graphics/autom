@@ -22,21 +22,32 @@ namespace autom {
         OutputTargetOpts &outputOpts;
         
         ToolchainDefaults * toolchainDefaults;
+        
+        std::deque<std::string> scriptRules;
+        
     public:
         explicit GenNinja(OutputTargetOpts &outputOpts,GenNinjaOpts & _opts):opts(_opts),
-        mainNinja(std::filesystem::path(_opts.outputDir.data()).append("build.ninja")),
         outputOpts(outputOpts),toolchainDefaults(nullptr){
 //            if(!mainNinja.is_open())
 //                // FAILED TO OUTPUT TO DIR!!
-            mainNinja << "# " << GEN_FILE_HEADER << std::endl;
-            mainNinja << "ninja_required_version = " << NINJA_MINIMUM_VERSION_REQUIRED << std::endl;
+            
         };
         typedef enum : int {
             Flags,
             IncludeDirs,
             Libs,
             LibDirs
+#ifdef __APPLE__
+            ,Frameworks,
+            FrameworkDirs
+#endif
         } BuildRuleType;
+        
+        void configGenContext() override {
+            mainNinja.open(std::filesystem::path(context->outputDir.data()).append("build.ninja"));
+            mainNinja << "# " << GEN_FILE_HEADER << std::endl;
+            mainNinja << "ninja_required_version = " << NINJA_MINIMUM_VERSION_REQUIRED << std::endl;
+        }
         
         void consumeToolchainDefaults(ToolchainDefaults &conf) override {
             toolchainDefaults = &conf;
@@ -66,22 +77,36 @@ namespace autom {
                         toolchain->formatter.writeLibDirs(paramArgs);
                         break;
                     }
+                    case Frameworks : {
+                        toolchain->formatter.writeFrameworks(paramArgs);
+                        break;
+                    }
+                    case FrameworkDirs : {
+                        toolchain->formatter.writeFrameworkDirs(paramArgs);
+                        break;
+                    }
                 }
 
                 toolchain->formatter.endCommandFormat(mainNinja);
             }
             mainNinja << std::endl;
         }
-        std::string writeLinkRecipe(CompiledTarget *t,StrRef toolName) {
-            std::string phony_name;
-            mainNinja << "build " << t->name->value();
-            if(!t->output_ext->empty())
-                mainNinja << "." << t->output_ext->value();
+        std::string writeLinkRecipe(std::shared_ptr<CompiledTarget> & t,StrRef toolName) {
+            std::string phony_name = "";
+            mainNinja << "build ";
+            
+            if(!t->output_dir->empty()){
+                phony_name.append(t->output_dir->value()).append("/");
+            }
+            
+            phony_name.append(t->name->value());
+            
+            if(!t->output_ext->empty()) {
+                phony_name.append(".").append(t->output_ext->value());
+            }
 
-            if(!t->output_ext->empty())
-                phony_name = std::string(t->name->value()) + "." + t->output_ext->value().data();
-            else
-                phony_name = t->name->value();
+            mainNinja << phony_name;
+               
             mainNinja << ": " << toolName << " ";
             for(auto & obj_src_p : t->source_object_map){
                 mainNinja << obj_src_p.second << " ";
@@ -97,9 +122,12 @@ namespace autom {
                 deps_out << " || ";
                 for(auto d : t->resolvedDeps){
                     if(d->type & COMPILED_OUTPUT_TARGET){
-                        auto *t = (CompiledTarget *)d;
+                        auto t = std::dynamic_pointer_cast<CompiledTarget>(d);
                         /// For every other Compiled Target
                         if(d->type != SOURCE_GROUP){
+                            if(!t->output_dir->empty()){
+                                deps_out << t->output_dir->value() << "/";
+                            };
                             deps_out << t->name->value() << "." << t->output_ext->value();
                         }
                         /// Only For Source Group Targets
@@ -120,10 +148,10 @@ namespace autom {
             mainNinja << std::endl;
             return phony_name;
         };
-        void consumeTarget(Target *target) override{
+        void consumeTarget(std::shared_ptr<Target> & target) override{
 
              if(target->type & COMPILED_OUTPUT_TARGET) {
-                    auto *t =(CompiledTarget *)target;
+                    auto t = std::dynamic_pointer_cast<CompiledTarget>(target);
                     // 1. Generate Source Build Recipes
                     mainNinja << "#" << t->name->value() << " Sources" << std::endl;
                     for(auto & s_obj_pair : t->source_object_map){
@@ -175,21 +203,47 @@ namespace autom {
                         /// Any Compiled Target Except for Source Group
                         auto libs = t->libs->toStringVector();
                         
+#ifdef __APPLE__
+                        auto frameworks = t->frameworks->toStringVector();
+                        /// Strip .framework extension from frameworks
+                        for(auto & f : frameworks){
+                            auto dot_end = f.size() - 10;
+                            auto ext = f.substr(dot_end,10);
+                            if(ext == ".framework"){
+                                f.assign(f.substr(0,dot_end));
+                            }
+                        }
+                        
+                        auto lib_dirs = t->lib_dirs->toStringVector();
+#endif
+                        
                         for(auto d : t->resolvedDeps){
                             if(d->type & (SHARED_LIBRARY | STATIC_LIBRARY)){
-                                auto _ct = (CompiledTarget *)d;
+                                auto _ct = std::dynamic_pointer_cast<CompiledTarget>(d);
                                 std::ostringstream dep_name;
+                                
+                                if(!_ct->output_dir->empty()){
+//                                    auto found = std::find_if(lib_dirs.begin(),lib_dirs.end(),[&](std::string & str){
+//                                        return _ct->output_dir->value() == str;
+//                                    });
+//                                    /// If lib dir has not been added yet.
+//                                    if(found == lib_dirs.end()){
+//                                    lib_dirs.push_back(_ct->output_dir->value());
+//                                    }
+                                    dep_name << _ct->output_dir->value() << "/";
+                                }
+                                
                                 if(toolchain->stripLibPrefix){
                                     std::string str = d->name->value();
-                                    if(str.substr(0,3) == "lib"){
-                                        dep_name << str.substr(3,str.size()-3);
-                                    }
-                                    else {
-                                        dep_name << str;
-                                    }
+//                                    if(str.substr(0,3) == "lib"){
+//                                        dep_name << str.substr(3,str.size()-3);
+//                                    }
+//                                    else {
+                                     dep_name << str << "." << _ct->output_ext->value();
+//                                    }
                                 }
                                 else {
-                                    dep_name << d->name->value();
+                                    dep_name << d->name->value() << "." << _ct->output_ext->value();
                                 }
                                 
                                 libs.push_back(dep_name.str());
@@ -197,19 +251,36 @@ namespace autom {
                         }
                         writeBuildRuleParam("LIBS",libs,Libs);
                         
-                        auto lib_dirs = t->lib_dirs->toStringVector();
+                    
                         
                         lib_dirs.push_back(".");
                         
                         writeBuildRuleParam("LIB_DIRS",lib_dirs,LibDirs);
+                        
+#ifdef __APPLE__
+                        writeBuildRuleParam("FRAMEWORKS",frameworks,Frameworks);
+                        
+                        auto framework_dirs = t->framework_dirs->toStringVector();
+                        
+                        writeBuildRuleParam("FRAMEWORK_DIRS",framework_dirs,FrameworkDirs);
+                        
+#endif
                     }
                     mainNinja << std::endl;
 
                     if(!t->output_ext->empty())
                         mainNinja << "build " << t->name->value() << ": phony " << phony_name << std::endl;
             }
+             else if(target->type == GROUP_TARGET){
+                 auto t = std::dynamic_pointer_cast<GroupTarget>(target);
+                 mainNinja << "build " << t->name->value() << ": phony ";
+                 for(auto & d : t->resolvedDeps){
+                     mainNinja << d->name->value() << " ";
+                 }
+                 mainNinja << std::endl;
+             }
              else if(target->type == FS_ACTION) {
-
+                 auto t = std::dynamic_pointer_cast<FSTarget>(target);
              }
         };
         bool supportsCustomToolchainRules() override {
@@ -236,14 +307,23 @@ namespace autom {
             toolchain = _toolchain;
 
         #define CFAMILY_C_INPUT_TEMPLATE " $CFLAGS $INCLUDE_DIRS "
+#ifdef __APPLE__
+    #define CFAMILY_LD_INPUT_TEMPLATE " $LDFLAGS $LIBS $LIB_DIRS $FRAMEWORKS $FRAMEWORK_DIRS "
+    #define CFAMILY_AR_INPUT_TEMPLATE " $ARFLAGS $LIBS $LIB_DIRS $FRAMEWORKS $FRAMEWORK_DIRS "
+#else
         #define CFAMILY_LD_INPUT_TEMPLATE " $LDFLAGS $LIBS $LIB_DIRS "
         #define CFAMILY_AR_INPUT_TEMPLATE " $ARFLAGS $LIBS $LIB_DIRS "
+#endif
 
-            std::ofstream toolchain_file(std::filesystem::path(opts.outputDir.data()).append("toolchain.ninja"));
+            std::ofstream toolchain_file(std::filesystem::path(context->outputDir.data()).append("toolchain.ninja"));
             toolchain_file << "#" << GEN_FILE_HEADER << std::endl;
             if(toolchain->toolchainType & TOOLCHAIN_CFAMILY_ASM){
                 writeToolchainRule("cc",Toolchain::Formatter::cc,CFAMILY_C_INPUT_TEMPLATE,{toolchainDefaults->c_flags},toolchain_file,"CC $in");
                 writeToolchainRule("cxx",Toolchain::Formatter::cxx,CFAMILY_C_INPUT_TEMPLATE,{toolchainDefaults->c_flags,toolchainDefaults->cxx_flags},toolchain_file,"CXX $in");
+#ifdef __APPLE__
+                writeToolchainRule("objc",Toolchain::Formatter::objc,CFAMILY_C_INPUT_TEMPLATE,{toolchainDefaults->c_flags},toolchain_file,"OBJC $in");
+                writeToolchainRule("objcxx",Toolchain::Formatter::objcxx,CFAMILY_C_INPUT_TEMPLATE,{toolchainDefaults->c_flags,toolchainDefaults->cxx_flags},toolchain_file,"OBJCXX $in");
+#endif
                 writeToolchainRule("exe",Toolchain::Formatter::exe,CFAMILY_LD_INPUT_TEMPLATE,{},toolchain_file,"LINK_EXE $out");
                 writeToolchainRule("so",Toolchain::Formatter::so,CFAMILY_LD_INPUT_TEMPLATE,{},toolchain_file,"LINK_SO $out");
                 writeToolchainRule("ar",Toolchain::Formatter::ar,CFAMILY_AR_INPUT_TEMPLATE,{},toolchain_file,"AR $out");

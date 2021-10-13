@@ -51,6 +51,10 @@ inline bool name(StrRef subject){ \
         /// @{
         CC,
         CXX,
+#ifdef __APPLE__
+        OBJC,
+        OBJCXX,
+#endif
         AR,
         SO_LD,
         EXE_LD,
@@ -65,6 +69,10 @@ inline bool name(StrRef subject){ \
         Flag include_dir;
         Flag lib;
         Flag lib_dir;
+#ifdef __APPLE__
+        Flag framework;
+        Flag framework_dir;
+#endif
         Flag compile;
         Flag output;
         
@@ -114,6 +122,12 @@ inline bool name(StrRef subject){ \
             void writeLibs(ArrayRef<std::string> libs);
             
             void writeLibDirs(ArrayRef<std::string> lib_dirs);
+            
+#ifdef __APPLE__
+            void writeFrameworks(ArrayRef<std::string> frameworks);
+            
+            void writeFrameworkDirs(ArrayRef<std::string> framework_dirs);
+#endif
 
             void writeIncludes(ArrayRef<std::string> inc);
 

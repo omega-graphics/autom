@@ -1,0 +1,93 @@
+{
+  "name": "AUTOM Language",
+  "scopeName": "source.autom",
+  "fileTypes": [
+    "autom",
+    "build"
+  ],
+  "foldingStartMarker": "\\{\\s*$",
+  "foldingStopMarker": "^\\s*\\}",
+  "uuid": "b3c1645c-3f5f-4cba-bacb-84ec2d700d26",
+  "patterns": [
+    {
+      "include": "#statements"
+    }
+  ],
+  "repository": {
+    "statements": {
+      "patterns": [
+        {
+          "name": "keyword.control.autom",
+          "match": "\\b(var|if|elif|else|func|foreach|import|load)\\b"
+        },
+        {
+          "name": "string.quoted.double.autom",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.autom",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "punctuation.separator.autom",
+          "match": "\\."
+        },
+        {
+          "name": "punctuation.paren.autom",
+          "match": "\\(|\\)"
+        },
+        {
+          "name": "keyword.operator.autom",
+          "match": "(?:=|\\+=|\\+|==)"
+        },
+        {
+          "name": "autom.target_id",
+          "match": "(?=[A-Z0-9_])(\\w+) *(?=\\()",
+          "captures": {
+            "1": [
+              {
+                "name": "entity.name.type.class"
+              }
+            ]
+          }
+        },
+        {
+          "name": "autom.func_id",
+          "match": "(?=[a-z0-9_])(\\w+) *(?=\\()",
+          "captures": {
+            "1": [
+              {
+                "name": "entity.name.function"
+              }
+            ]
+          }
+        },
+        {
+          "name": "autom.prop_id",
+          "match": "(?<=\\.) *(\\w+)",
+          "captures": {
+            "1": [
+              {
+                "name": "support.variable"
+              }
+            ]
+          }
+        },
+        {
+          "name": "autom.var_id",
+          "match": "(\\w+)",
+          "captures": {
+            "1": [
+              {
+                "name": "support.variable"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

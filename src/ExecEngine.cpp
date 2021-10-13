@@ -45,6 +45,9 @@ namespace autom {
             {"target_arch",new eval::String(TargetArchToString(outputTargetOpts.arch))},
             {"target_platform",new eval::String(TargetPlatformToString(outputTargetOpts.platform))}
         };
+        auto old_size = autom_obj.size();
+        autom_obj.resize(old_size + opts.globalVars.size());
+        std::copy(opts.globalVars.begin(),opts.globalVars.end(),autom_obj.begin() + old_size);
         
         exec->setGlobalVar("autom",new eval::Namespace(autom_obj));
     };
@@ -72,105 +75,109 @@ namespace autom {
     };
 
     bool ExecEngine::checkDependencyTree(){
-
-        if(exec->targets.empty()){
-            printError("No targets have been created in this project!");
-            return false;
-        }
         
         bool success = true;
-
-        std::vector<std::pair<autom::StrRef,Target *>> graph;
-        for(auto & t : exec->targets){
-
-            if(t->type & COMPILED_OUTPUT_TARGET){
-
-                auto *compiledTarget = (CompiledTarget *)t;
-                /// 1. Put Sources into map
-                for(auto s_it =  compiledTarget->srcs->getBeginIterator();s_it != compiledTarget->srcs->getEndIterator();s_it++){
-                    /// Resolve Source so that it is relative to output dir!
-                    auto fixed_source = std::filesystem::path(eval::castToString(*s_it)->value().data()).lexically_relative(opts.outputDir.data());
-                    
-                    compiledTarget->source_object_map.insert(std::make_pair(fixed_source.string(),""));
-                    
-                }
-                /// 2.  Check sources count!
-                if(compiledTarget->source_object_map.empty()){
-                    printError(formatmsg("Target `@0` has no sources",compiledTarget->name->value()));
-                    return false;
-                }
-                
-                /// 3.Resolve Object Files
-                for(auto & src_obj_map : compiledTarget->source_object_map){
-                    auto src_path =  std::filesystem::path(src_obj_map.first);
-
-                    auto src_name = src_path.filename();
-
-                    if(outputTargetOpts.os == TargetOS::Windows)
-                        src_name.replace_extension("obj");
-                    else
-                        src_name.replace_extension("o");
-
-                    src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name->value().data()).append(src_name.c_str()).string();
-                }
-            }
-            else if(t->type & JAVA_TARGET){
-                /// 1. Resolve Src Dir
-                auto _t = (JavaTarget *)t;
-                auto java_target_output_dir = std::filesystem::path(opts.outputDir.data()).append(_t->name->value().data());
-                
-                _t->src_dir->assign(std::filesystem::path(_t->src_dir->value().data()).lexically_relative(java_target_output_dir).string());
+        
+        std::vector<std::pair<autom::StrRef,std::shared_ptr<Target>>> graph;
+        
+        for(auto & t_pair : exec->projects){
+            auto & proj = t_pair.second;
+            if(proj.empty()){
+                printError("No targets have been created in this project!");
+                return false;
             }
             
-            auto resolveTargetForKey = [&](const StrRef & key){
-                auto graph_it = graph.begin();
+            for(auto & t : proj){
+
+                if(t->type & COMPILED_OUTPUT_TARGET){
+
+                    auto compiledTarget = std::dynamic_pointer_cast<CompiledTarget>(t);
+                    /// 1. Put Sources into map
+                    for(auto s_it =  compiledTarget->srcs->getBeginIterator();s_it != compiledTarget->srcs->getEndIterator();s_it++){
+                        /// Resolve Source so that it is relative to output dir!
+                        auto fixed_source = std::filesystem::path(eval::castToString(*s_it)->value().data()).lexically_relative(opts.outputDir.data());
+                        
+                        compiledTarget->source_object_map.insert(std::make_pair(fixed_source.string(),""));
+                        
+                    }
+                    /// 2.  Check sources count!
+                    if(compiledTarget->source_object_map.empty()){
+                        printError(formatmsg("Target `@0` has no sources",compiledTarget->name->value()));
+                        return false;
+                    }
+                    
+                    /// 3.Resolve Object Files
+                    for(auto & src_obj_map : compiledTarget->source_object_map){
+                        auto src_path =  std::filesystem::path(src_obj_map.first);
+
+                        auto src_name = src_path.filename();
+
+                        if(outputTargetOpts.os == TargetOS::Windows)
+                            src_name.replace_extension("obj");
+                        else
+                            src_name.replace_extension("o");
+
+                        src_obj_map.second = std::filesystem::path("obj").append(compiledTarget->name->value().data()).append(src_name.c_str()).string();
+                    }
+                }
+                else if(t->type & JAVA_TARGET){
+                    /// 1. Resolve Src Dir
+                    auto _t = std::dynamic_pointer_cast<JavaTarget>(t);
+                    auto java_target_output_dir = std::filesystem::path(opts.outputDir.data()).append(_t->name->value().data());
+                    
+                    _t->src_dir->assign(std::filesystem::path(_t->src_dir->value().data()).lexically_relative(java_target_output_dir).string());
+                }
                 
-                for(;graph_it != graph.end();graph_it++){
-                    if(graph_it->first == key){
-                        break;
+                auto resolveTargetForKey = [&](const StrRef & key){
+                    auto graph_it = graph.begin();
+                    
+                    for(;graph_it != graph.end();graph_it++){
+                        if(graph_it->first == key){
+                            break;
+                        }
+                    }
+                    
+                    return graph_it;
+                };
+                
+                std::vector<autom::StrRef> unresolvedDepNames;
+                
+                /// 4. Resolve Dependencies using the Target Graph
+                auto _deps = t->deps->value();
+                for(auto dep : _deps){
+                    auto dep_name = eval::castToString(dep)->value();
+                    auto dep_resolved_it = resolveTargetForKey(dep_name);
+                    if(dep_resolved_it == graph.end()){
+                        unresolvedDepNames.push_back(dep_name);
+                    }
+                    else {
+                        t->resolvedDeps.push_back(dep_resolved_it->second);
                     }
                 }
                 
-                return graph_it;
-            };
-            
-            std::vector<autom::StrRef> unresolvedDepNames;
-            
-            /// 4. Resolve Dependencies using the Target Graph
-            auto _deps = t->deps->value();
-            for(auto dep : _deps){
-                auto dep_name = eval::castToString(dep)->value();
-                auto dep_resolved_it = resolveTargetForKey(dep_name);
-                if(dep_resolved_it == graph.end()){
-                    unresolvedDepNames.push_back(dep_name);
+                if(unresolvedDepNames.empty()) {
+                    /// All Dependencies are resolved therefore this Target can be added to the Target Graph.
+    //                std::cout << "Sucess check on Target `" << t->name->value() << "`" << std::endl;
+                    graph.emplace_back(std::make_pair(t->name->value(),t));
                 }
                 else {
-                    t->resolvedDeps.push_back(dep_resolved_it->second);
-                }
-            }
-            
-            if(unresolvedDepNames.empty()) {
-                /// All Dependencies are resolved therefore this Target can be added to the Target Graph.
-//                std::cout << "Sucess check on Target `" << t->name->value() << "`" << std::endl;
-                graph.emplace_back(std::make_pair(t->name->value(),t));
-            }
-            else {
-                std::ostringstream names;
-                for(auto n = unresolvedDepNames.begin();n != unresolvedDepNames.end();n++){
-                    if(n != unresolvedDepNames.begin()){
-                        names << " , ";
+                    std::ostringstream names;
+                    for(auto n = unresolvedDepNames.begin();n != unresolvedDepNames.end();n++){
+                        if(n != unresolvedDepNames.begin()){
+                            names << " , ";
+                        }
+                        names << "`" << *n << "`";
                     }
-                    names << "`" << *n << "`";
+                    
+                    /// Logs missing dependencies!  NOTE:
+                    /// This invocation is inside the target iteration loop therefore all targets with missing dependencies will be reported!
+                    
+                    printError(formatmsg("Target `@0` has unresolved dependencies: @1",t->name->value(),names.str()));
+                    
+                    success = false;
                 }
-                
-                /// Logs missing dependencies!  NOTE:
-                /// This invocation is inside the target iteration loop therefore all targets with missing dependencies will be reported!
-                
-                printError(formatmsg("Target `@0` has unresolved dependencies: @1",t->name->value(),names.str()));
-                
-                success = false;
-            }
 
+            }
         }
 
         return success;
@@ -187,18 +194,24 @@ namespace autom {
             
         };
         
-        opts.gen.consumeToolchainDefaults(defs);
+        for(auto & p : exec->projects){
+            
+            auto ctxt = (GenContext *)&p.first;
+            
+            opts.gen.setGenContext(*ctxt);
         
-        if(opts.gen.supportsCustomToolchainRules()){
-            opts.gen.genToolchainRules(toolchain);
-        };
-        while(!exec->targets.empty()){
-            auto t = exec->targets.front();
-            opts.gen.consumeTarget(t);
-            exec->targets.pop_front();
-            delete t;
-        };
-        opts.gen.finish();
+            opts.gen.consumeToolchainDefaults(defs);
+            
+            if(opts.gen.supportsCustomToolchainRules()){
+                opts.gen.genToolchainRules(toolchain);
+            };
+            while(!p.second.empty()){
+                auto t = p.second.front();
+                opts.gen.consumeTarget(t);
+                p.second.pop_front();
+            };
+            opts.gen.finish();
+        }
     };
 
     ExecEngine::~ExecEngine(){
@@ -222,9 +235,10 @@ namespace autom {
     }
 
     void ExecEngine::report(){
-        std::cout << "\x1b[33mSuccess!\x1b[0m " << exec->targetCount;
         
-        if(exec->targetCount == 1){
+        std::cout << "\x1b[33mSuccess!\x1b[0m " << exec->totalTargets;
+        
+        if(totalTargets == 1){
             std::cout << " target has been generated!" << std::endl;
         }
         else {

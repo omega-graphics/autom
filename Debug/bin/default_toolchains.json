@@ -18,15 +18,15 @@
     "flags": {
       "define": "-D",
       "include_dir": "-I",
-      "lib": "",
+      "lib": "-l",
       "lib_dir": "-L",
-      "framework": "-framework",
+      "framework": "-f",
       "framework_dir": "-F",
       "output": "-o",
       "compile": "-c",
 	  "shared":"-dynamiclib -Wl,",
 	  "executable":"-Wl,",
-	  "strip_lib_prefix":false
+	  "strip_lib_prefix":true
     }
 
   },

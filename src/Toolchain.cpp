@@ -47,6 +47,10 @@ namespace autom {
                 
                 FIND_TOOL(CC.command,"C Compiler");
                 FIND_TOOL(CXX.command,"C++ Compiler");
+#ifdef __APPLE__
+                FIND_TOOL(OBJC.command,"ObjC Compiler");
+                FIND_TOOL(OBJCXX.command,"ObjC++ Compiler");
+#endif
                 FIND_TOOL(AR.command,"Archive Tool");
                 FIND_TOOL(SO_LD.command,"Shared Linker");
                 FIND_TOOL(EXE_LD.command,"Executable Linker");
@@ -68,12 +72,20 @@ namespace autom {
     }
 
     void Toolchain::Formatter::writeCommandPrefix() {
-        if(_type == cc || _type == objc){
+        if(_type == cc){
             str << toolchain.CC.command;
         }
-        else if(_type == cxx || _type == objcxx){
+        else if(_type == cxx ){
             str << toolchain.CXX.command;
         }
+#if defined(__APPLE__)
+        else if(_type == objc){
+            str << toolchain.OBJC.command;
+        }
+        else if(_type == objcxx){
+            str << toolchain.OBJCXX.command;
+        }
+#endif
         else if(_type == so){
             str << toolchain.SO_LD.command << " " << toolchain.shared;
         }
@@ -90,7 +102,7 @@ namespace autom {
     }
 
     void Toolchain::Formatter::writeSource(const StrRef &src) {
-        if(_type == cc || _type == cxx){
+        if(_type == cc || _type == cxx || _type == objc || _type == objcxx){
             str << toolchain.compile << " " << src.data();
         }
         else {
@@ -132,6 +144,22 @@ namespace autom {
         }
     }
 
+#ifdef __APPLE__
+
+    void Toolchain::Formatter::writeFrameworks(ArrayRef<std::string> frameworks) {
+        for(auto & f : frameworks){
+            str << toolchain.framework << " " << f << " ";
+        }
+    }
+
+    void Toolchain::Formatter::writeFrameworkDirs(ArrayRef<std::string> framework_dirs) {
+        for(auto & f : framework_dirs){
+            str << toolchain.framework_dir << f << " ";
+        }
+    }
+
+#endif
+
     void Toolchain::Formatter::writeString(const std::string &str) {
         this->str << str;
     }
@@ -158,6 +186,12 @@ namespace autom {
                 writer.String(toolchain->CC.command.c_str(),toolchain->CC.command.size());
                 writer.Key("cxx",3);
                 writer.String(toolchain->CXX.command.c_str(),toolchain->CXX.command.size());
+#ifdef __APPLE__
+                writer.Key("objc",2);
+                writer.String(toolchain->OBJC.command.c_str(),toolchain->OBJC.command.size());
+                writer.Key("objcxx",3);
+                writer.String(toolchain->OBJCXX.command.c_str(),toolchain->OBJCXX.command.size());
+#endif
                 writer.Key("ar",2);
                 writer.String(toolchain->AR.command.c_str(),toolchain->AR.command.size());
                 writer.Key("ld_exe",6);
@@ -176,6 +210,12 @@ namespace autom {
                 writer.String(toolchain->lib.c_str(),toolchain->lib.size());
                 writer.Key("lib_dir",7);
                 writer.String(toolchain->lib_dir.c_str(),toolchain->lib_dir.size());
+#ifdef __APPLE__
+                writer.Key("framework",9);
+                writer.String(toolchain->framework.c_str(),toolchain->framework.size());
+                writer.Key("framework_dir",13);
+                writer.String(toolchain->framework_dir.c_str(),toolchain->framework_dir.size());
+#endif
                 writer.Key("compile",7);
                 writer.String(toolchain->compile.c_str(),toolchain->compile.size());
                 writer.Key("output",6);
@@ -269,6 +309,11 @@ namespace autom {
                     t->lib = flags["lib"].GetString();
                     t->lib_dir = flags["lib_dir"].GetString();
                     
+#ifdef __APPLE__
+                    t->framework = flags["framework"].GetString();
+                    t->framework_dir = flags["framework_dir"].GetString();
+#endif
+                    
                     t->stripLibPrefix = flags["strip_lib_prefix"].GetBool();
                     
                     t->shared = flags["shared"].GetString();
@@ -276,6 +321,10 @@ namespace autom {
 
                     t->CC.command = progs["cc"].GetString();
                     t->CXX.command = progs["cxx"].GetString();
+#ifdef __APPLE__
+                    t->OBJC.command = progs["objc"].GetString();
+                    t->OBJCXX.command = progs["objcxx"].GetString();
+#endif
                     t->AR.command = progs["ar"].GetString();
                     t->EXE_LD.command = progs["ld_exe"].GetString();
                     t->SO_LD.command = progs["ld_so"].GetString();

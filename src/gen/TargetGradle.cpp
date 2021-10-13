@@ -11,12 +11,15 @@ namespace autom {
 
 class GradleGen : public Gen {
     std::ofstream out;
-    autom::StrRef outputDir;
 public:
     
-    GradleGen(autom::StrRef outputDir):outputDir(outputDir){
-        out.open(std::filesystem::path(outputDir.data()).append("settings.gradle"));
+    explicit GradleGen(){
+       
     };
+    
+    void configGenContext() override {
+        out.open(std::filesystem::path(context->outputDir).append("settings.gradle"));
+    }
     
     void consumeToolchainDefaults(ToolchainDefaults &conf) override {
         
@@ -31,13 +34,13 @@ public:
         return;
     }
     
-    void consumeTarget(Target *target) override{
+    void consumeTarget(std::shared_ptr<Target> & target) override{
         
         /// Create a new Gradle Subproject
-        auto java_target = (JavaTarget *)target;
+        auto java_target = std::dynamic_pointer_cast<JavaTarget>(target);
         
         
-        std::ofstream gradleTargetOut(std::filesystem::path(outputDir.data()).append(java_target->name->value().data()).append("build.gradle"),std::ios::out);
+        std::ofstream gradleTargetOut(std::filesystem::path(context->outputDir.data()).append(java_target->name->value().data()).append("build.gradle"),std::ios::out);
         
         
         if(!java_target->maven_repos->empty()){
@@ -108,8 +111,8 @@ formatmsg(R"(sourceSets {
 
 
 
-Gen *TargetGradle(autom::StrRef outputDir){
-    return new GradleGen(outputDir);
+Gen *TargetGradle(){
+    return new GradleGen();
 }
 
 }

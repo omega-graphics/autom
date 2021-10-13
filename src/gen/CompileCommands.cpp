@@ -37,6 +37,10 @@ namespace autom {
         void consumeToolchainDefaults(ToolchainDefaults &conf) override {
             
         }
+        
+        void configGenContext() override {
+            
+        }
 
         bool supportsCustomToolchainRules() override {
             return true;
@@ -46,17 +50,15 @@ namespace autom {
             toolchain = _toolchain;
         }
 
-        void consumeTarget(Target *target) override {
+        void consumeTarget(std::shared_ptr<Target> & target) override {
             switch (target->type) {
 
-                case FS_ACTION : {
-                    break;
-                }
-                case SCRIPT_ACTION : {
+                case FS_ACTION :
+                case SCRIPT_TARGET : {
                     break;
                 }
                 default: {
-                    auto * t = (CompiledTarget *)target;
+                    auto t = std::dynamic_pointer_cast<CompiledTarget>(target);
                     for(auto & s_obj_pair : t->source_object_map){
                         auto & s = s_obj_pair.first;
                         std::ostringstream cmdOut;

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <chrono>
 
 
 inline void printHelp(){
@@ -32,6 +33,7 @@ Options:
 
 --arch                    --> Sets the target cpu architecture (Uses host as default)
                               Choices:[x86|x86_64|arm|aarch64]
+--define, -D              --> Defines a variable with an intial value.
 
     Modes:
 
@@ -56,12 +58,16 @@ Options:
     exit(0);
 };
 
-
-
 int main(int argc,char * argv[]){
     
+    auto exec_path = std::filesystem::path(argv[0]).parent_path().parent_path().string();
     
-    auto exec_path = std::filesystem::path(argv[0]).parent_path().parent_path();
+    if(exec_path.empty()){
+        autom::locateProgram(argv[0],std::getenv("PATH"),exec_path);
+        exec_path = std::filesystem::path(exec_path).parent_path().parent_path();
+    }
+    
+    std::cout << exec_path << std::endl;
     
     auto std_modules_path = std::filesystem::path(exec_path).append("modules").string();
     
@@ -73,6 +79,8 @@ int main(int argc,char * argv[]){
     autom::TargetOS targetOS = autom::hostOS();
     autom::TargetArch targetArch = autom::hostArch();
     autom::TargetPlatform targetPlatform = autom::hostPlatform();
+    
+    std::vector<std::pair<std::string,autom::eval::Object *>> defines;
 
     bool ninja = true;
     bool sln = false;
@@ -151,13 +159,14 @@ int main(int argc,char * argv[]){
         std::filesystem::create_directories(outputDir.data());
 
     if(ninja){
-        autom::GenNinjaOpts ninjaOpts {outputDir,currentDir,false};
+        autom::GenNinjaOpts ninjaOpts {false};
         gen = autom::TargetNinja(outputTargetOpts,ninjaOpts);
     }
     
-    auto file = (!toolchainFile.empty())? toolchainFile : exec_path.append("bin").append("default_toolchains.json").string();
+    auto file = (!toolchainFile.empty())? toolchainFile : std::filesystem::path(exec_path).append("bin").append("default_toolchains.json").string();
     
     autom::ExecEngineOpts opts {
+        {defines.data(),defines.data() + defines.size()},
         outputDir,
         *gen,
         file,
@@ -172,12 +181,17 @@ int main(int argc,char * argv[]){
     };
 
     std::ifstream in("./AUTOM.build");
+    
+    auto startTime = std::chrono::steady_clock::now();
 
     auto success = eng.parseAndEvaluate(&in);
     if(success) {
         if(eng.checkDependencyTree()){
             eng.generate();
             eng.report();
+            auto endTime = std::chrono::steady_clock::now();
+            std::chrono::duration<double,std::milli> duration = endTime - startTime;
+            std::cout << "Time elapsed:" << duration.count() << "ms" << std::endl;
         };
     }
     else {

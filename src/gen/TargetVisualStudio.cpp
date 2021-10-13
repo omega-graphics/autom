@@ -12,16 +12,19 @@ namespace autom {
     class GenVisualStudio : public Gen {
         OutputTargetOpts & outputOpts;
         GenVisualStudioOpts & opts;
-        std::filesystem::path outputPath;
+     
         std::ofstream solutionOut;
     public:
         GenVisualStudio(
                 OutputTargetOpts & outputOpts,
                 GenVisualStudioOpts & opts):
-                outputOpts(outputOpts),opts(opts),outputPath(opts.outputDir.data()){
-            solutionOut.open(std::filesystem::path(outputPath).append(std::string(opts.projectName) + ".sln"),std::ios::out);
+                outputOpts(outputOpts),opts(opts){
 
         };
+        
+        void configGenContext() override {
+            solutionOut.open(std::filesystem::path(context->outputDir.data()).append(context->projectDesc.name).concat(".sln"));
+        }
         
         void consumeToolchainDefaults(ToolchainDefaults &conf) override {
             
@@ -33,8 +36,8 @@ namespace autom {
         void genToolchainRules(std::shared_ptr<Toolchain> &toolchain) override {
 
         }
-        void consumeTarget(Target *target) override {
-            std::ofstream vcxprojOut {std::filesystem::path(outputPath).append(std::string(target->name->value()) + ".vcxproj"),std::ios::out};
+        void consumeTarget(std::shared_ptr<Target> & target) override {
+            std::ofstream vcxprojOut {std::filesystem::path(context->outputDir.data()).append(std::string(target->name->value()) + ".vcxproj"),std::ios::out};
             vcxprojOut << VCXPROJ_PROJECT;
 
 

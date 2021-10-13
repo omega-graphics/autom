@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <functional>
 
 #include "Targets.def"
 
@@ -73,8 +74,8 @@ namespace autom {
         /// type = string[]
         eval::Array *deps = new eval::Array();
         
-        std::vector<Target *> resolvedDeps;
-        
+        std::vector<std::shared_ptr<Target>> resolvedDeps;
+        virtual ~Target() = default;
     };
 
     struct GroupTarget : public Target {
@@ -102,6 +103,9 @@ namespace autom {
 
         /// type = string
         eval::String * output_ext;
+        
+        /// type = string
+        eval::String * output_dir;
 
         /// type = string[]
         eval::Array * cflags;
@@ -114,6 +118,16 @@ namespace autom {
         
         /// type = string[]
         eval::Array * lib_dirs;
+        
+#ifdef __APPLE__
+        
+        /// type = string[]
+        eval::Array * frameworks;
+        
+        /// type = string[]
+        eval::Array * framework_dirs;
+        
+#endif
 
         /// type = string[]
         eval::Array * defines;
@@ -125,10 +139,15 @@ namespace autom {
             cflags = new eval::Array();
             libs = new eval::Array();
             lib_dirs = new eval::Array();
+#ifdef __APPLE__
+            frameworks = new eval::Array();
+            framework_dirs = new eval::Array();
+#endif
             defines = new eval::Array();
             include_dirs = new eval::Array();
             ldflags = new eval::Array();
             output_ext = new eval::String();
+            output_dir = new eval::String();
         }
 
         static CompiledTarget * Executable(eval::String * name,eval::Array * sources){
@@ -199,6 +218,58 @@ namespace autom {
         }
     };
 
+    struct FSTarget : public Target {
+        eval::Array * sources;
+        
+        eval::String * dest;
+        
+        static FSTarget * Copy(eval::String *name,eval::Array * sources,eval::String * dest){
+            auto *t = new FSTarget();
+            t->type = FS_COPY;
+            t->name = name;
+            t->sources = sources;
+            t->dest = dest;
+            return t;
+        }
+        
+        static FSTarget * Symlink(eval::String *name,eval::Array * sources,eval::String * dest){
+            auto *t = new FSTarget();
+            t->type = FS_SYMLINK;
+            t->name = name;
+            t->sources = sources;
+            t->dest = dest;
+            return t;
+        }
+        
+        static FSTarget * Mkdir(eval::String *name,eval::Array * sources,eval::String * dest){
+            auto *t = new FSTarget();
+            t->type = FS_MKDIR;
+            t->name = name;
+            t->sources = sources;
+            t->dest = dest;
+            return t;
+        }
+    };
+
+
+    struct ScriptTarget : public Target {
+        eval::String * cmd;
+        
+        eval::Array *args;
+        
+        eval::Array *outputs;
+        
+        static ScriptTarget *Create(eval::String * name,eval::String *cmd,eval::Array * args,eval::Array *outputs){
+            auto *t = new ScriptTarget();
+            t->type = SCRIPT_TARGET;
+            t->name = name;
+            t->cmd = cmd;
+            t->args = args;
+            t->outputs = outputs;
+            return t;
+        }
+    };
+
 
     
 
@@ -208,12 +279,12 @@ namespace autom {
 
     class TargetConsumer {
     public:
-        virtual void consumeTarget(Target *target) = 0;
+        virtual void consumeTarget(std::shared_ptr<Target> & target) = 0;
     };
 
     /// @}
 
     
-};
+}
 
 #endif

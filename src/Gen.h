@@ -6,10 +6,6 @@
 
 namespace autom {
 
-    struct ProjectDesc {
-        std::string name;
-        std::string version;
-    };
 
     struct ToolchainDefaults {
         eval::Array *c_flags;
@@ -18,8 +14,15 @@ namespace autom {
 
     
     class Gen : public TargetConsumer {
+    protected:
+        GenContext *context = nullptr;
     public:
         using TargetConsumer::consumeTarget;
+        virtual void configGenContext() = 0;
+        void setGenContext(GenContext & context){
+            this->context = &context;
+            configGenContext();
+        };
         virtual void consumeToolchainDefaults(ToolchainDefaults & conf) = 0;
         virtual bool supportsCustomToolchainRules() = 0;
         virtual void genToolchainRules(std::shared_ptr<Toolchain> &toolchain) = 0;
@@ -29,8 +32,6 @@ namespace autom {
     Gen *TargetCompileCommands(OutputTargetOpts &outputOpts,autom::StrRef output_path);
 
     struct GenNinjaOpts {
-        autom::StrRef outputDir;
-        autom::StrRef srcDir;
         bool splitTargetsByNinja;
     };
 
@@ -43,20 +44,20 @@ namespace autom {
 //    Gen *TargetCMake();
 
     struct GenVisualStudioOpts {
-        autom::StrRef projectName;
-        autom::StrRef outputDir;
+//        autom::StrRef projectName;
+//        autom::StrRef outputDir;
     };
 
     Gen *TargetVisualStudio(OutputTargetOpts & outputOpts,GenVisualStudioOpts & opts);
     
     struct GenXcodeOpts {
-        autom::StrRef projectName;
-        autom::StrRef outputDir;
+//        autom::StrRef projectName;
+//        autom::StrRef outputDir;
     };
 
     Gen *TargetXcode(OutputTargetOpts & outputOpts,GenXcodeOpts & opts);
 
-    Gen *TargetGradle(autom::StrRef outputDir);
+    Gen *TargetGradle();
 
 };
 

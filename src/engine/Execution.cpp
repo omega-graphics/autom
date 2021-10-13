@@ -29,7 +29,9 @@ namespace autom {
     
         void Eval::VarStore::deallocAll(){
             for(auto & ent : body){
-                delete ent.second;
+                if(ent.second != nullptr){
+//                    delete ent.second;
+                }
             };
             body.clear();
         }
@@ -38,13 +40,13 @@ namespace autom {
             deallocAll();
         }
 
-        Eval::Eval(Gen &gen,ExecEngine *engine):engine(engine),gen(gen),currentEvalDir("."){
+        Eval::Eval(Gen &gen,ExecEngine *engine):engine(engine),gen(gen),currentEvalDir("."),currentGenContext(nullptr){
             /// Current Eval Dir should be current directory of execution
         };
 
         void Eval::addTarget(Target *target){
-            targetCount += 1;
-            targets.push_back(target);
+            projects[*currentGenContext].emplace_back(target);
+            totalTargets += 1;
         };
     
         void Eval::setGlobalVar(autom::StrRef str,Object *object){
@@ -53,10 +55,14 @@ namespace autom {
 
         Object *Eval::referVarWithScope(ASTScope *scope,StrRef name){
             
-            auto & first_store = vars[scope];
-            auto found_it = first_store.body.find(name);
-            if(found_it != first_store.body.end())
-                return found_it->second;
+            auto first_store_it = vars.find(scope);
+            if(first_store_it != vars.end()){
+                auto & first_store = first_store_it->second;
+                
+                auto found_it = first_store.body.find(name);
+                if(found_it != first_store.body.end())
+                    return found_it->second;
+            }
                 
             for(auto & scope_var_store_p : vars){
                 if(scope->isChildScopeOfParent(scope_var_store_p.first)){
@@ -141,11 +147,11 @@ namespace autom {
                     auto literal = (ASTLiteral *)node;
                     if(literal->isString()){
                         auto str = literal->str.value();
-                        if(!processString(&str,node->scope)){
-                            engine->printError("Failed to Process String!");
-                            *failed = true;
-                            return nullptr;
-                        };
+//                        if(!processString(&str,node->scope)){
+//                            engine->printError("Failed to Process String!");
+//                            *failed = true;
+//                            return nullptr;
+//                        };
                         return new eval::String(str);
                     }
                     else if(literal->isBoolean()){
@@ -225,6 +231,9 @@ namespace autom {
                         return nullptr;
                     }
                     
+//                    std::cout << "LHS:" << (int)lhs->type << std::endl;
+//                    std::cout << "RHS:" << (int)rhs->type << std::endl;
+                    
                     switch (lhs->type) {
                         case Object::String: {
                             assert(objectIsString(rhs));
@@ -263,15 +272,37 @@ namespace autom {
 
                         if(tw->value()->type & COMPILED_OUTPUT_TARGET){
                             auto _target =  (CompiledTarget *)tw->value();
-//                            if(propName == "sources"){
-//                                return _target->srcs;
-//                            }
+                          
                             if(propName == "cflags"){
                                 return _target->cflags;
+                            }
+                            else if(propName == "output_dir"){
+                                return _target->output_dir;
                             }
                             else if(propName == "include_dirs"){
                                 return _target->include_dirs;
                             }
+                            else if(propName == "output_ext"){
+                                return _target->output_ext;
+                            }
+                            else if(propName == "libs"){
+                                return _target->libs;
+                            }
+                            else if(propName == "lib_dirs"){
+                                return _target->lib_dirs;
+                            }
+#ifdef __APPLE__
+                            else if(propName == "frameworks"){
+                                return _target->frameworks;
+                            }
+                            else if(propName == "framework_dirs"){
+                                return _target->framework_dirs;
+                            }
+#else
+                            else if(propName == "frameworks" || propName == "framework_dirs"){
+                                return nullptr;
+                            }
+#endif
                         }
                         else if(tw->value()->type & JAVA_TARGET){
                             auto _target = (JavaTarget *)tw->value();
@@ -320,23 +351,20 @@ namespace autom {
                     }
                 }
                 bool f;
-                auto o = evalGenericStmt(node,&f);
-                
-                if(ctxt.inFunction){
-                    *returning = true;
-                }
+                auto o = evalGenericStmt(node,&f,true,returning);
                 
                 if(f){
                     *failed = true;
                     return nullptr;
                 };
                 
-                if(ctxt.inFunction){
+                if(ctxt.inFunction && (*returning)){
                     return o;
                 }
                 
 
             }
+            return nullptr;
         }
 
         bool Eval::processString(std::string * str,ASTScope *scope){
@@ -407,12 +435,22 @@ namespace autom {
 
         Object *Eval::invokeFunc(ASTBlock * block,ArrayRef<std::pair<std::string,Object *>> args) {
             bool f,r;
-            return evalBlock(block,ASTBlockContext {true},&f,&r);
+            VarStore store {};
+            for(auto & a : args){
+                std::cout << (int)a.second->type << std::endl;
+                store.body.insert(a);
+            }
+            vars.insert(std::make_pair(block->scope,store));
+            auto obj = evalBlock(block,ASTBlockContext {true},&f,&r);
+            auto it = vars.find(block->scope);
+            vars.erase(it);
+            return obj;
         }
 
         Object * Eval::evalGenericStmt(ASTNode *node,bool *failed,bool inFunctionCtxt,bool *returning) {
             *failed = false;
-            // std::cout << "Eval Node" << std::endl;
+            
+//             std::cout << "Eval Node:" << std::hex << int(node->type) << std::dec << std::endl;
             if(node->type & EXPR){
                 bool f;
                 auto obj = evalExpr((ASTExpr *)node,&f);
@@ -501,7 +539,7 @@ namespace autom {
                         break;
                     }
                     case FUNC_DECL : {
-                        funcs.push_back((ASTFuncDecl *)node);
+                        funcs.push_back((std::shared_ptr<ASTFuncDecl>)(ASTFuncDecl *)node);
                         break;
                     }
                     case VAR_DECL : {

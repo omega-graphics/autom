@@ -17,6 +17,7 @@ namespace autom {
     };
 
     struct ExecEngineOpts {
+        MapRef<std::string,eval::Object *> globalVars;
         autom::StrRef outputDir;
         Gen &gen;
         autom::StrRef toolchainFile;
@@ -24,6 +25,8 @@ namespace autom {
     };
 
     class ExecEngine final {
+        
+        unsigned totalTargets = 0;
 
         std::shared_ptr<Toolchain> toolchain;
 

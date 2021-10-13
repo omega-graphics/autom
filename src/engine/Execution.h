@@ -6,10 +6,31 @@
 #include <filesystem>
 #include <deque>
 #include <iostream>
+#include <functional>
 
 
 #ifndef AUTOM_ENGINE_EXECUTION_H
 #define  AUTOM_ENGINE_EXECUTION_H
+
+namespace autom {
+
+    struct GenContext {
+        struct {
+            std::string name;
+            std::string version;
+        } projectDesc;
+        autom::StrRef outputDir;
+    };
+}
+
+namespace std {
+    template<>
+    struct less<::autom::GenContext> {
+        constexpr bool operator()(const autom::GenContext & lhs,const autom::GenContext & rhs) const{
+            return less<std::string>()(lhs.projectDesc.name,rhs.projectDesc.name);
+        }
+    };
+}
 
 namespace autom {
 
@@ -22,11 +43,11 @@ namespace autom {
         /// @brief A Runtime Object
         struct Object {
             typedef enum : int {
-                Target, // data = Target *
-                String, // data = StrData *
-                Array, // data = ArrayData *
-                Boolean, // data = BoolData *
-                Namespace, // data = NamespaceData *
+                Target = 0, // data = Target *
+                String = 1, // data = StrData *
+                Array = 2, // data = ArrayData *
+                Boolean = 3, // data = BoolData *
+                Namespace = 4, // data = NamespaceData *
                 Any = (Target | String | Array | Boolean | Namespace)
             } Ty;
             Ty type;
@@ -43,7 +64,7 @@ namespace autom {
             /// @brief Decrement object reference count
             void decRec();
             Object(Ty type);
-            virtual ~Object(){};
+            virtual ~Object() = default;
         };
 
         class Boolean : public Object {
@@ -142,9 +163,6 @@ namespace autom {
 
         class Eval {
             friend class ::autom::ExecEngine;
-            
-            unsigned targetCount = 0;
-            std::deque<Target *> targets;
 
             std::vector<Extension *> loadedExts;
 
@@ -152,11 +170,15 @@ namespace autom {
 
             Gen &gen;
 
-            std::vector<ASTFuncDecl *> funcs;
+            std::vector<std::shared_ptr<ASTFuncDecl>> funcs;
 
             Object * tryInvokeBuiltinFunc(autom::StrRef subject,std::unordered_map<std::string,ASTExpr *> & args,int * code);
 
         public:
+            GenContext * currentGenContext;
+            
+            std::map<GenContext,std::deque<std::shared_ptr<Target>>> projects;
+            
             bool hasProject = false;
             std::filesystem::path currentEvalDir;
             
@@ -172,8 +194,12 @@ namespace autom {
             Object *referVarWithScope(ASTScope *scope,StrRef name);
 
             void clearVarStoreWithScope(ASTScope *scope);
+            
+            unsigned totalTargets = 0;
 
             void addTarget(Target *target);
+            
+            void importFile(const autom::StrRef & path);
 
         private:
             bool processString(std::string * str,ASTScope *scope);
@@ -183,8 +209,6 @@ namespace autom {
             Object *evalBlock(ASTBlock * block,const ASTBlockContext & ctxt,bool * failed,bool *returning = nullptr);
             Object *evalGenericStmt(ASTNode *node,bool *failed,bool inFunctionCtxt = false,bool *returning = nullptr);
             Object *evalExpr(ASTExpr *expr,bool *failed);
-
-            void importFile(const autom::StrRef & path);
 
             Extension *loadExtension(const std::filesystem::path& path);
             void closeExtensions();

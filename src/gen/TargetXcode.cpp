@@ -102,11 +102,15 @@ auto pbxHeader = R"(// !$*UTF8*$!
     public:
         
         explicit XcodeGen(OutputTargetOpts & outputOpts,GenXcodeOpts & genOpts):outputOpts(outputOpts),genOpts(genOpts){
-            auto projectDir = std::string(genOpts.projectName) + ".xcodeproj";
+        
+        }
+        
+        void configGenContext() override {
+            auto projectDir = std::string(context->projectDesc.name) + ".xcodeproj";
            
-            std::filesystem::create_directory(std::filesystem::path(genOpts.outputDir.data()).append(projectDir));
+            std::filesystem::create_directory(std::filesystem::path(context->outputDir.data()).append(projectDir));
             
-            pbxprojOut.open(std::filesystem::path(genOpts.outputDir.data()).append(projectDir).append("project.pbxproj"));
+            pbxprojOut.open(std::filesystem::path(context->outputDir.data()).append(projectDir).append("project.pbxproj"));
             pbxprojOut << pbxHeader;
         }
         
@@ -118,7 +122,7 @@ auto pbxHeader = R"(// !$*UTF8*$!
             
         }
         
-        void consumeTarget(Target *target) override {
+        void consumeTarget(std::shared_ptr<Target> & target) override {
             
         }
         

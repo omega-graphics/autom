@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <fstream>
+#include <utility>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -151,8 +152,11 @@ namespace autom::eval {
         auto *version = castToString(args["version"]);
 
         std::cout << "Configuring Project " << name->value().data() << " " << version->value().data() << std::endl;
-
-        ctxt.eval->hasProject = true;
+        
+        GenContext context {{name->value(),version->value()},ctxt.execEngine->opts.outputDir};
+        
+        auto it = ctxt.eval->projects.insert(std::make_pair(std::move(context),std::deque<std::shared_ptr<Target>>{}));
+        ctxt.eval->currentGenContext = (GenContext *)&it.first->first;
         return nullptr;
     };
 
@@ -226,6 +230,31 @@ namespace autom::eval {
 
         return new TargetWrapper(t);
     };
+
+    Object *bf_GroupTarget(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *deps = castToArray(args["deps"]);
+        auto t = GroupTarget::Create(name,deps);
+        
+        ctxt.eval->addTarget(t);
+        
+        return new TargetWrapper(t);
+    }
+
+    Object *bf_Script(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *name = castToString(args["name"]);
+        auto *cmd = castToString(args["cmd"]);
+        auto *_args = castToArray(args["args"]);
+        auto *outputs = castToArray(args["outputs"]);
+        
+        auto t = ScriptTarget::Create(name,cmd,_args,outputs);
+        
+        ctxt.eval->addTarget(t);
+        
+        return new TargetWrapper(t);
+    }
+
+    
 
     Object *bf_JarLib(MapRef<std::string,Object *> args,EvalContext & ctxt){
         auto *name = castToString(args["name"]);
@@ -355,8 +384,13 @@ namespace autom::eval {
     }
 
     Object *bf_subdir(MapRef<std::string,Object *> args,EvalContext & ctxt){
-         auto *dir = castToString(args["path"]);
-
+        auto *dir = castToString(args["path"]);
+        if(!std::filesystem::is_directory(dir->value().data())){
+            ctxt.execEngine->printError(formatmsg("@0 is not a directory",dir->value()));
+            return nullptr;
+        };
+        auto path = std::filesystem::path(dir->value().data()).append("AUTOM.build");
+        ctxt.eval->importFile(path.string());
         return nullptr;
     }
 
@@ -368,7 +402,7 @@ namespace autom::eval {
         std::vector<std::pair<std::string,Object *>> ready_args;
 
         auto checkArgs = [&](std::initializer_list<std::pair<CString,Object::Ty>> params){
-            #define TYPECHECK_STRICT(object,t) if((t) != Object::Any && (object)->type != (t)){ engine->printError(formatmsg("Param `@0` is not a typeof @1",autom::StrRef(p.first),t));return false; }
+            #define TYPECHECK_STRICT(object,t) if((t) != Object::Any && (object)->type != (t)){ engine->printError(formatmsg("Param `@0` is not a typeof @1. Instead got type @2",autom::StrRef(p.first),t,(object)->type));return false; }
             bool rc = true;
             for(auto & p : params){
                 auto found_it = args.find(p.first);
@@ -415,10 +449,20 @@ namespace autom::eval {
         BUILTIN_FUNC(BUILTIN_SHARED,bf_Shared,{"name",Object::String},{"sources",Object::Array});
         
         BUILTIN_FUNC(BUILTIN_SOURCE_GROUP,bf_SourceGroup,{"name",Object::String},{"sources",Object::Array});
+        
+        BUILTIN_FUNC(BUILTIN_GROUP_TARGET,bf_GroupTarget,{"name",Object::String},{"deps",Object::Array});
+        
+        BUILTIN_FUNC(BUILTIN_SCRIPT,bf_Script,
+                     {"name",Object::String},
+                     {"cmd",Object::String},
+                     {"args",Object::Array},
+                     {"outputs",Object::Array});
 
         BUILTIN_FUNC(BUILTIN_FIND_PROGRAM,bf_find_program,{"cmd",Object::String});
 
         BUILTIN_FUNC(BUILTIN_CONFIG_FILE,bf_config_file,{"in",Object::String},{"out",Object::String});
+        
+        BUILTIN_FUNC(BUILTIN_SUBDIR,bf_subdir,{"path",Object::String});
         
         *code = INVOKE_NOTBUILTIN;
         return nullptr;

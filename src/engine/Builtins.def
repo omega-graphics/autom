@@ -10,10 +10,19 @@ typedef int AutomBuiltinFunc;
 
 #define BUILTIN_PRINT  "print"
 #define BUILTIN_PROJECT  "project"
+#define BUILTIN_SUBDIR "subdir"
+
+/// Target Functions
 #define BUILTIN_EXECUTABLE "Executable"
 #define BUILTIN_ARCHIVE "Archive"
 #define BUILTIN_SHARED "Shared"
 #define BUILTIN_SOURCE_GROUP "SourceGroup"
+#define BUILTIN_GROUP_TARGET "GroupTarget"
+#define BUILTIN_SCRIPT "Script"
+#define BUILTIN_FS_COPY "Copy"
+#define BUILTIN_FS_SYMLINK "Symlink"
+#define BUILTIN_FS_MKDIR "Mkdir"
+
 #define BUILTIN_CONFIG_FILE "config_file"
 #define BUILTIN_FIND_PROGRAM "find_program"
 

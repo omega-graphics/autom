@@ -1,0 +1,7 @@
+import "fs"
+
+var android_prog = find_program(cmd:"")
+
+func AndroidApp(name,source_dir){
+	
+}

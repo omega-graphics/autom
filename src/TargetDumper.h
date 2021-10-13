@@ -13,7 +13,8 @@ namespace autom {
         std::ostream & out;
     public:
         explicit TargetDumper(std::ostream & out);
-        void consumeTarget(Target *target) override;
+        void consumeTarget(std::shared_ptr<Target> & target) override;
+        void configGenContext() override;
         bool supportsCustomToolchainRules() override {return false;};
         void genToolchainRules(std::shared_ptr<Toolchain> &toolchain) override {};
         void finish() override{};
