@@ -22,14 +22,19 @@ public:
     void performInstallation(const autom::StrRef & path,const autom::StrRef & prefix){
         beginRead(path);
         autom::InstallRulePtr rule;
+        auto outputDir = std::filesystem::path(path.data()).parent_path();
         while(getRule(rule)){
+            auto p = std::filesystem::path(prefix.data()).append(rule->prefixed_dest.data());
+            if(!std::filesystem::exists(p)){
+                std::filesystem::create_directories(p);
+            }
             if(rule->type == autom::InstallRule::Target){
                 auto _t = std::dynamic_pointer_cast<autom::TargetInstallRule>(rule);
                 std::cout << "- Installing targets ";
                 
                 for(auto & t : _t->targets){
-                    auto fname = std::filesystem::path(t->name->value().data()).filename();
-                    std::filesystem::copy_file(t->name->value().data(),std::filesystem::path(prefix.data()).append(fname.string()));
+                    auto f_name = std::filesystem::path(t->name->value().data()).filename();
+                    std::filesystem::copy(std::filesystem::path(outputDir).append(t->name->value().data()),std::filesystem::path(prefix.data()).append(rule->prefixed_dest).append(f_name.string()).string(),std::filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
                     std::cout << t->name->value();
                 }
                 
@@ -46,7 +51,7 @@ public:
                                               std::filesystem::copy_options::recursive | std::filesystem::copy_options::update_existing);
                     }
                     else {
-                        std::filesystem::copy_file(p,std::filesystem::path(prefix.data()) += p.filename(),std::filesystem::copy_options::update_existing);
+                        std::filesystem::copy(p,std::filesystem::path(prefix.data()) += p.filename(),std::filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
                     }
                 }
                 

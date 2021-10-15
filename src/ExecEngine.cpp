@@ -43,7 +43,8 @@ namespace autom {
             {"toolchain",new eval::String(toolchain->name)},
             {"target_os",new eval::String(TargetOSToString(outputTargetOpts.os))},
             {"target_arch",new eval::String(TargetArchToString(outputTargetOpts.arch))},
-            {"target_platform",new eval::String(TargetPlatformToString(outputTargetOpts.platform))}
+            {"target_platform",new eval::String(TargetPlatformToString(outputTargetOpts.platform))},
+            {"output_dir",new eval::String(opts.outputDir.data())}
         };
         auto old_size = autom_obj.size();
         autom_obj.resize(old_size + opts.globalVars.size());

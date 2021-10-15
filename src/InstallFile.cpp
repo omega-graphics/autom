@@ -27,8 +27,8 @@ void InstallFileSerializer::DestroyReaderPriv::operator()(ReaderPriv *pt){
 }
 
 void InstallFileSerializer::beginRead(const autom::StrRef & input){
-    std::cout << "INSTALL_FILE:" << input.data() << std::endl;
-    std::cout.flush();
+//    std::cout << "INSTALL_FILE:" << input.data() << std::endl;
+//    std::cout.flush();
     reader->in.open(input.data(),std::ios::in);
     if(!reader->in.is_open()){
         std::cout << "FAILED TO READ FROM:" << input.data() << std::endl;
@@ -51,20 +51,20 @@ bool InstallFileSerializer::getRule(InstallRulePtr & rule){
         auto obj = item.GetObj();
         std::string target_type = obj["type"].GetString();
         if(target_type == "target"){
-            rule.reset(new TargetInstallRule());
+            rule = InstallRulePtr(new TargetInstallRule());
             rule->type = InstallRule::Target;
             auto _t = std::dynamic_pointer_cast<TargetInstallRule>(rule);
             auto & targets = _t->targets;
             auto _array = obj["targets"].GetArray();
             for(auto & obj : _array){
                 auto target = new Target();
-                target->name->assign(std::string(obj.GetString(),obj.GetStringLength()));
+                target->name = new eval::String(std::string(obj.GetString(),obj.GetStringLength()));
                 targets.emplace_back(target);
             }
             
         }
         else if(target_type == "file"){
-            rule.reset(new FileInstallRule());
+            rule = InstallRulePtr(new FileInstallRule());
             rule->type = InstallRule::File;
             auto _t = std::dynamic_pointer_cast<FileInstallRule>(rule);
             auto & sources = _t->files;
@@ -115,16 +115,19 @@ void InstallFileSerializer::writeRule(InstallRulePtr rule){
         writer->writer.StartArray();
         for(auto & t : target_rule->targets){
             assert(t->type != FS_ACTION || t->type != SCRIPT_TARGET || t->type == GROUP_TARGET && "Only compiled targets can be given install time rules");
-            std::string full_target_path;
+            std::filesystem::path full_target_path;
             if(t->type & COMPILED_OUTPUT_TARGET){
                 auto _t = std::dynamic_pointer_cast<CompiledTarget>(t);
-                full_target_path = std::filesystem::path(_t->output_dir->value().data()).append(_t->name->value().data()).concat(".").concat(_t->output_ext->value().data()).string();
+                full_target_path = std::filesystem::path(_t->output_dir->value().data()).append(_t->name->value().data());
+                if(!_t->output_ext->empty()){
+                    full_target_path.concat(".").concat(_t->output_ext->value().data()).string();
+                }
             }
             else {
                 
             }
-           
-            writer->writer.String(full_target_path.data(),(rapidjson::SizeType)full_target_path.size());
+            auto str = full_target_path.string();
+            writer->writer.String(str.data(),(rapidjson::SizeType)str.size());
         }
         writer->writer.EndArray();
     }
