@@ -199,6 +199,17 @@ namespace autom {
             auto ctxt = (GenContext *)&p.first;
             
             opts.gen.setGenContext(*ctxt);
+            
+            /// Gen AUTOMINSTALL file.
+            if(!ctxt->installRules.empty()){
+                opts.gen.beginConsumeInstallRules();
+                while(!ctxt->installRules.empty()){
+                    auto rule = ctxt->installRules.front();
+                    opts.gen.consumeInstallRule(rule);
+                    ctxt->installRules.pop_front();
+                }
+                opts.gen.endConsumeInstallRules();
+            }
         
             opts.gen.consumeToolchainDefaults(defs);
             

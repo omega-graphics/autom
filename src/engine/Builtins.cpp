@@ -153,12 +153,53 @@ namespace autom::eval {
 
         std::cout << "Configuring Project " << name->value().data() << " " << version->value().data() << std::endl;
         
-        GenContext context {{name->value(),version->value()},ctxt.execEngine->opts.outputDir};
+        GenContext context {{name->value(),version->value()},{},ctxt.execEngine->opts.outputDir};
         
         auto it = ctxt.eval->projects.insert(std::make_pair(std::move(context),std::deque<std::shared_ptr<Target>>{}));
         ctxt.eval->currentGenContext = (GenContext *)&it.first->first;
+
         return nullptr;
     };
+
+
+    Object *bf_install_targets(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *targets = castToArray(args["targets"]);
+        auto *dest = castToString(args["dest"]);
+        auto rule = std::make_shared<TargetInstallRule>();
+        rule->prefixed_dest = dest->value();
+        
+        auto & current_project_targets = ctxt.eval->projects[*ctxt.eval->currentGenContext];
+        
+        auto & res_targets = rule->targets;
+        auto _ts = targets->toStringVector();
+        for(auto & tname : _ts){
+            auto pred = [&](std::shared_ptr<Target> & target){
+                return target->name->value() == tname;
+            };
+            auto t = std::find_if(current_project_targets.begin(),current_project_targets.end(),pred);
+            if(t == current_project_targets.end()){
+                ctxt.execEngine->printError(formatmsg("@0 is not a target defined in the current project @1",tname,ctxt.eval->currentGenContext->projectDesc.name));
+                return nullptr;
+            }
+            else {
+                res_targets.push_back(*t);
+            }
+        }
+        ctxt.eval->currentGenContext->installRules.push_back(rule);
+        
+        return nullptr;
+        
+    }
+
+    Object *bf_install_files(MapRef<std::string,Object *> args,EvalContext & ctxt){
+        auto *files = castToArray(args["files"]);
+        auto *dest = castToString(args["dest"]);
+        auto rule = std::make_shared<FileInstallRule>();
+        rule->prefixed_dest = dest->value();
+        rule->files = files->toStringVector();
+        ctxt.eval->currentGenContext->installRules.push_back(rule);
+        return nullptr;
+    }
 
     Object *bf_Executable(MapRef<std::string,Object *> args,EvalContext & ctxt){
         auto *name = castToString(args["name"]);
@@ -246,6 +287,10 @@ namespace autom::eval {
         auto *cmd = castToString(args["cmd"]);
         auto *_args = castToArray(args["args"]);
         auto *outputs = castToArray(args["outputs"]);
+        if(outputs->empty()){
+            ctxt.execEngine->printError("Script targets must have at least 1 output file.");
+            return nullptr;
+        }
         
         auto t = ScriptTarget::Create(name,cmd,_args,outputs);
         
@@ -441,6 +486,10 @@ namespace autom::eval {
         BUILTIN_FUNC(BUILTIN_PRINT,bf_print,{"msg",Object::Any});    
 
         BUILTIN_FUNC(BUILTIN_PROJECT,bf_project,{"name",Object::String},{"version",Object::String});
+        
+        BUILTIN_FUNC(BUILTIN_INSTALL_FILES,bf_install_files,{"files",Object::Array},{"dest",Object::String});
+        
+        BUILTIN_FUNC(BUILTIN_INSTALL_TARGETS,bf_install_targets,{"targets",Object::Array},{"dest",Object::String});
          
         BUILTIN_FUNC(BUILTIN_EXECUTABLE,bf_Executable,{"name",Object::String},{"sources",Object::Array});
 

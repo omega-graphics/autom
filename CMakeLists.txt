@@ -39,6 +39,7 @@ macro(add_autom_test _NAME)
 endmacro()
 
 add_executable("autom-install" "src/tools/install-main.cpp")
+set_target_properties("autom-install" PROPERTIES INSTALL_RPATH @loader_path/../lib)
 target_link_libraries("autom-install" PRIVATE "autom-lib")
 
 add_autom_test("lex-test" "src/tests/lex-test.cpp")

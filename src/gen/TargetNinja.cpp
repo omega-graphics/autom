@@ -279,8 +279,58 @@ namespace autom {
                  }
                  mainNinja << std::endl;
              }
-             else if(target->type == FS_ACTION) {
+             else if(target->type & FS_ACTION) {
                  auto t = std::dynamic_pointer_cast<FSTarget>(target);
+                 mainNinja << "build ";
+                 auto _sources = t->sources->toStringVector();
+                 if(t->type == FS_COPY){
+                     auto dest = std::filesystem::path(t->dest->value().data());
+                     std::ostringstream srcs_out("");
+                     for(auto & s : _sources){
+                         srcs_out << s;
+                         mainNinja << dest.string() << "/" << std::filesystem::path(s).filename().string() << " ";
+                     }
+                     mainNinja << ": ";
+                     mainNinja << "copy ";
+                     mainNinja << srcs_out.str() << std::endl;
+                 }
+                 else if(t->type == FS_MKDIR){
+                     auto dest = std::filesystem::path(t->dest->value().data());
+                     mainNinja << dest.string() << ": mkdir " << dest.string() << std::endl;
+                 }
+                 else if(t->type == FS_SYMLINK){
+                     auto dest = std::filesystem::path(t->dest->value().data());
+                     
+                     mainNinja << dest.string() << "/" << std::filesystem::path(t->symlink_src->value()).filename().string() << " ";
+                     
+                     mainNinja << ": ";
+                     mainNinja << "smylink ";
+                     mainNinja << t->symlink_src->value() << std::endl;
+                 }
+             }
+             else if(target->type == SCRIPT_TARGET){
+                 auto t = std::dynamic_pointer_cast<ScriptTarget>(target);
+                 auto t_outputs = t->outputs->toStringVector();
+                 mainNinja << "build ";
+                 for(auto &t : t_outputs){
+                     mainNinja << t << " ";
+                 }
+                 mainNinja << ":" << "script " << t->script->value() << std::endl;
+                 mainNinja << " ARGS=";
+                 if(!t->args->empty()){
+                     auto _args = t->args->toStringVector();
+                     for(auto & a : _args){
+                         mainNinja << a << " ";
+                     }
+                 }
+                 mainNinja << std::endl;
+                 mainNinja << " NAME=" << t->name->value() << std::endl;
+                 mainNinja << " DESC=" << t->desc->value() << std::endl;
+                 
+                 mainNinja << "build " << t->name->value() << ": phony ";
+                 for(auto &t : t_outputs){
+                     mainNinja << t << " ";
+                 }
              }
         };
         bool supportsCustomToolchainRules() override {
@@ -328,6 +378,47 @@ namespace autom {
                 writeToolchainRule("so",Toolchain::Formatter::so,CFAMILY_LD_INPUT_TEMPLATE,{},toolchain_file,"LINK_SO $out");
                 writeToolchainRule("ar",Toolchain::Formatter::ar,CFAMILY_AR_INPUT_TEMPLATE,{},toolchain_file,"AR $out");
             }
+            /// Write Stamp Rule.
+            toolchain_file << "rule stamp" << std::endl;
+            toolchain_file << " command =";
+#ifdef _WIN32
+            toolchain_file << "echo > $out";
+#else
+            toolchain_file << "touch $out";
+#endif
+            toolchain_file << " description =" << "STAMP $out" << std::endl;
+            
+            /// Write Copy Rule
+            toolchain_file << "rule copy" << std::endl;
+            toolchain_file << " command =";
+#ifdef _WIN32
+            toolchain_file << "copy > $out";
+#else
+            toolchain_file << "cp -R $in $out";
+#endif
+            toolchain_file << " description =" << "COPY $in $out" << std::endl;
+            
+            /// Write Symlink Rule
+            toolchain_file << "rule symlink" << std::endl;
+            toolchain_file << " command =";
+#ifdef _WIN32
+            toolchain_file << "mklink $out $in";
+#else
+            toolchain_file << "ln -s $in $out";
+#endif
+            toolchain_file << " description =" << "SYMLINK $in $out"<< std::endl;
+            
+            
+            /// Write Script Run Rule
+            toolchain_file << "rule script" << std::endl;
+            toolchain_file << " command =";
+#ifdef _WIN32
+            toolchain_file << "py -3 $in $ARGS";
+#else
+            toolchain_file << "python3 $in $ARGS";
+#endif
+            toolchain_file << " description =" << "$DESC"<< std::endl;
+            
             toolchain_file << std::endl;
             toolchain_file.close();
             mainNinja << "include toolchain.ninja" << std::endl;

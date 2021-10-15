@@ -219,9 +219,11 @@ namespace autom {
     };
 
     struct FSTarget : public Target {
-        eval::Array * sources;
+        eval::Array * sources = nullptr;
         
-        eval::String * dest;
+        eval::String * dest = nullptr;
+        
+        eval::String *symlink_src = nullptr;
         
         static FSTarget * Copy(eval::String *name,eval::Array * sources,eval::String * dest){
             auto *t = new FSTarget();
@@ -232,20 +234,19 @@ namespace autom {
             return t;
         }
         
-        static FSTarget * Symlink(eval::String *name,eval::Array * sources,eval::String * dest){
+        static FSTarget * Symlink(eval::String *name,eval::String * source,eval::String * dest){
             auto *t = new FSTarget();
             t->type = FS_SYMLINK;
             t->name = name;
-            t->sources = sources;
+            t->symlink_src = source;
             t->dest = dest;
             return t;
         }
         
-        static FSTarget * Mkdir(eval::String *name,eval::Array * sources,eval::String * dest){
+        static FSTarget * Mkdir(eval::String *name,eval::String * dest){
             auto *t = new FSTarget();
             t->type = FS_MKDIR;
             t->name = name;
-            t->sources = sources;
             t->dest = dest;
             return t;
         }
@@ -253,17 +254,21 @@ namespace autom {
 
 
     struct ScriptTarget : public Target {
-        eval::String * cmd;
+        eval::String * script;
+        
+        eval::String * desc;
         
         eval::Array *args;
         
         eval::Array *outputs;
         
-        static ScriptTarget *Create(eval::String * name,eval::String *cmd,eval::Array * args,eval::Array *outputs){
+        static ScriptTarget *Create(eval::String * name,eval::String *script,eval::Array * args,eval::Array *outputs){
             auto *t = new ScriptTarget();
             t->type = SCRIPT_TARGET;
             t->name = name;
-            t->cmd = cmd;
+            t->script = script;
+            t->desc = new eval::String();
+            t->desc->assign(name);
             t->args = args;
             t->outputs = outputs;
             return t;

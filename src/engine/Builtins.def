@@ -11,6 +11,8 @@ typedef int AutomBuiltinFunc;
 #define BUILTIN_PRINT  "print"
 #define BUILTIN_PROJECT  "project"
 #define BUILTIN_SUBDIR "subdir"
+#define BUILTIN_INSTALL_TARGETS "install_targets"
+#define BUILTIN_INSTALL_FILES "install_files"
 
 /// Target Functions
 #define BUILTIN_EXECUTABLE "Executable"

@@ -304,6 +304,13 @@ namespace autom {
                             }
 #endif
                         }
+                        else if(tw->value()->type == SCRIPT_TARGET){
+                            auto _target =  (ScriptTarget *)tw->value();
+                          
+                            if(propName == "desc"){
+                                return _target->desc;
+                            }
+                        }
                         else if(tw->value()->type & JAVA_TARGET){
                             auto _target = (JavaTarget *)tw->value();
                             if(propName == "maven_repos"){

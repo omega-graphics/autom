@@ -14,11 +14,15 @@
 
 namespace autom {
 
+    struct InstallRule;
+    typedef std::shared_ptr<InstallRule> InstallRulePtr;
+
     struct GenContext {
         struct {
             std::string name;
             std::string version;
         } projectDesc;
+        std::deque<InstallRulePtr> installRules;
         autom::StrRef outputDir;
     };
 }
