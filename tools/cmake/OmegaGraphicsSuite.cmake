@@ -1,7 +1,7 @@
 # OmegaGSuite CMake Functions
 
 
-include(CMakeParseArguments)
+# include(CMakeParseArguments)
 
 set(CMAKE_C_STANDARD_REQUIRED YES)
 set(CMAKE_C_STANDARD 11)
@@ -61,6 +61,26 @@ if(APPLE)
 		message(FATAL_ERROR "CODE_SIGNATURE Variable must be defined in order to sign Apple App and Framework Bundles.")
 	endif()
 	
+	macro(set_library_install_name LIB PATH)
+		get_filename_component(LIBNAME ${LIB} NAME)
+		add_custom_command(
+			OUTPUT "${LIB}_install_name"
+			COMMAND install_name_tool -id ${PATH} ${LIB} && touch ${LIB}_install_name
+			DEPENDS ${NAME}
+			COMMENT "Setting Install Name ${PATH} of Library ${LIB}")
+		add_custom_target("${LIBNAME}_install_name" DEPENDS "${LIB}_install_name")
+	endmacro()
+	
+	macro(reset_library_dependent_name LIB OLD_PATH PATH)
+		get_filename_component(LIBNAME ${LIB} NAME)
+		add_custom_command(
+			OUTPUT "${LIB}_${OLD_PATH}_reset_dependent_name"
+			COMMAND install_name_tool -change ${OLD_PATH} ${PATH} ${LIB} && touch ${LIB}_${OLD_PATH}_reset_dependent_name
+			DEPENDS ${NAME}
+			COMMENT "Resetting Install Name From ${OLD_PATH} to ${PATH} in Dependent Library ${LIB}")
+		add_custom_target("${LIBNAME}_${OLD_PATH}_reset_dependent_name" DEPENDS "${LIB}_${OLD_PATH}_reset_dependent_name")
+	endmacro()
+	
 	set(APP_BUNDLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/Apps")
 	set(FRAMEWORK_OUTPUT_DIR "${CMAKE_BINARY_DIR}/Frameworks")
 	
@@ -73,33 +93,48 @@ if(XCODE)
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_IDENTITY ${CODE_SIGNATURE})
 else()
 
-    macro(code_sign_bundle _NAME IS_APP VERSION OUTPUT_DIR)
+    macro(code_sign_bundle _NAME IS_APP VERSION OUTPUT_DIR EMBED_LIBS)
         if(TARGET ${_NAME})
-            if(IS_APP)
+            if(${IS_APP})
                 set(_OUT "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/_CodeSignature")
-				set(_CODE "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents")
+				set(_CODE "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app")
             else()
                 set(_OUT "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${VERSION}/_CodeSignature")
 				set(_CODE "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${VERSION}")
             endif()
             
-            if(IS_APP)
-                add_custom_command(OUTPUT "${OUTPUT_DIR}/_CodeSignature"
+            if(${IS_APP})
+                add_custom_command(OUTPUT "${_OUT}"
                 COMMAND ${PYEXEC} ${CODESIGN_SCRIPT} 
                 --sig ${CODE_SIGNATURE} --code ${_CODE}
                 DEPENDS "${_NAME}${UNSIGNED_TARGET_SUFFIX};${_NAME}"
 				COMMENT "Code Signing App Bundle ${_NAME}.app")
             else()
-                add_custom_command(OUTPUT "${OUTPUT_DIR}/_CodeSignature"
-                COMMAND ${PYEXEC} ${CODESIGN_SCRIPT} --sig ${CODE_SIGNATURE} 
-                --code ${_CODE} 
-                --framework
-                -F "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework"
-                --name ${_NAME}
-                --current_version ${VERSION}
-                DEPENDS "${_NAME}${UNSIGNED_TARGET_SUFFIX};${_NAME}"
-				COMMENT "Code Signing Framework Bundle ${_NAME}.framework"
-                )
+               
+				if(EMBED_LIBS)
+	                add_custom_command(OUTPUT "${OUTPUT_DIR}/_CodeSignature"
+	                COMMAND ${PYEXEC} ${CODESIGN_SCRIPT} --sig ${CODE_SIGNATURE} 
+	                --code ${_CODE} 
+	                --framework
+	                -F "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework"
+	                --name ${_NAME}
+	                --current_version ${VERSION}
+					--symlink-other-dirs Libraries
+	                DEPENDS "${_NAME}${UNSIGNED_TARGET_SUFFIX};${_NAME}"
+					COMMENT "Code Signing Framework Bundle ${_NAME}.framework"
+	                )
+				else()
+	                add_custom_command(OUTPUT "${OUTPUT_DIR}/_CodeSignature"
+	                COMMAND ${PYEXEC} ${CODESIGN_SCRIPT} --sig ${CODE_SIGNATURE} 
+	                --code ${_CODE} 
+	                --framework
+	                -F "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework"
+	                --name ${_NAME}
+	                --current_version ${VERSION}
+	                DEPENDS "${_NAME}${UNSIGNED_TARGET_SUFFIX};${_NAME}"
+					COMMENT "Code Signing Framework Bundle ${_NAME}.framework"
+	                )
+				endif()
             endif()
             add_custom_target("${_NAME}__codesign" DEPENDS "${OUTPUT_DIR}/_CodeSignature")
         endif()
@@ -108,22 +143,9 @@ else()
 endif()
 
 function(add_framework_bundle)
-    cmake_parse_arguments(
-    "_ARG" 
+    cmake_parse_arguments("_ARG" "" "NAME;PLIST;VERSION" "SOURCES;RESOURCES;DEPS;LIBS;FRAMEWORKS;EMBEDDED_FRAMEWORKS;EMBEDDED_LIBS" ${ARGN})
 	
-    "" 
-
-    "NAME;
-	INFO_PLIST;
-	VERSION" 
-	
-    "SOURCES;
-    RESOURCES;
-    DEPS;
-    LIBS;
-    FRAMEWORKS;EMBEDDED_FRAMEWORKS" 
-    ${ARGN})
-	
+	message("UNPARSED_ARGS:${_ARG_UNPARSED_ARGUMENTS}")
 
     message("EMBEDDED_FRAMEWORKS:${_ARG_EMBEDDED_FRAMEWORKS}")
 	set(_NAME ${_ARG_NAME})
@@ -152,7 +174,7 @@ function(add_framework_bundle)
     add_custom_target(${UNSIGNED_TARGET})
 	add_dependencies(${UNSIGNED_TARGET} ${_ARG_NAME})
 	
-	set( _ARG_RESOURCES ${_ARG_RESOURCES} ${_ARG_INFO_PLIST})
+	set( _ARG_RESOURCES ${_ARG_RESOURCES} ${_ARG_PLIST})
 	# message("RES: ${_ARG_RESOURCES}")
 	
 	set(ALL_RES_FINAL )
@@ -167,6 +189,7 @@ function(add_framework_bundle)
 		OUTPUT ${RES_OUTPUT}
 		COMMAND ${CMAKE_COMMAND} -E copy ${r}  "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Resources/${RES_NAME}"
 		DEPENDS ${r}
+		COMMENT "Copying Bundle Resource ${RES_NAME}"
 		)
     endforeach()
 	
@@ -190,13 +213,33 @@ function(add_framework_bundle)
             add_dependencies(${_NAME} ${f})
             add_custom_command(
                 OUTPUT "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Frameworks/${f}.framework"
-                COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_BUNDLE_DIR:${f}>"  "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Frameworks/${f}.framework"  
-                DEPENDS ${f})
+                COMMAND cp -R  "${FRAMEWORK_OUTPUT_DIR}/${f}.framework"  "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Frameworks/${f}.framework"  
+                DEPENDS ${f}
+				COMMENT "Embedding Framework ${f} in Framework Bundle ${_NAME}")
         endforeach()
         add_custom_target("${_NAME}__framework_embed" DEPENDS ${__outputted_frameworks})
         add_dependencies(${UNSIGNED_TARGET} "${_NAME}__framework_embed")
+		
+		set(EMBED_LIBS FALSE)
+		
+		if(_ARG_EMBEDDED_LIBS)
+			set(EMBED_LIBS TRUE)
+			file(MAKE_DIRECTORY ${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Libraries)
+			
+			foreach(l ${_ARG_EMBEDDED_LIBS})
+				get_filename_component(LIBNAME ${l} NAME)
+				set(__outputted_libraries ${__outputted_libraries} "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Libraries/${LIBNAME}")
+				add_custom_command(
+						OUTPUT "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Libraries/${LIBNAME}"
+						COMMAND ${CMAKE_COMMAND} -E copy "${l}"  "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}/Libraries/${LIBNAME}"
+						DEPENDS ${l}
+						COMMENT "Embedding Library ${LIBNAME} in Framework Bundle ${_NAME}")
+			endforeach()
+			add_custom_target("${_NAME}__lib_embed" DEPENDS ${__outputted_libraries})
+			add_dependencies(${UNSIGNED_TARGET} "${_NAME}__lib_embed")
+		endif()
     
-        code_sign_bundle(${_NAME} FALSE ${_ARG_VERSION} "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}")
+        code_sign_bundle(${_NAME} FALSE ${_ARG_VERSION} "${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework/Versions/${_ARG_VERSION}" ${EMBED_LIBS})
 		add_dependencies(${_NAME}.framework "${_NAME}__codesign")
     endif()
    
@@ -210,71 +253,105 @@ function(add_framework_bundle)
 endfunction()
 
 function(add_app_bundle)
-    cmake_parse_arguments(
-        "_ARG" 
-
-        "" 
-
-        "NAME;INFO_PLIST" 
-
-        "SOURCES;
-        RESOURCES;
-        DEPENDS;
-        LIBS;
-        EMBEDDED_FRAMEWORKS" ${ARGN})
-
+    cmake_parse_arguments("_ARG" "" "NAME;PLIST" "SOURCES;RESOURCES;DEPS;LIBS;EMBEDDED_FRAMEWORKS" ${ARGN})
+		
+	message("KEYWORDS_MISSING_VALUES:${_ARG_KEYWORDS_MISSING_VALUES}")
+	
+	
     message("EMBEDDED_FRAMEWORKS:${_ARG_EMBEDDED_FRAMEWORKS}")
 
-    file(MAKE_DIRECTORY "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/MacOS")
-    file(COPY ${_ARG_INFO_PLIST} DESTINATION ${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents)
+	set(_NAME ${_ARG_NAME})
 
-    add_executable("${_ARG_NAME}__exec" ${_ARG_SOURCES})
-    set_target_properties("${_ARG_NAME}__exec"
+    file(MAKE_DIRECTORY "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/MacOS")
+    file(COPY ${_ARG_PLIST} DESTINATION ${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents)
+
+    add_executable("${_ARG_NAME}" ${_ARG_SOURCES})
+    set_target_properties("${_ARG_NAME}"
     PROPERTIES
     RUNTIME_OUTPUT_NAME ${_ARG_NAME}
+			MACOS_RPATH TRUE
+			SUFFIX ""
+			PREFIX ""
     RUNTIME_OUTPUT_DIRECTORY "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/MacOS")
 
-    add_custom_target(${_NAME})
+	set(UNSIGNED_TARGET "${_NAME}${UNSIGNED_TARGET_SUFFIX}")
+	add_custom_target(${UNSIGNED_TARGET})
+	add_dependencies(${UNSIGNED_TARGET} ${_ARG_NAME})
 
-    set(_RES_FINAL)
+	set(ALL_RES_FINAL )
 
-    foreach(r ${_ARG_RESOURCES})
-        get_filename_component(RES_NAME ${r} NAME)
-        list(APPEND _RES_FINAL ${RES_NAME})
-        add_custom_command(
-            OUTPUT "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/${RES_NAME}"
-            COMMAND ${CMAKE_COMMAND} -E copy ${r} "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/${RES_NAME}"  
-            DEPENDS ${f})
-    endforeach()
+	file(MAKE_DIRECTORY "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/Resources")
 
-    add_custom_target("${_NAME}__res" DEPENDS ${_RES_FINAL})
-    add_dependencies(${_NAME} "${_NAME}__res")
+	foreach(r ${_ARG_RESOURCES})
+		get_filename_component(RES_NAME ${r} NAME)
+		set(RES_OUTPUT "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/Resources/${RES_NAME}")
+		list(APPEND ALL_RES_FINAL ${RES_OUTPUT})
+		add_custom_command(
+				OUTPUT ${RES_OUTPUT}
+				COMMAND ${CMAKE_COMMAND} -E copy ${r}  "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/Resources/${RES_NAME}"
+				DEPENDS ${r}
+		)
+	endforeach()
 
-    if(XCODE)
-        set_target_properties(${_NAME} PROPERTIES XCODE_EMBED_FRAMEWORKS ${_ARG_EMBEDDED_FRAMEWORKS})
-    else()
+	add_custom_target("${_NAME}__res" DEPENDS ${ALL_RES_FINAL})
+	add_dependencies(${UNSIGNED_TARGET} "${_NAME}__res")
 
-        set(__outputted_frameworks)
-        file(MAKE_DIRECTORY "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/Frameworks")
-        foreach(f ${_ARG_EMBEDDED_FRAMEWORKS})
-            set(__outputted_frameworks ${__outputted_frameworks} "${CMAKE_BINARY_DIR}/Apps/${_ARG_NAME}.app/Contents/Frameworks/${f}.framework")
-            add_dependencies(${_ARG_NAME} ${f})
-            add_custom_command(
-                OUTPUT "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/Frameworks/${f}.framework"
-                COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_BUNDLE_DIR:${f}> "${APP_BUNDLE_OUTPUT_DIR}/${_ARG_NAME}.app/Contents/Frameworks/${f}.framework"  
-                DEPENDS ${f})
-        endforeach()
-        add_custom_target("${_NAME}__framework_embed" DEPENDS ${__outputted_frameworks})
-        add_dependencies("${_NAME}" "${_NAME}__framework_embed")
+	# if(${_ARG_EMBEDDED_HEADERS})
+	#     set_target_properties()
+	# set_source_files_properties(${_ARG_RESOURCES} MACOSX_PACKAGE_LOCATION "Resources")
 
-        code_sign_bundle(${_ARG_NAME} TRUE "" "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents")
-    endif()
-    
-    foreach(_dep ${_ARG_DEPS})
-        add_dependencies(${_ARG_NAME} ${_dep})
-    endforeach()
+	add_custom_target(${_NAME}.app)
 
-    target_link_libraries(${_ARG_NAME} PRIVATE ${_ARG_LIBS} ${_ARG_FRAMEWORKS} ${_ARG_EMBEDDED_FRAMEWORKS})
+	if(XCODE)
+		if(_ARG_EMBEDDED_FRAMEWORKS)
+			set_target_properties(${_NAME} PROPERTIES XCODE_EMBED_FRAMEWORKS ${_ARG_EMBEDDED_FRAMEWORKS})
+		endif()
+	else()
+		set(__outputted_frameworks)
+		if(_ARG_EMBEDDED_FRAMEWORKS)
+			file(MAKE_DIRECTORY ${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Frameworks)
+		endif()
+		foreach(f ${_ARG_EMBEDDED_FRAMEWORKS})
+			set(__outputted_frameworks ${__outputted_frameworks} "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Frameworks/${f}.framework")
+			add_dependencies(${_NAME} ${f})
+			add_custom_command(
+					OUTPUT "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Frameworks/${f}.framework"
+					COMMAND cp -R "${FRAMEWORK_OUTPUT_DIR}/${f}.framework"  "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Frameworks/${f}.framework"
+					DEPENDS ${f}
+					COMMENT "Embedding Framework ${f} in App Bundle ${_NAME}")
+		endforeach()
+		add_custom_target("${_NAME}__framework_embed" DEPENDS ${__outputted_frameworks})
+		add_dependencies(${UNSIGNED_TARGET} "${_NAME}__framework_embed")
+		
+		set(EMBED_LIBS FALSE)
+		
+		if(_ARG_EMBEDDED_LIBS)
+			set(EMBED_LIBS TRUE)
+			file(MAKE_DIRECTORY ${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Libraries)
+			
+			foreach(l ${_ARG_EMBEDDED_LIBS})
+				get_filename_component(LIBNAME ${l} NAME)
+				set(__outputted_libraries ${__outputted_libraries} "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Libraries/${LIBNAME}")
+				add_custom_command(
+						OUTPUT "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Libraries/${LIBNAME}"
+						COMMAND ${CMAKE_COMMAND} -E copy "${l}"  "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents/Libraries/${LIBNAME}"
+						DEPENDS ${l}
+						COMMENT "Embedding Library ${LIBNAME} in App Bundle ${_NAME}")
+			endforeach()
+			add_custom_target("${_NAME}__lib_embed" DEPENDS ${__outputted_libraries})
+			add_dependencies(${UNSIGNED_TARGET} "${_NAME}__lib_embed")
+		endif()
+
+		code_sign_bundle(${_NAME} TRUE "VERSION" "${APP_BUNDLE_OUTPUT_DIR}/${_NAME}.app/Contents" ${EMBED_LIBS})
+		add_dependencies(${_NAME}.app "${_NAME}__codesign")
+	endif()
+
+
+	foreach(_dep ${_ARG_DEPS})
+		add_dependencies(${_NAME} ${_dep})
+	endforeach()
+
+	target_link_libraries(${_NAME} PRIVATE ${_ARG_LIBS} ${_ARG_FRAMEWORKS} ${_ARG_EMBEDDED_FRAMEWORKS})
 endfunction()
 
 function(target_link_system_frameworks _NAME)
@@ -372,7 +449,7 @@ endfunction()
 
 function(add_omega_graphics_module _NAME)
 	
-	cmake_parse_arguments("_ARG" "STATIC;SHARED;FRAMEWORK" "HEADER_DIR;INFO_PLIST;VERSION" "DEPENDS;SOURCES" ${ARGN})
+	cmake_parse_arguments("_ARG" "STATIC;SHARED;FRAMEWORK" "HEADER_DIR;INFO_PLIST;VERSION" "DEPENDS;SOURCES;EMBEDDED_LIBS" ${ARGN})
 	
 	message("-- Adding Module:${_NAME}")
 
@@ -387,10 +464,14 @@ function(add_omega_graphics_module _NAME)
 	else()
 
 		if(APPLE AND ${_ARG_FRAMEWORK})
+			set(EMBED_LIBS_ARGS)
+			if(_ARG_EMBEDDED_LIBS)
+				set(EMBED_LIBS_ARGS "EMBEDDED_LIBS;${_ARG_EMBEDDED_LIBS}")
+			endif()
 			if(_ARG_DEPENDS)
-				add_framework_bundle(NAME ${_NAME} INFO_PLIST ${_ARG_INFO_PLIST} VERSION ${_ARG_VERSION} DEPENDS ${_ARG_DEPENDS} SOURCES ${_ARG_SOURCES})
+				add_framework_bundle(NAME ${_NAME} PLIST ${_ARG_INFO_PLIST} VERSION ${_ARG_VERSION} ${EMBED_LIBS_ARGS} DEPS ${_ARG_DEPENDS} SOURCES ${_ARG_SOURCES})
 			else()
-				add_framework_bundle(NAME ${_NAME} INFO_PLIST ${_ARG_INFO_PLIST} VERSION ${_ARG_VERSION} SOURCES ${_ARG_SOURCES})
+				add_framework_bundle(NAME ${_NAME} PLIST ${_ARG_INFO_PLIST} VERSION ${_ARG_VERSION} ${EMBED_LIBS_ARGS} SOURCES ${_ARG_SOURCES})
 			endif()
 			install(DIRECTORY ${FRAMEWORK_OUTPUT_DIR}/${_NAME}.framework DESTINATION lib)
 		else()
