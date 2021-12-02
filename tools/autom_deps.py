@@ -60,6 +60,8 @@ Command = dict
 
 variables:"dict[str,Any]" = {}
 
+default_platform:str
+
 # Conditional Parser
 
 def processStringWithVariables(string:str) -> str:
@@ -75,18 +77,11 @@ def processStringWithVariables(string:str) -> str:
     return s
     
 def processCommand(c:Command):
+    global default_platform
     if c.get("platforms"):
-        platforms:"list[str]" = c.get("platforms")
+        platforms: "list[str]" = c.get("platforms")
 
-        current_platform = platform.system()
-
-        sp:str 
-        if current_platform == "Windows":
-            sp = "windows"
-        elif current_platform == "Linux":
-            sp = "linux"
-        elif current_platform == "Darwin":
-            sp = "mac"
+        sp = default_platform
 
         cont = False
 
@@ -299,13 +294,27 @@ def parseAutomDepsFile(stream:io.TextIOWrapper,root:bool = True,count = 0):
                 _counter.increment()
         _counter.finish()
 
+
 def main(args):
     parser = argparse.ArgumentParser(prog="automdeps",description=
     "AUTOM Project Dependency Manager (Automates 3rd party library installation/fetching as well project configuration)")
-    parser.add_argument("--exec",action="store_const",const=True,default=True)
-    parser.add_argument("--sync",dest="update",action="store_const",const=True,default=False)
+    parser.add_argument("--exec", action="store_const", const=True, default=True)
+    parser.add_argument("--sync", dest="update", action="store_const", const=True, default=False)
+    parser.add_argument("--target", nargs="?", choices=["windows","macos","linux","ios","android"], dest="target")
     args = parser.parse_args(args)
 
+    global default_platform
+
+    if not args.target:
+        t_sys = platform.system()
+        if t_sys == "Windows":
+            default_platform = "windows"
+        elif t_sys == "Darwin":
+            default_platform = "macos"
+        else:
+            default_platform = "linux"
+    else:
+        default_platform = args.target
 
     global updateOnly
     updateOnly = args.update
@@ -330,6 +339,8 @@ def main(args):
     else:
         raise "AUTOMDEPS File Not Found in Current Directory. Exiting..."
     return
+
+
 if __name__ == "__main__":
     sys.argv.pop(0)
     main(sys.argv)
