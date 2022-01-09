@@ -194,7 +194,9 @@ namespace autom::eval {
     Object *bf_install_files(MapRef<std::string,Object *> args,EvalContext & ctxt){
         auto *files = castToArray(args["files"]);
         auto *dest = castToString(args["dest"]);
+
         auto rule = std::make_shared<FileInstallRule>();
+        
         rule->prefixed_dest = dest->value();
         rule->files = files->toStringVector();
         ctxt.eval->currentGenContext->installRules.push_back(rule);
@@ -246,6 +248,7 @@ namespace autom::eval {
         resolveSources(srcs,ctxt.eval->currentEvalDir);
         
         if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Windows){
+            t->implib_ext = new eval::String("lib");
             t->output_ext->assign("dll");
         }
         else if(ctxt.execEngine->outputTargetOpts.os == TargetOS::Darwin){

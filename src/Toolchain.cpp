@@ -123,7 +123,12 @@ namespace autom {
     }
 
     void Toolchain::Formatter::writeOutput(const StrRef &output) {
-        str << toolchain.output << " " << output.data();
+        if(_type == exe || _type == so || _type == ar){
+            str << toolchain.link_output << output.data();
+        }
+        else {
+            str << toolchain.compile_output << output.data();
+        }
     }
 
     void Toolchain::Formatter::writeDefines(ArrayRef<std::string> defines) {
@@ -218,8 +223,10 @@ namespace autom {
 #endif
                 writer.Key("compile",7);
                 writer.String(toolchain->compile.c_str(),toolchain->compile.size());
-                writer.Key("output",6);
-                writer.String(toolchain->output.c_str(),toolchain->output.size());
+                writer.Key("compile_output",14);
+                writer.String(toolchain->compile_output.c_str(),toolchain->compile_output.size());
+                writer.Key("link_output",11);
+                writer.String(toolchain->link_output.c_str(),toolchain->link_output.size());
                 writer.EndObject();
                 break;
             }
@@ -299,7 +306,8 @@ namespace autom {
 
                 {
                     t->compile = flags["compile"].GetString();
-                    t->output = flags["output"].GetString();
+                    t->link_output = flags["link_output"].GetString();
+                    t->compile_output = flags["compile_output"].GetString();
                 }
 
                 if(type == "cfamily" && opts.type == ToolchainSearchOpts::ccAsmFamily){

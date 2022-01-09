@@ -9,7 +9,8 @@ namespace autom {
         return (subject == KW_IF ) || (subject == KW_ELIF) ||
         (subject == KW_ELSE) || (subject == KW_FUNC) ||
         (subject == KW_VAR) || (subject == KW_IMPORT) ||
-        (subject == KW_LOAD) || (subject == KW_FOREACH);
+        (subject == KW_LOAD) || (subject == KW_FOREACH) || 
+        (subject == KW_RETURN);
     };
 
     inline bool isBooleanLiteral(StrRef subject){

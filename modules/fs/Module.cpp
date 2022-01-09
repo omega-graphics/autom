@@ -38,13 +38,13 @@ AUTOM_NATIVE_FUNC(fs_glob){
     
 #ifdef _WIN32
     WIN32_FIND_DATA findData;
-    HANDLE h = FindFirstFileA(path.data(),&findData);
+    HANDLE h = FindFirstFileA(std::filesystem::path(path.data()).string().c_str(),&findData);
 
     str = std::filesystem::path(path.data()).parent_path().append(findData.cFileName).string();
-
+    
     res.push_back(toObject(str));
 
-    while(FindNextFileA(h,&findData) != TRUE){
+    while(FindNextFileA(h,&findData) == TRUE){
         str = std::filesystem::path(path.data()).parent_path().append(findData.cFileName).string();
 
         res.push_back(toObject(str));

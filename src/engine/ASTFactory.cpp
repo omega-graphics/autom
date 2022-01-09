@@ -192,13 +192,13 @@ namespace autom {
                 
                 auto testCase = buildExpr(first_tok,scope);
                 if(!testCase){
-                    return nullptr;
+                    return;
                 }
                 
                 if(wrapParen){
                     if(nextToken().type != TOK_RPAREN){
                         engine->printError("Expected RParen in this context.");
-                        return nullptr;
+                        return;
                     }
                 }
                 first_tok = nextToken();
@@ -237,6 +237,12 @@ namespace autom {
             engine->printError("Cannot use keywords `elif` or `else` in this context.");
             return nullptr;
         }
+        else if(first_tok.str == KW_RETURN){
+            auto *decl = new ASTExpr();
+            decl->type = RETURN_DECL;
+            decl->rhs = buildExpr(nextToken(),scope);
+            node = decl;
+        }
         else {
             return nullptr;
         }
@@ -255,7 +261,7 @@ namespace autom {
         auto block = new ASTBlock();
         
         ASTScopeAddReference(scope);
-        auto block_scope = new ASTScope {"__BLOCK_SCOPE__",scope};
+        auto block_scope = ASTScopeCreate("__BLOCK_SCOPE__",scope);
         block->scope = block_scope;
         
         while((first_tok = nextToken()).type != TOK_RBRACE){

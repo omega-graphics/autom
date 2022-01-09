@@ -54,6 +54,12 @@ namespace autom {
         };
 
         Object *Eval::referVarWithScope(ASTScope *scope,StrRef name){
+            if(scope->parent != nullptr){
+                std::cout << formatmsg("Current Scope: @0, Parent Scope: @2, Var: @1",scope->name,name,scope->parent->name).res << std::endl;
+            }
+            else {
+                std::cout << formatmsg("Current Scope: @0, Var: @1",scope->name,name).res << std::endl;
+            }
             
             auto first_store_it = vars.find(scope);
             if(first_store_it != vars.end()){
@@ -106,6 +112,7 @@ namespace autom {
                                     bool f;
                                     args.emplace_back(std::make_pair(a.first,evalExpr(a.second,&f)));
                                     if(f){
+                                        engine->printError(formatmsg("Failed to evaluate func arg for @0",v));
                                         *failed = true;
                                         return nullptr;
                                     };
@@ -344,6 +351,8 @@ namespace autom {
         }
 
         Object * Eval::evalBlock(ASTBlock * block,const ASTBlockContext & ctxt,bool *failed,bool *returning) {
+            *failed = false;
+            *returning = false;
             for(const auto & node : block->body){
                 if(ctxt.inFunction){
                     if(node->type == RETURN_DECL){
@@ -451,6 +460,10 @@ namespace autom {
             auto obj = evalBlock(block,ASTBlockContext {true},&f,&r);
             auto it = vars.find(block->scope);
             vars.erase(it);
+            if(f){
+                engine->printError("Failed to evaluate func..");
+                return nullptr;
+            }
             return obj;
         }
 

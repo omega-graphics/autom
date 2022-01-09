@@ -1,30 +1,56 @@
 import "fs"
-import "addon"
 
 project(name:"AUTOM",version:"0.8")
 
 if(autom.toolchain == "LLVM"){
-    autom.cxx_flags += ["-std=c++17"]
+    if(autom.target_platform == "windows"){
+        autom.cxx_flags += ["/std:c++17"]
+    }
+    else {
+        autom.cxx_flags += ["-std=c++17"]
+    }
 }
 
 var libautom_srcs = fs_glob(path:"src/*.cpp") + fs_glob(path:"src/engine/*.cpp")
 libautom_srcs += fs_glob(path:"src/gen/*.cpp")
 
-var main_lib = Shared(name:"libautom",sources:libautom_srcs)
+var main_lib = Archive(name:"libautom",sources:libautom_srcs)
 
 var includes = [fs_abspath(path:"deps/rapidjson/include"), fs_abspath(path:"src")]
 
 main_lib.include_dirs = includes
+main_lib.output_dir = "lib"
 
 var main_exec = Executable(name:"autom",sources:["src/driver/main.cpp"])
 main_exec.deps = ["libautom"]
 main_exec.include_dirs = includes
+main_exec.output_dir = "bin"
 
-var srcs = ["modules/fs/Module.cpp"]
+var install_exec = Executable(name:"autom-install",sources:["src/tools/install-main.cpp"])
+install_exec.deps = ["libautom"]
+install_exec.include_dirs = includes 
+install_exec.output_dir = "bin"
 
-var n = "fs"
+func AutomExtension(name,sources){
+    var e = Shared(name:name,sources:sources)
+    print(msg:"Hello World")
+    e.output_ext = "aext"
+    e.output_dir = "modules"
+    e.include_dirs = includes
+    e.deps = ["libautom"]
+}
 
-AutomExtension(name:n,sources:srcs)
+AutomExtension(name:"fs",sources:["modules/fs/Module.cpp"])
+
+install_targets(targets:["autom","autom-install"],dest:"bin")
+
+install_targets(targets:["libautom"],dest:"lib")
+
+install_targets(targets:["fs"],dest:"modules")
+
+var mods = fs_glob(path:"modules/*.autom")
+
+install_files(files:mods,dest:"modules")
 
 
 

@@ -57,6 +57,7 @@ typedef int TokType;
 #define KW_FUNC KW("func")
 #define KW_VAR KW("var")
 #define KW_FOREACH KW("foreach")
+#define KW_RETURN KW("return")
 
 /// Boolean Literal
 #define BOOL_TRUE TOKEN("true")

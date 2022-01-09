@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "Targets.def"
 #include "Toolchains.def"
 
 namespace autom {
@@ -77,6 +78,7 @@ namespace autom {
                         toolchain->formatter.writeLibDirs(paramArgs);
                         break;
                     }
+                    #ifdef __APPLE__
                     case Frameworks : {
                         toolchain->formatter.writeFrameworks(paramArgs);
                         break;
@@ -85,6 +87,7 @@ namespace autom {
                         toolchain->formatter.writeFrameworkDirs(paramArgs);
                         break;
                     }
+                    #endif
                 }
 
                 toolchain->formatter.endCommandFormat(mainNinja);
@@ -128,7 +131,9 @@ namespace autom {
                             if(!t->output_dir->empty()){
                                 deps_out << t->output_dir->value() << "/";
                             };
+                    
                             deps_out << t->name->value() << "." << t->output_ext->value();
+                           
                         }
                         /// Only For Source Group Targets
                         else {
@@ -214,8 +219,9 @@ namespace autom {
                             }
                         }
                         
-                        auto lib_dirs = t->lib_dirs->toStringVector();
+                       
 #endif
+                         auto lib_dirs = t->lib_dirs->toStringVector();
                         
                         for(auto d : t->resolvedDeps){
                             if(d->type & (SHARED_LIBRARY | STATIC_LIBRARY)){
@@ -232,19 +238,30 @@ namespace autom {
 //                                    }
                                     dep_name << _ct->output_dir->value() << "/";
                                 }
-                                
-                                if(toolchain->stripLibPrefix){
-                                    std::string str = d->name->value();
-//                                    if(str.substr(0,3) == "lib"){
-//                                        dep_name << str.substr(3,str.size()-3);
-//                                    }
-//                                    else {
-                                     dep_name << str << "." << _ct->output_ext->value();
-//                                    }
+                                /// Use IMPORT LIB when linking DLL on Windows
+                                if(outputOpts.platform == TargetPlatform::Windows){
+                                    if(_ct->type == SHARED_LIBRARY){
+                                        dep_name << _ct->name->value() << "." << _ct->implib_ext->value();
+                                    }
+                                    else {
+                                        dep_name << d->name->value() << "." << _ct->output_ext->value();
+                                    }
                                 }
                                 else {
-                                    dep_name << d->name->value() << "." << _ct->output_ext->value();
+                                    if(toolchain->stripLibPrefix){
+                                        std::string str = d->name->value();
+    //                                    if(str.substr(0,3) == "lib"){
+    //                                        dep_name << str.substr(3,str.size()-3);
+    //                                    }
+    //                                    else {
+                                        dep_name << str << "." << _ct->output_ext->value();
+//          
+                                    }
+                                    else {
+                                        dep_name << d->name->value() << "." << _ct->output_ext->value();
+                                    }
                                 }
+                               
                                 
                                 libs.push_back(dep_name.str());
                             }
@@ -301,7 +318,7 @@ namespace autom {
                  else if(t->type == FS_SYMLINK){
                      auto dest = std::filesystem::path(t->dest->value().data());
                      
-                     mainNinja << dest.string() << "/" << std::filesystem::path(t->symlink_src->value()).filename().string() << " ";
+                     mainNinja << dest.string() << "/" << std::filesystem::path(t->symlink_src->value().data()).filename().string() << " ";
                      
                      mainNinja << ": ";
                      mainNinja << "smylink ";
@@ -346,7 +363,7 @@ namespace autom {
                 toolchain->formatter.writeFlags(d->toStringVector());
             }
             toolchain->formatter.writeString(inputTemplate);
-            toolchain->formatter.writeOutput(" $out ");
+            toolchain->formatter.writeOutput("$out ");
             toolchain->formatter.writeSource(" $in ");
             toolchain->formatter.endCommandFormat(toolchain_file);
             

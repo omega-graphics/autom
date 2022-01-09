@@ -18,7 +18,7 @@ public:
     };
     
     void configGenContext() override {
-        out.open(std::filesystem::path(context->outputDir).append("settings.gradle"));
+        out.open(std::filesystem::path(context->outputDir.data()).append("settings.gradle"));
     }
     
     void consumeToolchainDefaults(ToolchainDefaults &conf) override {

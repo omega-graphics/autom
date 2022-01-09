@@ -64,7 +64,7 @@ int main(int argc,char * argv[]){
     
     if(exec_path.empty()){
         autom::locateProgram(argv[0],std::getenv("PATH"),exec_path);
-        exec_path = std::filesystem::path(exec_path).parent_path().parent_path();
+        exec_path = std::filesystem::path(exec_path).parent_path().parent_path().string();
     }
     
     std::cout << exec_path << std::endl;

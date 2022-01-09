@@ -74,7 +74,8 @@ inline bool name(StrRef subject){ \
         Flag framework_dir;
 #endif
         Flag compile;
-        Flag output;
+        Flag compile_output;
+        Flag link_output;
         
         bool stripLibPrefix;
         

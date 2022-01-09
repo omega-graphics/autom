@@ -103,6 +103,10 @@ namespace autom {
 
         /// type = string
         eval::String * output_ext;
+
+        /// @note private use for Windows only.
+        /// type = string
+        eval::String * implib_ext;
         
         /// type = string
         eval::String * output_dir;

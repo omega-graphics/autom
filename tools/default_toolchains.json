@@ -22,11 +22,12 @@
       "lib_dir": "-L",
       "framework": "-framework",
       "framework_dir": "-F",
-      "output": "-o",
+      "compile_output": "-o",
+      "link_output": "-o",
       "compile": "-c",
-	  "shared":"-dynamiclib -Wl,",
-	  "executable":"-Wl,",
-	  "strip_lib_prefix":false
+	    "shared":"-dynamiclib -Wl,",
+	    "executable":"-Wl,",
+	    "strip_lib_prefix":false
     }
 
   },
@@ -49,7 +50,8 @@
       "include_dir": "-I",
       "lib": "-l",
       "lib_dir": "-L",
-      "output": "-o",
+      "compile_output": "-o",
+      "link_output": "-o",
       "compile": "-c"
     }
 
@@ -73,7 +75,8 @@
       "include_dir": "-I",
       "lib": "-l",
       "lib_dir": "-L",
-      "output": "-o",
+      "compile_output": "-o",
+      "link_output": "-o",
       "compile": "-c"
     }
 
@@ -96,8 +99,12 @@
       "include_dir": "/I",
       "lib": "",
       "lib_dir": "/LIBPATH:",
-      "output": "/Fo",
-      "compile": "/c"
+      "compile_output": "/Fo",
+      "link_output": "/out:",
+      "compile": "/c",
+      "shared":"/dll",
+      "executable":"",
+      "strip_lib_prefix":false
     }
   },
   {
@@ -118,8 +125,12 @@
       "include_dir": "/I",
       "lib": "",
       "lib_dir": "/LIBPATH:",
-      "output": "/Fo",
-      "compile": "/c"
+      "compile_output": "/Fo",
+      "link_output": "/out:",
+      "compile": "/c",
+      "shared":"/LD /link",
+      "executable":"/link",
+      "strip_lib_prefix":false
     }
   },
   {
