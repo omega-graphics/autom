@@ -19,11 +19,13 @@ struct InstallRule {
 };
 
 struct TargetInstallRule : public InstallRule {
+    explicit TargetInstallRule();
     std::vector<std::shared_ptr<::autom::Target>> targets;
     ~TargetInstallRule() override = default;
 };
 
 struct FileInstallRule : public InstallRule {
+    explicit FileInstallRule();
     std::vector<std::string> files;
     ~FileInstallRule() override = default;
 };

@@ -30,28 +30,27 @@ public:
             }
             if(rule->type == autom::InstallRule::Target){
                 auto _t = std::dynamic_pointer_cast<autom::TargetInstallRule>(rule);
-                std::cout << "- Installing targets ";
-                
+                std::cout << "- Installing targets -->" << std::endl << "       ";
                 for(auto & t : _t->targets){
                     auto f_name = std::filesystem::path(t->name->value().data()).filename();
                     std::filesystem::copy(std::filesystem::path(outputDir).append(t->name->value().data()),std::filesystem::path(prefix.data()).append(rule->prefixed_dest).append(f_name.string()).string(),std::filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
-                    std::cout << t->name->value();
+                    std::cout << "- " << t->name->value() << std::endl << "       ";
                 }
                 
             }
             else {
                 auto _t = std::dynamic_pointer_cast<autom::FileInstallRule>(rule);
-                std::cout << "- Installing files ";
+                std::cout << "- Installing files -->" << std::endl << "       ";
                 
                 for(auto & f : _t->files){
                     auto p = std::filesystem::path(f);
-                    std::cout << p.string() << " ";
+                    std::cout << "- " << p.string() << std::endl << "       ";
                     if(std::filesystem::is_directory(p)){
-                        std::filesystem::copy(p,std::filesystem::path(prefix.data()) += p.filename(),
+                        std::filesystem::copy(p,std::filesystem::path(prefix.data()).append(rule->prefixed_dest).append(p.filename().string()),
                                               std::filesystem::copy_options::recursive | std::filesystem::copy_options::update_existing);
                     }
                     else {
-                        std::filesystem::copy(p,std::filesystem::path(prefix.data()) += p.filename(),std::filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
+                        std::filesystem::copy(p,std::filesystem::path(prefix.data()).append(rule->prefixed_dest).append(p.filename().string()),std::filesystem::copy_options::update_existing | std::filesystem::copy_options::recursive);
                     }
                 }
                 

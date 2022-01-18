@@ -1,3 +1,5 @@
+# AUTOM Self Build File
+
 import "fs"
 
 project(name:"AUTOM",version:"0.8")
@@ -51,6 +53,16 @@ install_targets(targets:["fs"],dest:"modules")
 var mods = fs_glob(path:"modules/*.autom")
 
 install_files(files:mods,dest:"modules")
+
+var py_tools = fs_glob(path:"tools/*.py")
+install_files(files:py_tools,dest:"bin")
+
+if(autom.target_platform == "windows"){
+    install_files(files:["tools/autom-clone.bat","tools/autom-deps.bat"],dest:"bin")
+}
+else {
+    install_files(files:["tools/autom-clone","tools/autom-deps"],dest:"bin")
+}
 
 
 

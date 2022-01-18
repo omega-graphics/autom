@@ -9,6 +9,14 @@
 
 namespace autom {
 
+    TargetInstallRule::TargetInstallRule():targets(){
+        type = Target;
+    }
+
+    FileInstallRule::FileInstallRule():files(){
+        type = File;
+    }
+
 struct InstallFileSerializer::ReaderPriv {
     std::ifstream in;
     std::unique_ptr<rapidjson::IStreamWrapper> inputStreamWrapper;
@@ -120,7 +128,7 @@ void InstallFileSerializer::writeRule(InstallRulePtr rule){
                 auto _t = std::dynamic_pointer_cast<CompiledTarget>(t);
                 full_target_path = std::filesystem::path(_t->output_dir->value().data()).append(_t->name->value().data());
                 if(!_t->output_ext->empty()){
-                    full_target_path.concat(".").concat(_t->output_ext->value().data()).string();
+                    full_target_path.concat(".").concat(_t->output_ext->value().data());
                 }
             }
             else {

@@ -67,10 +67,7 @@ namespace autom {
         while((c = getChar()) != -1){
             switch(c){
                 case '#' : {
-                    while((c = getChar()) != '\n'){
-                        PUSH_CHAR(c)
-                    }
-                    PUSH_TOKEN(TOK_LINECOMMENT)
+                    while((c = getChar()) != '\n');
                     break;
                 }
                 case '=' : {

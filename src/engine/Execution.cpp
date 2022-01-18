@@ -101,6 +101,7 @@ namespace autom {
                         std::string & v = node->lhs->id;
                         int code;
                         auto * returnT = tryInvokeBuiltinFunc(v,node->func_args,&code);
+                      
                         if(code == INVOKE_NOTBUILTIN){
                             
                             std::vector<std::pair<std::string,Object *>> evalParams;

@@ -199,6 +199,7 @@ namespace autom::eval {
         
         rule->prefixed_dest = dest->value();
         rule->files = files->toStringVector();
+        
         ctxt.eval->currentGenContext->installRules.push_back(rule);
         return nullptr;
     }
@@ -331,8 +332,9 @@ namespace autom::eval {
     Object *bf_find_program(MapRef<std::string,Object *> args,EvalContext & ctxt){
 #ifdef _WIN32
         std::string path;
-        path.resize(32767);
-        size_t newSize = GetEnvironmentVariableA("Path",path.data(),path.size());
+        
+        path.resize(2 ^(sizeof(size_t) - 1));
+        size_t newSize = (size_t)GetEnvironmentVariableA("Path",path.data(),path.size());
         path.resize(newSize);
 #else
         std::string path = std::getenv("PATH");

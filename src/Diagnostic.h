@@ -61,6 +61,13 @@ namespace autom {
         };
     };
 
+    template<>
+    struct Format<int> {
+        static void format(std::ostream & out,int & val){
+            out << val;
+        };
+    };
+
 
 
 

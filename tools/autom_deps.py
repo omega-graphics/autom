@@ -88,7 +88,7 @@ def processCommand(c:Command):
         for p in platforms:
             if sp == p:
                 cont = True
-                break;
+                break
         
         if not cont:
             return
@@ -110,7 +110,9 @@ def processCommand(c:Command):
         prior_dir = os.getcwd()
         if updateOnly:
             print(f"Git Pull {c.get('url')}\nBranch:{c.get('branch')}")
+            os.chdir(dest)
             os.system(f"git pull")
+            os.chdir(prior_dir)
         else:
             print(f"Git Clone {c.get('url')}\nBranch:{c.get('branch')}")
             if branch == None:
@@ -134,7 +136,9 @@ def processCommand(c:Command):
         prior_dir = os.getcwd()
         if updateOnly:
             print(f"AUTOM Sync {c.get('url')}\nBranch:{c.get('branch')}")
+            os.chdir(dest)
             os.system(f"git pull")
+            os.chdir(prior_dir)	
         else:
             print(f"AUTOM Clone {c.get('url')}\nBranch:{c.get('branch')}")
             if branch == None:
