@@ -1,4 +1,6 @@
 # AUTOM 
+
+# THIS REPO IS NO LONGER BEING UPDATED. see `omega-graphics/omega-graphics-project.`
 ## (Automate,Automatic,etc..)
 
 An open-source native code build system generator used by the OmegaG Suite. It can generate to a few build systems including CMake, and GN.
